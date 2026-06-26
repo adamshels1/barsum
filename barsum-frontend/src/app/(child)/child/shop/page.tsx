@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Camera, CheckCircle2, ChevronRight, Pencil, Sparkles } from "lucide-react";
 import { useRef, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -33,18 +34,6 @@ const TYPE_EMOJI: Record<string, string> = {
   experience: "🎉",
 };
 
-const TYPE_BG: Record<string, string> = {
-  snack: "#FFF7ED",
-  time: "#EFF6FF",
-  experience: "#F0FDF4",
-};
-
-const TYPE_COLOR: Record<string, string> = {
-  snack: "#EA8C2D",
-  time: "#3B82F6",
-  experience: "#16A34A",
-};
-
 const TYPE_LABEL: Record<string, string> = {
   snack: "🍕 Вкусняшки",
   time: "⏰ Время",
@@ -71,56 +60,84 @@ function ConfirmModal({
   return (
     <div
       className="fixed inset-0 flex items-end justify-center z-50 p-4"
-      style={{ background: "rgba(0,0,0,0.45)" }}
+      style={{ background: "rgba(0,0,0,0.5)" }}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="w-full max-w-sm bg-white rounded-3xl p-6 space-y-4">
-        <div className="text-center">
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 400,
+          background: "rgba(20,10,60,0.95)",
+          backdropFilter: "blur(24px)",
+          WebkitBackdropFilter: "blur(24px)",
+          border: "1px solid rgba(255,255,255,0.15)",
+          borderRadius: "28px 28px 0 0",
+          padding: "32px 24px 40px",
+        }}
+      >
+        <div style={{ textAlign: "center", marginBottom: 20 }}>
           <div
-            className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-3"
-            style={{ background: TYPE_BG[reward.type] ?? "#F3F4F6" }}
+            className="glass-chip"
+            style={{
+              width: 64,
+              height: 64,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 32,
+              margin: "0 auto 16px",
+            }}
           >
             {TYPE_EMOJI[reward.type] ?? "🎁"}
           </div>
-          <h3 className="text-xl font-extrabold" style={{ color: "var(--ink)" }}>
+          <h3 style={{ margin: 0, fontSize: 20, fontWeight: 900, color: "#ffffff" }}>
             Запросить награду?
           </h3>
-          <p className="text-sm mt-1" style={{ color: "var(--muted)" }}>
+          <p style={{ margin: "8px 0 0", fontSize: 14, color: "rgba(255,255,255,0.65)" }}>
             «{reward.name}» за{" "}
-            <span className="font-bold" style={{ color: "var(--purple)" }}>
-              {reward.cost} монет
+            <span style={{ fontWeight: 800, color: "#ffffff" }}>
+              {reward.cost} 🪙
             </span>
           </p>
         </div>
+
         <div
-          className="flex items-center justify-between py-2 px-3 rounded-xl text-sm"
-          style={{ background: "var(--surface)" }}
+          className="glass-sm"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "12px 16px",
+            marginBottom: 20,
+            fontSize: 14,
+          }}
         >
-          <span style={{ color: "var(--muted)" }}>Баланс после:</span>
+          <span style={{ color: "rgba(255,255,255,0.65)" }}>Баланс после:</span>
           <span>
-            <span style={{ color: "var(--muted)" }}>{balanceBefore.toLocaleString()}</span>
+            <span style={{ color: "rgba(255,255,255,0.65)" }}>{balanceBefore.toLocaleString()}</span>
             {" → "}
-            <strong style={{ color: "var(--purple)" }}>{balanceAfter.toLocaleString()}</strong>
+            <strong style={{ color: "#ffffff" }}>{balanceAfter.toLocaleString()}</strong>
             {" 🪙"}
           </span>
         </div>
-        <div className="flex gap-3">
+
+        <div style={{ display: "flex", gap: 12 }}>
           <button
             onClick={onClose}
-            className="flex-1 py-3 rounded-2xl font-semibold text-sm"
-            style={{ background: "var(--surface)", color: "var(--muted)" }}
+            className="btn-glass"
+            style={{ flex: 1 }}
           >
             Отмена
           </button>
           <button
             onClick={onConfirm}
             disabled={isPending}
-            className="flex-1 py-3 rounded-2xl font-bold text-sm text-white"
-            style={{ background: isPending ? "#A78BFA" : "var(--purple)" }}
+            className="btn-white"
+            style={{ flex: 1, color: "#4776e6", opacity: isPending ? 0.6 : 1 }}
           >
-            {isPending ? "Отправляем..." : "✅ Подтвердить"}
+            {isPending ? "Отправляем..." : "Подтвердить"}
           </button>
         </div>
       </div>
@@ -160,12 +177,12 @@ function RewardsTab({ childId }: { childId: string }) {
 
   if (loadingRewards) {
     return (
-      <div className="grid grid-cols-2 gap-3">
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         {[1, 2, 3, 4].map((i) => (
           <div
             key={i}
-            className="rounded-3xl h-40 animate-pulse"
-            style={{ background: "var(--surface)" }}
+            className="glass"
+            style={{ height: 160, borderRadius: 20, animation: "pulse 2s infinite" }}
           />
         ))}
       </div>
@@ -174,12 +191,12 @@ function RewardsTab({ childId }: { childId: string }) {
 
   if (activeRewards.length === 0) {
     return (
-      <div className="rounded-2xl p-10 text-center" style={{ background: "var(--surface)" }}>
-        <p className="text-5xl mb-3">🎁</p>
-        <p className="font-extrabold" style={{ color: "var(--ink)" }}>
+      <div className="glass" style={{ padding: 40, textAlign: "center" }}>
+        <p style={{ fontSize: 40, margin: "0 0 12px" }}>🎁</p>
+        <p style={{ margin: 0, fontWeight: 900, color: "#ffffff" }}>
           Наград пока нет
         </p>
-        <p className="text-sm mt-1" style={{ color: "var(--muted)" }}>
+        <p style={{ margin: "6px 0 0", fontSize: 13, color: "rgba(255,255,255,0.65)" }}>
           Попроси родителей добавить награды
         </p>
       </div>
@@ -202,86 +219,136 @@ function RewardsTab({ childId }: { childId: string }) {
 
   return (
     <>
+      {/* Balance card */}
       <div
-        className="rounded-2xl p-4 flex items-center justify-between mb-5"
-        style={{ background: "var(--purple)" }}
+        className="glass"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: 16,
+          marginBottom: 20,
+        }}
       >
         <div>
-          <p className="text-xs text-white opacity-70">Мой баланс</p>
-          <p className="text-2xl font-extrabold text-white">
+          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.65)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+            Мой баланс
+          </p>
+          <p style={{ margin: "4px 0 0", fontSize: 24, fontWeight: 900, color: "#ffffff" }}>
             {balance.toLocaleString()} 🪙
           </p>
         </div>
-        <span className="text-4xl">💰</span>
+        <span style={{ fontSize: 36 }}>💰</span>
       </div>
 
       {successId && (
         <div
-          className="rounded-2xl p-3 mb-4 text-center text-sm font-semibold"
-          style={{ background: "#DCFCE7", color: "#15803D" }}
+          style={{
+            background: "rgba(0,200,100,0.2)",
+            borderRadius: 16,
+            padding: "12px 16px",
+            marginBottom: 20,
+            textAlign: "center",
+            fontSize: 14,
+            fontWeight: 700,
+            color: "#aaffcc",
+          }}
         >
-          ✅ Запрос отправлен родителю!
+          <CheckCircle2 size={16} style={{ display: "inline", marginRight: 6, verticalAlign: "middle" }} />
+          Запрос отправлен родителю!
         </div>
       )}
 
       {grouped.map(({ type, items }) => (
-        <div key={type} className="mb-6">
-          <h3 className="text-sm font-extrabold mb-3" style={{ color: "var(--ink)" }}>
+        <div key={type} style={{ marginBottom: 24 }}>
+          <h3 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 800, color: "#ffffff" }}>
             {TYPE_LABEL[type] ?? "🎁 Другое"}
           </h3>
-          <div className="grid grid-cols-2 gap-3">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             {items.map((reward) => {
               const canAfford = balance >= reward.cost;
               const diff = reward.cost - balance;
-              const bg = TYPE_BG[reward.type] ?? "#F3F4F6";
-              const color = TYPE_COLOR[reward.type] ?? "var(--purple)";
 
               return (
                 <div
                   key={reward.id}
-                  className="rounded-3xl overflow-hidden flex flex-col"
+                  className="glass"
                   style={{
-                    background: "var(--card)",
-                    boxShadow: "0 4px 16px rgba(0,0,0,0.07)",
-                    border: "1.5px solid rgba(0,0,0,0.04)",
+                    borderRadius: 20,
+                    overflow: "hidden",
+                    display: "flex",
+                    flexDirection: "column",
                     opacity: canAfford ? 1 : 0.7,
                   }}
                 >
                   <div
-                    className="h-28 flex items-center justify-center text-5xl relative"
-                    style={{ background: bg }}
+                    className="glass-sm"
+                    style={{
+                      height: 112,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 42,
+                      position: "relative",
+                      borderRadius: 0,
+                    }}
                   >
                     {TYPE_EMOJI[reward.type] ?? "🎁"}
                     {!canAfford && (
                       <div
-                        className="absolute inset-0 flex items-center justify-center"
-                        style={{ background: "rgba(0,0,0,0.15)" }}
+                        style={{
+                          position: "absolute",
+                          inset: 0,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          background: "rgba(0,0,0,0.35)",
+                        }}
                       >
-                        <span className="text-2xl">🔒</span>
+                        <span style={{ fontSize: 24 }}>🔒</span>
                       </div>
                     )}
                   </div>
-                  <div className="p-3 flex flex-col flex-1">
+                  <div style={{ padding: 12, display: "flex", flexDirection: "column", flex: 1 }}>
                     <p
-                      className="font-bold text-sm line-clamp-2 flex-1"
-                      style={{ color: "var(--ink)" }}
+                      style={{
+                        margin: 0,
+                        fontWeight: 700,
+                        fontSize: 13,
+                        color: "#ffffff",
+                        flex: 1,
+                        overflow: "hidden",
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                      }}
                     >
                       {reward.name}
                     </p>
-                    <div className="mt-2 flex items-center justify-between gap-1">
-                      <span className="text-sm font-extrabold" style={{ color }}>
+                    <div style={{ marginTop: 8, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 4 }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: "#ffffff" }}>
                         🪙 {reward.cost.toLocaleString()}
                       </span>
                       {canAfford ? (
                         <button
                           onClick={() => setSelectedReward(reward)}
-                          className="text-xs px-3 py-1.5 rounded-xl font-bold text-white flex-shrink-0"
-                          style={{ background: "var(--purple)" }}
+                          style={{
+                            background: "rgba(255,255,255,0.9)",
+                            color: "#4776e6",
+                            borderRadius: 9999,
+                            padding: "6px 12px",
+                            fontSize: 12,
+                            fontWeight: 800,
+                            border: "none",
+                            cursor: "pointer",
+                            fontFamily: "inherit",
+                            flexShrink: 0,
+                          }}
                         >
                           Взять
                         </button>
                       ) : (
-                        <span className="text-xs font-semibold" style={{ color: "#DC2626" }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,160,160,0.9)" }}>
                           −{diff}
                         </span>
                       )}
@@ -379,7 +446,7 @@ function DreamTab({ childId }: { childId: string }) {
 
   if (loadingDream) {
     return (
-      <p className="text-sm text-center py-8" style={{ color: "var(--muted)" }}>
+      <p style={{ fontSize: 14, textAlign: "center", padding: "32px 0", color: "rgba(255,255,255,0.65)" }}>
         Загрузка...
       </p>
     );
@@ -387,90 +454,100 @@ function DreamTab({ childId }: { childId: string }) {
 
   if (!dream || dream.status === "rejected") {
     return (
-      <div className="space-y-4">
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         {dream?.status === "rejected" && (
-          <div className="rounded-2xl p-4" style={{ background: "#FEE2E2" }}>
-            <p className="font-bold text-sm" style={{ color: "#B91C1C" }}>
+          <div
+            style={{
+              background: "rgba(220,0,0,0.15)",
+              borderRadius: 16,
+              padding: 16,
+            }}
+          >
+            <p style={{ margin: 0, fontWeight: 700, fontSize: 14, color: "rgba(255,160,160,0.9)" }}>
               Предыдущая мечта отклонена
             </p>
             {dream.rejectedReason && (
-              <p className="text-xs mt-1" style={{ color: "#B91C1C" }}>
+              <p style={{ margin: "4px 0 0", fontSize: 12, color: "rgba(255,160,160,0.75)" }}>
                 Причина: {dream.rejectedReason}
               </p>
             )}
           </div>
         )}
 
-        <div className="rounded-3xl overflow-hidden" style={{ background: "var(--surface)" }}>
-          <button
-            type="button"
-            onClick={() => fileRef.current?.click()}
-            className="w-full h-44 flex flex-col items-center justify-center gap-2 transition-opacity hover:opacity-80"
-            style={{
-              background: photoPreview
-                ? "transparent"
-                : "linear-gradient(135deg, #f4f1ff, #efeaff)",
-              position: "relative",
-            }}
-          >
-            {photoPreview ? (
-              <img src={photoPreview} alt="" className="w-full h-44 object-cover" />
-            ) : (
-              <>
-                <span className="text-5xl">📸</span>
-                <span className="text-sm font-semibold" style={{ color: "var(--purple)" }}>
-                  Сфотографируй свою мечту
-                </span>
-                <span className="text-xs" style={{ color: "var(--muted)" }}>
-                  или выбери из галереи
-                </span>
-              </>
-            )}
-            {photoPreview && (
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          className="glass-sm"
+          style={{
+            borderRadius: 20,
+            overflow: "hidden",
+            height: 176,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            cursor: "pointer",
+            border: "none",
+            position: "relative",
+            width: "100%",
+          }}
+        >
+          {photoPreview ? (
+            <>
+              <img src={photoPreview} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
               <div
-                className="absolute inset-0 flex items-center justify-center"
-                style={{ background: "rgba(0,0,0,0.3)" }}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "rgba(0,0,0,0.3)",
+                }}
               >
-                <span className="text-white font-bold text-sm bg-black bg-opacity-40 px-3 py-1 rounded-full">
+                <span style={{ color: "#ffffff", fontWeight: 700, fontSize: 14, background: "rgba(0,0,0,0.4)", padding: "6px 14px", borderRadius: 9999 }}>
                   📸 Изменить фото
                 </span>
               </div>
-            )}
-          </button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            className="hidden"
-            onChange={handlePhotoChange}
-          />
-        </div>
+            </>
+          ) : (
+            <>
+              <Camera size={40} color="rgba(255,255,255,0.6)" strokeWidth={1.5} />
+              <span style={{ fontWeight: 700, fontSize: 14, color: "#ffffff" }}>Сфотографируй свою мечту</span>
+              <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>или выбери из галереи</span>
+            </>
+          )}
+        </button>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          style={{ display: "none" }}
+          onChange={handlePhotoChange}
+        />
 
-        <div className="space-y-3">
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div>
-            <label
-              className="text-xs font-semibold uppercase mb-1 block"
-              style={{ color: "var(--muted)" }}
-            >
+            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
               Что ты хочешь? ✨
             </label>
             <input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="Например: Велосипед"
-              className="w-full px-4 py-3 rounded-xl border text-base outline-none"
-              style={{ borderColor: "#E5E7EB", color: "var(--ink)", background: "#fff" }}
+              className="glass-input"
             />
           </div>
-          <p className="text-xs text-center px-4" style={{ color: "var(--muted)" }}>
+          <p style={{ margin: 0, fontSize: 12, textAlign: "center", color: "rgba(255,255,255,0.55)" }}>
             Родитель установит стоимость и одобрит мечту 🌟
           </p>
           <button
             onClick={() => createMutation.mutate()}
             disabled={!newName.trim() || createMutation.isPending}
-            className="w-full py-4 rounded-2xl font-extrabold text-white text-lg"
-            style={{ background: !newName.trim() ? "#C4B5FD" : "var(--purple)" }}
+            className="btn-white"
+            style={{ color: "#4776e6", opacity: !newName.trim() || createMutation.isPending ? 0.5 : 1 }}
           >
             {createMutation.isPending ? "Создаём..." : "✨ Отправить родителю"}
           </button>
@@ -481,18 +558,21 @@ function DreamTab({ childId }: { childId: string }) {
 
   if (dream.status === "pending_approval") {
     return (
-      <div className="space-y-4">
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         {dream.photoUrl && (
-          <div className="rounded-2xl overflow-hidden h-44">
-            <img src={dream.photoUrl} alt="" className="w-full h-full object-cover" />
+          <div style={{ borderRadius: 16, overflow: "hidden", height: 176 }}>
+            <img src={dream.photoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           </div>
         )}
-        <div className="rounded-2xl p-5 text-center" style={{ background: "#FEF3C7" }}>
-          <p className="text-4xl mb-3">⏳</p>
-          <p className="font-extrabold text-lg" style={{ color: "#92400E" }}>
+        <div
+          className="glass-sm"
+          style={{ padding: 20, textAlign: "center" }}
+        >
+          <p style={{ fontSize: 36, margin: "0 0 12px" }}>⏳</p>
+          <p style={{ margin: 0, fontWeight: 900, fontSize: 18, color: "#ffffff" }}>
             {dream.name}
           </p>
-          <p className="text-sm mt-2" style={{ color: "#B45309" }}>
+          <p style={{ margin: "8px 0 0", fontSize: 13, color: "rgba(255,255,255,0.65)" }}>
             Ждём, пока родитель установит стоимость и одобрит мечту
           </p>
         </div>
@@ -507,33 +587,37 @@ function DreamTab({ childId }: { childId: string }) {
   const isCompleted = dream.status === "completed";
 
   return (
-    <div className="space-y-4">
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div
-        className="rounded-2xl overflow-hidden relative"
+        className={dream.photoUrl ? undefined : "glass"}
         style={{
+          borderRadius: 16,
+          overflow: "hidden",
+          position: "relative",
           background: dream.photoUrl
             ? `url(${dream.photoUrl}) center/cover`
-            : "var(--card)",
+            : undefined,
           minHeight: dream.photoUrl ? 160 : "auto",
         }}
       >
         {dream.photoUrl && (
           <div
-            className="absolute inset-0"
             style={{
+              position: "absolute",
+              inset: 0,
               background: "linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.65))",
             }}
           />
         )}
-        <div className="relative p-5 space-y-4">
-          <div className="flex items-start justify-between gap-2">
+        <div style={{ position: "relative", padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
             {editing ? (
-              <div className="flex-1 flex gap-2">
+              <div style={{ flex: 1, display: "flex", gap: 8 }}>
                 <input
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="flex-1 px-3 py-2 rounded-xl border text-base outline-none"
-                  style={{ borderColor: "#E5E7EB", color: "var(--ink)" }}
+                  className="glass-input"
+                  style={{ flex: 1 }}
                   autoFocus
                 />
                 <button
@@ -541,15 +625,34 @@ function DreamTab({ childId }: { childId: string }) {
                     updateMutation.mutate({ id: dream.id, data: { name: editName } })
                   }
                   disabled={!editName.trim() || updateMutation.isPending}
-                  className="px-3 py-2 rounded-xl text-sm font-bold text-white"
-                  style={{ background: "var(--purple)" }}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 9999,
+                    background: "rgba(255,255,255,0.9)",
+                    color: "#4776e6",
+                    border: "none",
+                    cursor: "pointer",
+                    fontWeight: 900,
+                    fontSize: 16,
+                    flexShrink: 0,
+                  }}
                 >
                   ✓
                 </button>
                 <button
                   onClick={() => setEditing(false)}
-                  className="px-3 py-2 rounded-xl text-sm font-semibold"
-                  style={{ background: "var(--surface)", color: "var(--muted)" }}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 9999,
+                    background: "rgba(255,255,255,0.16)",
+                    color: "#ffffff",
+                    border: "1px solid rgba(255,255,255,0.3)",
+                    cursor: "pointer",
+                    fontSize: 16,
+                    flexShrink: 0,
+                  }}
                 >
                   ✕
                 </button>
@@ -557,16 +660,10 @@ function DreamTab({ childId }: { childId: string }) {
             ) : (
               <>
                 <div>
-                  <p
-                    className="text-xs font-semibold uppercase"
-                    style={{ color: dream.photoUrl ? "rgba(255,255,255,0.7)" : "var(--muted)" }}
-                  >
+                  <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.65)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
                     Моя мечта
                   </p>
-                  <p
-                    className="text-xl font-extrabold mt-0.5"
-                    style={{ color: dream.photoUrl ? "#fff" : "var(--ink)" }}
-                  >
+                  <p style={{ margin: "4px 0 0", fontSize: 20, fontWeight: 900, color: "#ffffff" }}>
                     {dream.name}
                   </p>
                 </div>
@@ -576,10 +673,23 @@ function DreamTab({ childId }: { childId: string }) {
                       setEditName(dream.name);
                       setEditing(true);
                     }}
-                    className="text-xs px-3 py-1.5 rounded-xl font-semibold flex-shrink-0"
-                    style={{ background: "#EDE9FE", color: "var(--purple)" }}
+                    className="glass-chip"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                      padding: "6px 12px",
+                      border: "none",
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                      color: "#ffffff",
+                      fontWeight: 700,
+                      fontSize: 12,
+                      flexShrink: 0,
+                    }}
                   >
-                    ✏️ Изменить
+                    <Pencil size={12} strokeWidth={2.5} />
+                    Изменить
                   </button>
                 )}
               </>
@@ -587,55 +697,52 @@ function DreamTab({ childId }: { childId: string }) {
           </div>
 
           {isCompleted && (
-            <div className="rounded-xl p-3 text-center" style={{ background: "#DCFCE7" }}>
-              <p className="text-lg font-extrabold" style={{ color: "#15803D" }}>
+            <div
+              className="glass-sm"
+              style={{ background: "rgba(0,200,100,0.25)", borderRadius: 12, padding: 12, textAlign: "center" }}
+            >
+              <p style={{ margin: 0, fontSize: 16, fontWeight: 900, color: "#aaffcc" }}>
                 🎉 Мечта достигнута!
               </p>
             </div>
           )}
 
           <div>
-            <div className="flex justify-between text-sm mb-2">
-              <span
-                className="font-semibold"
-                style={{ color: dream.photoUrl ? "#fff" : "var(--ink)" }}
-              >
-                🪙 {dream.savedCoins.toLocaleString()}
-              </span>
-              <span style={{ color: dream.photoUrl ? "rgba(255,255,255,0.7)" : "var(--muted)" }}>
-                из {dream.targetCoins.toLocaleString()}
-              </span>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, marginBottom: 8 }}>
+              <span style={{ fontWeight: 700, color: "#ffffff" }}>🪙 {dream.savedCoins.toLocaleString()}</span>
+              <span style={{ color: "rgba(255,255,255,0.65)" }}>из {dream.targetCoins.toLocaleString()}</span>
             </div>
             <div
-              className="w-full h-5 rounded-full overflow-hidden"
-              style={{ background: dream.photoUrl ? "rgba(255,255,255,0.3)" : "#E5E7EB" }}
+              style={{
+                width: "100%",
+                height: 20,
+                borderRadius: 9999,
+                overflow: "hidden",
+                background: "rgba(255,255,255,0.25)",
+              }}
             >
               <div
-                className="h-full rounded-full transition-all duration-500 flex items-center justify-end pr-2"
                 style={{
+                  height: "100%",
+                  borderRadius: 9999,
+                  transition: "width 0.5s ease",
                   width: `${Math.max(progress, 4)}%`,
-                  background: isCompleted
-                    ? "var(--green)"
-                    : dream.photoUrl
-                    ? "#fff"
-                    : "var(--purple)",
+                  background: isCompleted ? "rgba(0,220,120,0.8)" : "rgba(255,255,255,0.85)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "flex-end",
+                  paddingRight: 8,
                 }}
               >
                 {progress >= 15 && (
-                  <span
-                    className="text-xs font-bold"
-                    style={{ color: dream.photoUrl ? "var(--purple)" : "#fff" }}
-                  >
+                  <span style={{ fontSize: 11, fontWeight: 800, color: isCompleted ? "#ffffff" : "#4776e6" }}>
                     {Math.round(progress)}%
                   </span>
                 )}
               </div>
             </div>
             {progress < 15 && (
-              <p
-                className="text-right text-xs mt-1 font-semibold"
-                style={{ color: dream.photoUrl ? "rgba(255,255,255,0.7)" : "var(--muted)" }}
-              >
+              <p style={{ textAlign: "right", fontSize: 11, marginTop: 4, fontWeight: 700, color: "rgba(255,255,255,0.65)" }}>
                 {Math.round(progress)}%
               </p>
             )}
@@ -644,14 +751,14 @@ function DreamTab({ childId }: { childId: string }) {
       </div>
 
       {!isCompleted && balance > 0 && (
-        <div className="rounded-2xl p-5 space-y-3" style={{ background: "var(--surface)" }}>
-          <p className="font-bold" style={{ color: "var(--ink)" }}>
+        <div className="glass" style={{ padding: 20, borderRadius: 16 }}>
+          <p style={{ margin: "0 0 4px", fontWeight: 700, color: "#ffffff" }}>
             Отправить монеты в мечту
           </p>
-          <p className="text-xs" style={{ color: "var(--muted)" }}>
+          <p style={{ margin: "0 0 12px", fontSize: 12, color: "rgba(255,255,255,0.65)" }}>
             Доступно: 🪙 {balance.toLocaleString()}
           </p>
-          <div className="flex gap-2">
+          <div style={{ display: "flex", gap: 8 }}>
             <input
               type="number"
               min={1}
@@ -659,8 +766,8 @@ function DreamTab({ childId }: { childId: string }) {
               value={sendAmount}
               onChange={(e) => setSendAmount(e.target.value)}
               placeholder="Сколько монет?"
-              className="flex-1 px-4 py-3 rounded-xl border text-base outline-none"
-              style={{ borderColor: "#E5E7EB", color: "var(--ink)" }}
+              className="glass-input"
+              style={{ flex: 1 }}
             />
             <button
               onClick={() => sendMutation.mutate(Number(sendAmount))}
@@ -670,19 +777,23 @@ function DreamTab({ childId }: { childId: string }) {
                 Number(sendAmount) > balance ||
                 sendMutation.isPending
               }
-              className="px-5 py-3 rounded-xl font-bold text-white text-sm flex-shrink-0"
+              className="btn-white"
               style={{
-                background:
+                color: "#4776e6",
+                width: "auto",
+                padding: "0 20px",
+                flexShrink: 0,
+                opacity:
                   !sendAmount || Number(sendAmount) < 1 || Number(sendAmount) > balance
-                    ? "#C4B5FD"
-                    : "var(--purple)",
+                    ? 0.4
+                    : 1,
               }}
             >
-              {sendMutation.isPending ? "..." : "⬆️ Внести"}
+              {sendMutation.isPending ? "..." : "Внести"}
             </button>
           </div>
           {sendMutation.isSuccess && (
-            <p className="text-sm font-semibold" style={{ color: "var(--green)" }}>
+            <p style={{ marginTop: 8, fontSize: 13, fontWeight: 700, color: "#aaffcc" }}>
               ✅ Монеты отправлены!
             </p>
           )}
@@ -690,8 +801,8 @@ function DreamTab({ childId }: { childId: string }) {
       )}
 
       {!isCompleted && balance === 0 && (
-        <div className="rounded-2xl p-4 text-center" style={{ background: "var(--surface)" }}>
-          <p className="text-sm" style={{ color: "var(--muted)" }}>
+        <div className="glass-sm" style={{ padding: 16, textAlign: "center" }}>
+          <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.65)" }}>
             Заработай монеты, читая книги, чтобы приблизить мечту!
           </p>
         </div>
@@ -716,9 +827,9 @@ function ChildShopInner() {
   const hasActiveDream = dream?.status === "active";
 
   return (
-    <main className="min-h-screen max-w-lg mx-auto pb-6">
-      <div className="p-5 pb-0">
-        <h2 className="text-xl font-extrabold" style={{ color: "var(--ink)" }}>
+    <main style={{ minHeight: "100dvh", paddingBottom: 24 }}>
+      <div style={{ padding: "20px 20px 0" }}>
+        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 900, color: "#ffffff" }}>
           {activeTab === "rewards" ? "🎁 Магазин наград" : "💫 Моя мечта"}
         </h2>
       </div>
@@ -726,81 +837,120 @@ function ChildShopInner() {
       {!dream || dream.status === "rejected" ? (
         <button
           onClick={() => setActiveTab("dream")}
-          className="mx-5 mt-4 w-[calc(100%-2.5rem)] rounded-2xl p-4 flex items-center gap-3 text-left"
+          className="glass-sm"
           style={{
-            background: "linear-gradient(135deg, #f4f1ff, #efeaff)",
-            border: "1.5px solid #e6dffb",
+            margin: "16px 20px 4px",
+            borderRadius: 16,
+            padding: 16,
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            width: "calc(100% - 40px)",
+            border: "none",
+            cursor: "pointer",
+            textAlign: "left",
+            fontFamily: "inherit",
           }}
         >
-          <span className="text-3xl">💫</span>
-          <div>
-            <p className="font-extrabold text-sm" style={{ color: "var(--purple)" }}>
+          <Sparkles size={24} color="#ffffff" strokeWidth={2} />
+          <div style={{ flex: 1 }}>
+            <p style={{ margin: 0, fontWeight: 700, fontSize: 14, color: "#ffffff" }}>
               Добавь свою мечту!
             </p>
-            <p className="text-xs mt-0.5" style={{ color: "var(--muted)" }}>
+            <p style={{ margin: "2px 0 0", fontSize: 12, color: "rgba(255,255,255,0.65)" }}>
               Родители помогут её осуществить
             </p>
           </div>
-          <span className="ml-auto text-lg" style={{ color: "var(--purple)" }}>
-            →
-          </span>
+          <ChevronRight size={20} color="rgba(255,255,255,0.7)" />
         </button>
       ) : hasPendingDream ? (
         <button
           onClick={() => setActiveTab("dream")}
-          className="mx-5 mt-4 w-[calc(100%-2.5rem)] rounded-2xl p-3 flex items-center gap-2 text-left"
-          style={{ background: "#FEF3C7", border: "1px solid #FDE68A" }}
+          className="glass-chip"
+          style={{
+            margin: "12px 20px 0",
+            padding: "12px 16px",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            width: "calc(100% - 40px)",
+            border: "1px solid rgba(255,255,255,0.2)",
+            cursor: "pointer",
+            textAlign: "left",
+            fontFamily: "inherit",
+          }}
         >
-          <span className="text-xl">⏳</span>
-          <p className="text-xs font-semibold" style={{ color: "#92400E" }}>
+          <span style={{ fontSize: 18 }}>⏳</span>
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#ffffff" }}>
             Мечта «{dream.name}» ждёт одобрения родителя
           </p>
         </button>
       ) : hasActiveDream ? (
         <button
           onClick={() => setActiveTab("dream")}
-          className="mx-5 mt-4 w-[calc(100%-2.5rem)] rounded-2xl p-3 flex items-center gap-3 text-left"
+          className="glass-sm"
           style={{
-            background: "linear-gradient(135deg, #f4f1ff, #efeaff)",
-            border: "1px solid #e6dffb",
+            margin: "12px 20px 0",
+            padding: "12px 16px",
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            width: "calc(100% - 40px)",
+            border: "none",
+            cursor: "pointer",
+            textAlign: "left",
+            fontFamily: "inherit",
+            borderRadius: 16,
           }}
         >
-          <span className="text-xl">💫</span>
-          <div className="flex-1">
-            <p className="text-xs font-bold" style={{ color: "var(--purple)" }}>
+          <span style={{ fontSize: 20 }}>💫</span>
+          <div style={{ flex: 1 }}>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "#ffffff" }}>
               {dream.name}
             </p>
-            <div
-              className="w-full h-1.5 rounded-full mt-1 overflow-hidden"
-              style={{ background: "#e0d9f9" }}
-            >
+            <div style={{ width: "100%", height: 6, borderRadius: 9999, marginTop: 6, overflow: "hidden", background: "rgba(255,255,255,0.2)" }}>
               <div
-                className="h-full rounded-full"
                 style={{
+                  height: "100%",
+                  borderRadius: 9999,
+                  background: "rgba(255,255,255,0.85)",
                   width: `${Math.min((dream.savedCoins / dream.targetCoins) * 100, 100)}%`,
-                  background: "var(--purple)",
                 }}
               />
             </div>
           </div>
-          <span className="text-xs font-bold" style={{ color: "var(--purple)" }}>
+          <span style={{ fontSize: 12, fontWeight: 800, color: "#ffffff", flexShrink: 0 }}>
             {Math.round(Math.min((dream.savedCoins / dream.targetCoins) * 100, 100))}%
           </span>
         </button>
       ) : null}
 
+      {/* Tab switcher */}
       <div
-        className="flex mx-5 mt-4 rounded-2xl p-1 mb-5"
-        style={{ background: "var(--surface)" }}
+        style={{
+          display: "flex",
+          margin: "16px 20px 0",
+          background: "rgba(0,0,0,0.18)",
+          borderRadius: 9999,
+          padding: 4,
+        }}
       >
         {(["rewards", "dream"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className="flex-1 py-3 rounded-xl font-bold text-sm transition-all"
             style={{
-              background: activeTab === tab ? "var(--purple)" : "transparent",
-              color: activeTab === tab ? "#fff" : "var(--muted)",
+              flex: 1,
+              padding: "10px 0",
+              borderRadius: 9999,
+              border: "none",
+              cursor: "pointer",
+              fontWeight: 700,
+              fontSize: 14,
+              fontFamily: "inherit",
+              transition: "all 0.15s",
+              background: activeTab === tab ? "rgba(255,255,255,0.9)" : "transparent",
+              color: activeTab === tab ? "#4776e6" : "rgba(255,255,255,0.55)",
             }}
           >
             {tab === "rewards" ? "🎁 Награды" : "💫 Мечта"}
@@ -808,7 +958,7 @@ function ChildShopInner() {
         ))}
       </div>
 
-      <div className="px-5">
+      <div style={{ padding: "20px 20px 0" }}>
         {activeTab === "rewards" ? (
           <RewardsTab childId={childId} />
         ) : (
@@ -821,7 +971,7 @@ function ChildShopInner() {
 
 export default function ChildShopPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen" style={{ background: "var(--background)" }} />}>
+    <Suspense fallback={<div style={{ minHeight: "100dvh" }} />}>
       <ChildShopInner />
     </Suspense>
   );

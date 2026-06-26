@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { BookMarked, ChevronLeft, Plus, Users2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -32,23 +33,20 @@ const FILTERS: { key: FilterStatus; label: string }[] = [
   { key: "rejected", label: "Отклонён" },
 ];
 
-const STATUS_BADGE: Record<
-  string,
-  { label: string; color: string; bg: string }
-> = {
-  draft: { label: "Черновик", color: "var(--ink)", bg: "var(--line)" },
-  moderation: {
-    label: "На модерации",
-    color: "var(--orange-deep)",
-    bg: "var(--orange-light)",
-  },
-  published: {
-    label: "Опубликован",
-    color: "var(--green-deep)",
-    bg: "var(--green-light)",
-  },
-  rejected: { label: "Отклонён", color: "#DC2626", bg: "#FEE2E2" },
-};
+function statusBadgeStyle(status: string): React.CSSProperties {
+  if (status === "moderation") return { background: "rgba(255,180,0,0.25)", color: "#ffd200", borderRadius: 9999, padding: "4px 10px", fontSize: 11, fontWeight: 700 };
+  if (status === "published") return { background: "rgba(0,200,100,0.25)", color: "#aaffcc", borderRadius: 9999, padding: "4px 10px", fontSize: 11, fontWeight: 700 };
+  if (status === "rejected") return { background: "rgba(220,0,0,0.25)", color: "#ffaaaa", borderRadius: 9999, padding: "4px 10px", fontSize: 11, fontWeight: 700 };
+  return { background: "rgba(255,255,255,0.16)", color: "#ffffff", borderRadius: 9999, padding: "4px 10px", fontSize: 11, fontWeight: 700, border: "1px solid rgba(255,255,255,0.26)" };
+}
+
+function statusBadgeLabel(status: string): string {
+  if (status === "draft") return "Черновик";
+  if (status === "moderation") return "На модерации";
+  if (status === "published") return "Опубликован";
+  if (status === "rejected") return "Отклонён";
+  return status;
+}
 
 export default function ExpertBooksPage() {
   const router = useRouter();
@@ -73,175 +71,126 @@ export default function ExpertBooksPage() {
   });
 
   const filtered =
-    filter === "all"
-      ? allChallenges
-      : allChallenges.filter((c) => c.status === filter);
+    filter === "all" ? allChallenges : allChallenges.filter((c) => c.status === filter);
 
   return (
-    <main
-      className="min-h-screen p-6 max-w-lg mx-auto"
-      style={{ background: "var(--background)" }}
-    >
+    <main style={{ minHeight: "100dvh", padding: "0 0 32px" }}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "52px 20px 16px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <button
             onClick={() => router.back()}
-            className="text-sm mb-1 flex items-center gap-1 transition-opacity hover:opacity-70"
-            style={{ color: "var(--muted)" }}
+            className="glass-chip"
+            style={{ display: "flex", alignItems: "center", gap: 4, padding: "8px 14px", border: "none", cursor: "pointer", fontFamily: "inherit", color: "#ffffff", fontWeight: 700, fontSize: 14 }}
           >
-            ← Назад
+            <ChevronLeft size={16} strokeWidth={2.5} />
+            Назад
           </button>
-          <h1
-            className="text-2xl font-extrabold"
-            style={{ color: "var(--ink)" }}
-          >
-            Мои задания
-          </h1>
+          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: "#ffffff" }}>Мои задания</h1>
         </div>
         <button
           onClick={() => router.push("/expert/create")}
-          className="px-4 py-2.5 rounded-2xl font-bold text-white text-sm transition-opacity hover:opacity-90"
-          style={{
-            background: "var(--purple)",
-            boxShadow: "0 4px 0 var(--purple-deep)",
-          }}
+          className="btn-white"
+          style={{ color: "#4776e6", padding: "10px 18px", width: "auto", fontSize: 14, gap: 6, display: "flex", alignItems: "center" }}
         >
-          + Создать
+          <Plus size={16} strokeWidth={3} />
+          Создать
         </button>
       </div>
 
-      {/* Filter chips */}
-      <div className="flex gap-2 overflow-x-auto pb-2 mb-6 scrollbar-hide">
-        {FILTERS.map((f) => {
-          const isActive = filter === f.key;
-          const count =
-            f.key === "all"
-              ? allChallenges.length
-              : allChallenges.filter((c) => c.status === f.key).length;
-          return (
-            <button
-              key={f.key}
-              onClick={() => setFilter(f.key)}
-              className="flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all"
-              style={{
-                background: isActive ? "var(--purple)" : "var(--white)",
-                color: isActive ? "#fff" : "var(--muted)",
-                boxShadow: isActive
-                  ? "0 3px 0 var(--purple-deep)"
-                  : "var(--shadow-sm)",
-              }}
-            >
-              {f.label}
-              {count > 0 && (
-                <span className="ml-1.5 text-xs opacity-80">{count}</span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* List */}
-      {isLoading ? (
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="rounded-2xl h-28 animate-pulse"
-              style={{ background: "var(--white)" }}
-            />
-          ))}
-        </div>
-      ) : filtered.length === 0 ? (
-        <div
-          className="rounded-2xl p-10 text-center"
-          style={{ background: "var(--white)", boxShadow: "var(--shadow-sm)" }}
-        >
-          <p className="text-4xl mb-3">📋</p>
-          <p className="font-semibold" style={{ color: "var(--ink)" }}>
-            {filter === "all" ? "Нет заданий" : "Нет заданий в этой категории"}
-          </p>
-          {filter === "all" && (
-            <p className="text-sm mt-1" style={{ color: "var(--muted)" }}>
-              Создайте первое задание
-            </p>
-          )}
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {filtered.map((challenge) => {
-            const badge = STATUS_BADGE[challenge.status] ?? STATUS_BADGE.draft;
+      <div style={{ padding: "0 20px" }}>
+        {/* Filter chips */}
+        <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 8, marginBottom: 16 }}>
+          {FILTERS.map((f) => {
+            const isActive = filter === f.key;
+            const count = f.key === "all" ? allChallenges.length : allChallenges.filter((c) => c.status === f.key).length;
             return (
-              <div
-                key={challenge.id}
-                className="rounded-2xl p-4"
+              <button
+                key={f.key}
+                onClick={() => setFilter(f.key)}
                 style={{
-                  background: "var(--white)",
-                  boxShadow: "var(--shadow-sm)",
+                  flexShrink: 0,
+                  padding: "8px 16px",
+                  borderRadius: 9999,
+                  border: "none",
+                  cursor: "pointer",
+                  fontWeight: 700,
+                  fontSize: 13,
+                  fontFamily: "inherit",
+                  background: isActive ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.16)",
+                  color: isActive ? "#4776e6" : "#ffffff",
+                  transition: "all 0.15s",
                 }}
               >
+                {f.label}
+                {count > 0 && (
+                  <span style={{ marginLeft: 6, fontSize: 12, opacity: 0.8 }}>{count}</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* List */}
+        {isLoading ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="glass" style={{ height: 112, animation: "pulse 2s infinite", opacity: 0.5 }} />
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="glass" style={{ padding: 40, textAlign: "center" }}>
+            <div style={{ width: 56, height: 56, borderRadius: 18, background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+              <BookMarked size={28} color="#ffffff" strokeWidth={2} />
+            </div>
+            <p style={{ margin: 0, fontWeight: 900, color: "#ffffff" }}>
+              {filter === "all" ? "Нет заданий" : "Нет заданий в этой категории"}
+            </p>
+            {filter === "all" && (
+              <p style={{ margin: "8px 0 0", fontSize: 13, color: "rgba(255,255,255,0.6)" }}>Создайте первое задание</p>
+            )}
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {filtered.map((challenge) => (
+              <div key={challenge.id} className="glass" style={{ padding: 16 }}>
                 {/* Top row */}
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div className="flex-1 min-w-0">
-                    <p
-                      className="font-bold truncate"
-                      style={{ color: "var(--ink)" }}
-                    >
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ margin: 0, fontWeight: 900, fontSize: 14, color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {challenge.title}
                     </p>
-                    <p
-                      className="text-xs mt-0.5 truncate"
-                      style={{ color: "var(--muted)" }}
-                    >
-                      {challenge.bookTitle}
-                      {challenge.bookAuthor ? ` · ${challenge.bookAuthor}` : ""}
+                    <p style={{ margin: "3px 0 0", fontSize: 12, color: "rgba(255,255,255,0.6)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {challenge.bookTitle}{challenge.bookAuthor ? ` · ${challenge.bookAuthor}` : ""}
                     </p>
                   </div>
-                  <span
-                    className="text-xs px-2.5 py-1 rounded-full font-semibold flex-shrink-0"
-                    style={{ background: badge.bg, color: badge.color }}
-                  >
-                    {badge.label}
-                  </span>
+                  <span style={statusBadgeStyle(challenge.status)}>{statusBadgeLabel(challenge.status)}</span>
                 </div>
 
                 {/* Meta row */}
-                <div
-                  className="flex items-center gap-3 text-xs mb-3"
-                  style={{ color: "var(--muted)" }}
-                >
+                <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 12, color: "rgba(255,255,255,0.6)", marginBottom: 10 }}>
                   <span>📅 {challenge.days} дней</span>
                   <span>💰 {challenge.price.toLocaleString("ru-RU")} ₸</span>
-                  <span>👥 {challenge.membersCount}</span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    <Users2 size={12} /> {challenge.membersCount}
+                  </span>
                 </div>
 
                 {/* Rejected reason */}
-                {challenge.status === "rejected" &&
-                  challenge.rejectedReason && (
-                    <div
-                      className="rounded-xl p-3 mb-3 text-xs"
-                      style={{ background: "#FEF2F2", color: "#B91C1C" }}
-                    >
-                      <span className="font-semibold">
-                        Причина отклонения:{" "}
-                      </span>
-                      {challenge.rejectedReason}
-                    </div>
-                  )}
+                {challenge.status === "rejected" && challenge.rejectedReason && (
+                  <div style={{ background: "rgba(220,0,0,0.2)", color: "rgba(255,160,160,0.9)", borderRadius: 12, padding: "10px 14px", marginBottom: 10, fontSize: 12 }}>
+                    <span style={{ fontWeight: 700 }}>Причина отклонения: </span>
+                    {challenge.rejectedReason}
+                  </div>
+                )}
 
                 {/* Action buttons */}
-                {(challenge.status === "draft" ||
-                  challenge.status === "rejected") && (
-                  <div className="flex gap-2 mt-1">
+                {(challenge.status === "draft" || challenge.status === "rejected") && (
+                  <div style={{ display: "flex", gap: 8 }}>
                     <button
-                      onClick={() =>
-                        router.push(`/expert/create?edit=${challenge.id}`)
-                      }
-                      className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-opacity hover:opacity-80"
-                      style={{
-                        background: "var(--lav)",
-                        color: "var(--purple)",
-                      }}
+                      onClick={() => router.push(`/expert/create?edit=${challenge.id}`)}
+                      className="glass-chip"
+                      style={{ flex: 1, padding: "10px 0", border: "none", cursor: "pointer", fontFamily: "inherit", color: "#ffffff", fontWeight: 700, fontSize: 13 }}
                     >
                       Редактировать
                     </button>
@@ -249,24 +198,18 @@ export default function ExpertBooksPage() {
                       <button
                         onClick={() => submitMutation.mutate(challenge.id)}
                         disabled={submitMutation.isPending}
-                        className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-                        style={{
-                          background: "var(--green)",
-                          boxShadow: "0 3px 0 var(--green-deep)",
-                        }}
+                        style={{ flex: 1, padding: "10px 0", borderRadius: 9999, border: "1px solid rgba(100,255,150,0.35)", background: "rgba(0,200,100,0.25)", color: "#ffffff", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit", opacity: submitMutation.isPending ? 0.6 : 1 }}
                       >
-                        {submitMutation.isPending
-                          ? "Отправка..."
-                          : "На модерацию"}
+                        {submitMutation.isPending ? "Отправка..." : "На модерацию"}
                       </button>
                     )}
                   </div>
                 )}
               </div>
-            );
-          })}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
     </main>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
+import { Home, Mic, MicOff, Send, RotateCcw, Bot } from "lucide-react";
 import { useRef, useState } from "react";
 import { sessionsApi } from "@/lib/api/sessions";
 
@@ -26,7 +27,7 @@ function PulsingDots() {
           key={i}
           className="w-3 h-3 rounded-full"
           style={{
-            background: "var(--purple)",
+            background: "rgba(255,255,255,0.85)",
             animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite`,
           }}
         />
@@ -114,27 +115,18 @@ function PhaseRead({
   };
 
   return (
-    <div className="flex flex-col gap-5">
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {/* Text block */}
-      <div
-        className="rounded-2xl p-5"
-        style={{ background: "var(--surface)" }}
-      >
-        <p
-          className="text-xs font-semibold uppercase mb-3"
-          style={{ color: "var(--muted)" }}
-        >
+      <div className="glass" style={{ padding: 20, borderRadius: 20 }}>
+        <p style={{ fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12, margin: "0 0 12px" }}>
           День {session.day} · Страницы {startPage}–{endPage}
         </p>
         {dayText ? (
-          <p
-            className="text-base leading-relaxed"
-            style={{ color: "var(--ink)", fontFamily: "Georgia, serif" }}
-          >
+          <p style={{ fontSize: 16, lineHeight: 1.7, color: "rgba(255,255,255,0.9)", fontFamily: "Georgia, serif", margin: 0 }}>
             {dayText}
           </p>
         ) : (
-          <p className="text-sm italic" style={{ color: "var(--muted)" }}>
+          <p style={{ fontSize: 14, fontStyle: "italic", color: "rgba(255,255,255,0.55)", margin: 0 }}>
             Прочитай страницы {startPage}–{endPage} из книги
           </p>
         )}
@@ -144,69 +136,137 @@ function PhaseRead({
       {stage === "before" && (
         <button
           onClick={startRecording}
-          className="w-full py-4 rounded-2xl font-extrabold text-white text-lg"
-          style={{ background: "var(--green)" }}
+          style={{
+            width: "100%",
+            padding: "18px 0",
+            borderRadius: 9999,
+            background: "rgba(255,255,255,0.9)",
+            color: "#4776e6",
+            fontWeight: 900,
+            fontSize: 16,
+            border: "none",
+            cursor: "pointer",
+            fontFamily: "inherit",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 10,
+            textTransform: "uppercase",
+            letterSpacing: "0.06em",
+          }}
         >
-          🎙️ Начать читать вслух
+          <Mic size={20} strokeWidth={2.5} />
+          Начать читать вслух
         </button>
       )}
 
       {stage === "recording" && (
-        <div className="flex flex-col items-center gap-3">
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
           <div
-            className="w-full rounded-2xl p-4 flex items-center justify-center gap-3"
-            style={{ background: "#FEE2E2" }}
+            className="glass"
+            style={{
+              width: "100%",
+              padding: 16,
+              borderRadius: 20,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 12,
+              background: "rgba(220,0,0,0.2)",
+              border: "1px solid rgba(255,100,100,0.35)",
+            }}
           >
-            <span
-              className="text-2xl font-extrabold tabular-nums"
-              style={{ color: "#DC2626" }}
-            >
+            <span style={{ fontSize: 22, fontWeight: 900, fontVariantNumeric: "tabular-nums", color: "#ffaaaa" }}>
               ● {formatTime(recordingTime)}
             </span>
-            <span className="text-sm" style={{ color: "#DC2626" }}>
-              Читаю вслух...
-            </span>
+            <span style={{ fontSize: 14, color: "#ffbbbb" }}>Читаю вслух...</span>
           </div>
           <button
             onClick={stopRecording}
-            className="w-full py-4 rounded-2xl font-extrabold text-white text-lg"
-            style={{ background: "#DC2626" }}
+            style={{
+              width: "100%",
+              padding: "18px 0",
+              borderRadius: 9999,
+              background: "rgba(220,0,0,0.3)",
+              border: "1px solid rgba(255,100,100,0.4)",
+              color: "#ffffff",
+              fontWeight: 900,
+              fontSize: 16,
+              cursor: "pointer",
+              fontFamily: "inherit",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 10,
+            }}
           >
-            ⏹ Закончил читать
+            <MicOff size={20} strokeWidth={2.5} />
+            Закончил читать
           </button>
         </div>
       )}
 
       {stage === "recorded" && (
-        <div className="flex flex-col gap-3">
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div
-            className="rounded-2xl p-4 text-center"
-            style={{ background: "var(--surface)" }}
+            className="glass"
+            style={{ padding: 16, borderRadius: 20, textAlign: "center", background: "rgba(0,200,100,0.2)", border: "1px solid rgba(100,255,150,0.3)" }}
           >
-            <p className="text-sm font-semibold" style={{ color: "var(--green)" }}>
-              ✅ Запись готова! ({formatTime(recordingTime)})
+            <p style={{ fontSize: 14, fontWeight: 700, color: "#aaffcc", margin: 0 }}>
+              Запись готова! ({formatTime(recordingTime)})
             </p>
           </div>
           <button
             onClick={handleUpload}
             disabled={uploading}
-            className="w-full py-4 rounded-2xl font-extrabold text-white text-lg"
-            style={{ background: uploading ? "#A78BFA" : "var(--purple)" }}
+            style={{
+              width: "100%",
+              padding: "18px 0",
+              borderRadius: 9999,
+              background: uploading ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.9)",
+              color: "#4776e6",
+              fontWeight: 900,
+              fontSize: 16,
+              border: "none",
+              cursor: uploading ? "not-allowed" : "pointer",
+              fontFamily: "inherit",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 10,
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+            }}
           >
-            {uploading ? "Отправляем..." : "⬆️ Отправить запись"}
+            <Send size={18} strokeWidth={2.5} />
+            {uploading ? "Отправляем..." : "Отправить запись"}
           </button>
           <button
             onClick={() => { setAudioBlob(null); setStage("before"); setRecordingTime(0); }}
-            className="w-full py-3 rounded-2xl font-semibold text-sm"
-            style={{ background: "var(--surface)", color: "var(--muted)" }}
+            className="glass-chip"
+            style={{
+              width: "100%",
+              padding: "14px 0",
+              border: "1px solid rgba(255,255,255,0.25)",
+              cursor: "pointer",
+              fontFamily: "inherit",
+              color: "#ffffff",
+              fontWeight: 700,
+              fontSize: 14,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+            }}
           >
+            <RotateCcw size={15} strokeWidth={2.5} />
             Прочитать заново
           </button>
         </div>
       )}
 
       {error && (
-        <p className="text-sm font-semibold text-center" style={{ color: "#DC2626" }}>
+        <p style={{ fontSize: 14, fontWeight: 700, textAlign: "center", color: "#ffd6d6", margin: 0 }}>
           {error}
         </p>
       )}
@@ -217,13 +277,15 @@ function PhaseRead({
 // ─── Phase: processing (transcribing / analyzing) ─────────────────────────────
 function PhaseProcessing() {
   return (
-    <div className="flex flex-col items-center gap-6 py-4">
-      <div className="text-6xl">🤖</div>
-      <div className="text-center">
-        <h2 className="text-2xl font-extrabold mb-1" style={{ color: "var(--ink)" }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 24, padding: "16px 0" }}>
+      <div className="glass" style={{ width: 80, height: 80, borderRadius: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Bot size={36} color="#ffffff" strokeWidth={1.5} />
+      </div>
+      <div style={{ textAlign: "center" }}>
+        <h2 style={{ fontSize: 24, fontWeight: 900, color: "#ffffff", margin: "0 0 6px" }}>
           AI проверяет...
         </h2>
-        <p className="text-sm" style={{ color: "var(--muted)" }}>
+        <p style={{ fontSize: 14, color: "rgba(255,255,255,0.65)", margin: 0 }}>
           Обрабатываем запись, подожди немного
         </p>
       </div>
@@ -279,55 +341,57 @@ function PhaseDone({ session }: { session: Session }) {
   const isCompleted = session.status === "completed";
 
   return (
-    <div className="flex flex-col items-center gap-6 py-4 text-center">
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 24, padding: "16px 0", textAlign: "center" }}>
       {isCompleted && <Confetti />}
       {isCompleted ? (
         <>
-          <div className="text-7xl" style={{ animation: "coinPop 0.5s ease both" }}>🏆</div>
+          <div style={{ fontSize: 72, animation: "coinPop 0.5s ease both" }}>🏆</div>
           <div>
-            <h2 className="text-2xl font-extrabold mb-1" style={{ color: "var(--ink)" }}>
-              Отлично!
-            </h2>
-            <p className="text-sm" style={{ color: "var(--muted)" }}>
+            <h2 style={{ fontSize: 28, fontWeight: 900, color: "#ffffff", margin: "0 0 6px" }}>Отлично!</h2>
+            <p style={{ fontSize: 14, color: "rgba(255,255,255,0.65)", margin: 0 }}>
               Ты прочитал сегодня — молодец!
             </p>
           </div>
-          <div className="w-full rounded-2xl p-6 space-y-2" style={{ background: "var(--surface)" }}>
-            <p className="text-4xl" style={{ animation: "streakPulse 0.8s ease 0.5s both" }}>🔥</p>
+          <div className="glass" style={{ width: "100%", padding: 24, borderRadius: 20, display: "flex", flexDirection: "column", gap: 8, alignItems: "center" }}>
+            <p style={{ fontSize: 48, margin: 0, animation: "streakPulse 0.8s ease 0.5s both" }}>🔥</p>
             <div style={{ animation: "coinPop 0.6s ease 0.3s both" }}>
-              <p className="text-2xl font-extrabold" style={{ color: "var(--green)" }}>
-                +500 монет начислено!
+              <p style={{ fontSize: 24, fontWeight: 900, color: "#ffffff", margin: 0 }}>
+                +500 монет начислено! 🪙
               </p>
             </div>
-            <p className="text-sm" style={{ color: "var(--muted)" }}>
+            <p style={{ fontSize: 13, color: "rgba(255,255,255,0.65)", margin: 0 }}>
               Серия продолжается — так держать!
             </p>
           </div>
         </>
       ) : (
         <>
-          <div className="text-7xl">📋</div>
+          <div className="glass" style={{ width: 80, height: 80, borderRadius: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span style={{ fontSize: 40 }}>📋</span>
+          </div>
           <div>
-            <h2 className="text-2xl font-extrabold mb-1" style={{ color: "var(--ink)" }}>
-              Почти готово!
-            </h2>
-            <p className="text-sm" style={{ color: "var(--muted)" }}>
+            <h2 style={{ fontSize: 24, fontWeight: 900, color: "#ffffff", margin: "0 0 6px" }}>Почти готово!</h2>
+            <p style={{ fontSize: 14, color: "rgba(255,255,255,0.65)", margin: 0 }}>
               Результат отправлен на проверку родителю
             </p>
           </div>
-          <div className="w-full rounded-2xl p-4" style={{ background: "#FEF3C7" }}>
-            <p className="text-sm font-semibold" style={{ color: "#92400E" }}>
-              👨‍👩‍👧 Родитель проверит и начислит монеты
+          <div
+            className="glass"
+            style={{ width: "100%", padding: 16, borderRadius: 16, background: "rgba(255,180,0,0.15)", border: "1px solid rgba(255,200,0,0.25)" }}
+          >
+            <p style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,220,100,0.9)", margin: 0 }}>
+              Родитель проверит и начислит монеты
             </p>
           </div>
         </>
       )}
       <button
         onClick={() => router.push("/child/home")}
-        className="w-full py-4 rounded-2xl font-extrabold text-white text-lg"
-        style={{ background: "var(--purple)" }}
+        className="btn-white"
+        style={{ color: "#4776e6", display: "flex", alignItems: "center", gap: 10 }}
       >
-        🏠 На главную
+        <Home size={18} strokeWidth={2.5} />
+        На главную
       </button>
     </div>
   );
@@ -358,27 +422,37 @@ export default function SessionPage() {
 
   if (isLoading || !session) {
     return (
-      <main className="min-h-screen flex items-center justify-center">
+      <main style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <PulsingDots />
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen p-6 max-w-lg mx-auto pb-12">
+    <main style={{ minHeight: "100dvh", padding: "52px 20px 32px", maxWidth: 512, margin: "0 auto" }}>
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
         <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center text-lg font-extrabold text-white flex-shrink-0"
-          style={{ background: "var(--purple)" }}
+          className="glass-chip"
+          style={{
+            width: 44,
+            height: 44,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 18,
+            fontWeight: 900,
+            color: "#ffffff",
+            flexShrink: 0,
+          }}
         >
           {session.day}
         </div>
         <div>
-          <p className="text-xs font-semibold uppercase" style={{ color: "var(--muted)" }}>
+          <p style={{ fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em", margin: 0 }}>
             День {session.day}
           </p>
-          <p className="font-extrabold text-sm" style={{ color: "var(--ink)" }}>
+          <p style={{ fontWeight: 900, fontSize: 16, color: "#ffffff", margin: "2px 0 0" }}>
             Ежедневное чтение
           </p>
         </div>

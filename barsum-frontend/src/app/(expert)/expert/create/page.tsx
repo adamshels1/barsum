@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { CheckCircle2, ChevronLeft } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { toast } from "sonner";
@@ -78,48 +79,57 @@ const STEPS = ["Книга", "Параметры", "Цена", "Публикац
 
 function ProgressBar({ step }: { step: number }) {
   return (
-    <div className="mb-8">
-      <div className="flex items-center justify-between mb-2">
+    <div style={{ marginBottom: 28 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
         {STEPS.map((label, i) => (
-          <div key={i} className="flex flex-col items-center flex-1">
+          <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1 }}>
             <div
-              className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold mb-1 transition-all"
               style={{
-                background:
-                  i < step
-                    ? "var(--purple)"
-                    : i === step
-                      ? "var(--purple)"
-                      : "var(--line)",
-                color: i <= step ? "#fff" : "var(--muted)",
-                boxShadow:
-                  i === step ? "0 0 0 3px var(--purple-light)" : "none",
+                width: 32,
+                height: 32,
+                borderRadius: 9999,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 13,
+                fontWeight: 700,
+                marginBottom: 4,
+                transition: "all 0.2s",
+                background: i <= step ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.15)",
+                color: i <= step ? "#4776e6" : "rgba(255,255,255,0.5)",
+                boxShadow: i === step ? "0 0 0 3px rgba(255,255,255,0.25)" : "none",
               }}
             >
               {i < step ? "✓" : i + 1}
             </div>
             <span
-              className="text-xs font-semibold hidden sm:block"
-              style={{ color: i === step ? "var(--purple)" : "var(--muted)" }}
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                color: i === step ? "#ffffff" : "rgba(255,255,255,0.5)",
+              }}
+              className="hidden sm:block"
             >
               {label}
             </span>
           </div>
         ))}
       </div>
-      <div
-        className="relative h-1.5 rounded-full mt-2"
-        style={{ background: "var(--line)" }}
-      >
+      <div style={{ position: "relative", height: 6, borderRadius: 9999, background: "rgba(255,255,255,0.2)", marginTop: 4 }}>
         <div
-          className="absolute left-0 top-0 h-full rounded-full transition-all duration-300"
           style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            height: "100%",
+            borderRadius: 9999,
+            transition: "width 0.3s",
             width: `${(step / (STEPS.length - 1)) * 100}%`,
-            background: "var(--purple)",
+            background: "rgba(255,255,255,0.85)",
           }}
         />
       </div>
-      <p className="text-xs text-center mt-2" style={{ color: "var(--muted)" }}>
+      <p style={{ textAlign: "center", fontSize: 12, marginTop: 8, color: "rgba(255,255,255,0.6)" }}>
         Шаг {step + 1} из {STEPS.length} — {STEPS[step]}
       </p>
     </div>
@@ -147,11 +157,8 @@ function InputField({
 }) {
   return (
     <div>
-      <label
-        className="block text-xs font-semibold mb-1.5"
-        style={{ color: "var(--muted)" }}
-      >
-        {label} {required && <span style={{ color: "var(--purple)" }}>*</span>}
+      <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+        {label} {required && <span style={{ color: "rgba(255,255,255,0.9)" }}>*</span>}
       </label>
       <input
         type={type}
@@ -160,12 +167,7 @@ function InputField({
         placeholder={placeholder}
         min={min}
         max={max}
-        className="w-full px-4 py-3 rounded-xl border text-base outline-none focus:ring-2 focus:ring-purple-300"
-        style={{
-          borderColor: "var(--line)",
-          background: "var(--soft)",
-          color: "var(--ink)",
-        }}
+        className="glass-input"
       />
     </div>
   );
@@ -188,19 +190,16 @@ function NumberStepper({
 }) {
   return (
     <div>
-      <label
-        className="block text-xs font-semibold mb-1.5"
-        style={{ color: "var(--muted)" }}
-      >
+      <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginBottom: 6 }}>
         {label}
-        {sublabel && <span className="ml-1 font-normal">{sublabel}</span>}
+        {sublabel && <span style={{ fontWeight: 400, marginLeft: 4 }}>{sublabel}</span>}
       </label>
-      <div className="flex items-center gap-3">
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <button
           type="button"
           onClick={() => onChange(Math.max(min, value - step))}
-          className="w-11 h-11 rounded-xl text-xl font-bold transition-opacity hover:opacity-80 flex-shrink-0"
-          style={{ background: "var(--lav)", color: "var(--purple)" }}
+          className="glass-chip"
+          style={{ width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 700, flexShrink: 0, border: "none", cursor: "pointer", fontFamily: "inherit" }}
         >
           −
         </button>
@@ -208,18 +207,13 @@ function NumberStepper({
           type="number"
           value={value}
           onChange={(e) => onChange(Math.max(min, Number(e.target.value)))}
-          className="flex-1 text-center px-4 py-3 rounded-xl border text-base font-bold outline-none focus:ring-2 focus:ring-purple-300"
-          style={{
-            borderColor: "var(--line)",
-            background: "var(--soft)",
-            color: "var(--ink)",
-          }}
+          className="glass-input"
+          style={{ flex: 1, textAlign: "center", fontWeight: 700 }}
         />
         <button
           type="button"
           onClick={() => onChange(value + step)}
-          className="w-11 h-11 rounded-xl text-xl font-bold transition-opacity hover:opacity-80 flex-shrink-0"
-          style={{ background: "var(--purple)", color: "#fff" }}
+          style={{ width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 700, flexShrink: 0, background: "rgba(255,255,255,0.9)", color: "#4776e6", borderRadius: 9999, border: "none", cursor: "pointer", fontFamily: "inherit" }}
         >
           +
         </button>
@@ -265,7 +259,7 @@ function Step1({
   const valid = data.title.trim() && data.bookTitle.trim();
 
   return (
-    <div className="space-y-4">
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <InputField
         label="Название задания"
         value={data.title}
@@ -275,21 +269,22 @@ function Step1({
       />
 
       <div>
-        <label
-          className="block text-xs font-semibold mb-1.5"
-          style={{ color: "var(--muted)" }}
-        >
+        <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>
           Категория
         </label>
-        <div className="flex gap-2 flex-wrap">
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button
             type="button"
-            className="px-4 py-2 rounded-full text-sm font-semibold"
             style={{
-              background: "var(--purple)",
-              color: "#fff",
-              boxShadow: "0 3px 0 var(--purple-deep)",
+              padding: "10px 16px",
+              borderRadius: 9999,
+              background: "rgba(255,255,255,0.9)",
+              color: "#4776e6",
+              fontWeight: 800,
+              fontSize: 14,
+              border: "none",
               cursor: "default",
+              fontFamily: "inherit",
             }}
           >
             📖 Чтение
@@ -299,18 +294,23 @@ function Step1({
               key={label}
               type="button"
               disabled
-              className="px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-1.5"
+              className="glass-chip"
               style={{
-                background: "var(--line)",
-                color: "var(--muted)",
+                padding: "10px 16px",
+                fontSize: 14,
+                fontWeight: 600,
+                opacity: 0.5,
                 cursor: "not-allowed",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                border: "none",
+                color: "rgba(255,255,255,0.7)",
+                fontFamily: "inherit",
               }}
             >
               {label}
-              <span
-                className="text-xs px-1.5 py-0.5 rounded-full font-semibold"
-                style={{ background: "#fef3c7", color: "#92400e" }}
-              >
+              <span style={{ background: "rgba(255,180,0,0.25)", color: "#ffd200", borderRadius: 9999, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>
                 скоро
               </span>
             </button>
@@ -320,65 +320,60 @@ function Step1({
 
       {/* Book picker */}
       <div>
-        <label
-          className="block text-xs font-semibold mb-1.5"
-          style={{ color: "var(--muted)" }}
-        >
-          Выберите книгу <span style={{ color: "var(--purple)" }}>*</span>
+        <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+          Выберите книгу <span style={{ color: "rgba(255,255,255,0.9)" }}>*</span>
         </label>
 
         {selectedBook && !showList ? (
-          <div
-            className="rounded-xl p-4 flex items-center justify-between gap-3"
-            style={{
-              background: "var(--lav)",
-              border: "1.5px solid var(--purple-light)",
-            }}
-          >
+          <div className="glass-sm" style={{ padding: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, borderRadius: 16 }}>
             <div>
-              <p className="font-bold text-sm" style={{ color: "var(--ink)" }}>
+              <p style={{ fontWeight: 700, fontSize: 14, color: "#ffffff", margin: 0 }}>
                 {selectedBook.title}
               </p>
-              <p className="text-xs mt-0.5" style={{ color: "var(--muted)" }}>
+              <p style={{ fontSize: 12, marginTop: 2, color: "rgba(255,255,255,0.65)", margin: "2px 0 0" }}>
                 {selectedBook.author} · {selectedBook.pages} стр · {selectedBook.ageMin}–{selectedBook.ageMax} лет
               </p>
             </div>
             <button
               type="button"
               onClick={() => { setSearch(""); setShowList(true); update({ bookTitle: "", bookAuthor: "" }); }}
-              className="text-xs px-3 py-1.5 rounded-lg font-semibold flex-shrink-0"
-              style={{ background: "var(--white)", color: "var(--purple)" }}
+              className="glass-chip"
+              style={{ padding: "6px 12px", fontSize: 12, fontWeight: 600, border: "none", cursor: "pointer", color: "#ffffff", flexShrink: 0, fontFamily: "inherit" }}
             >
               Изменить
             </button>
           </div>
         ) : (
-          <div className="relative">
+          <div style={{ position: "relative" }}>
             <input
               type="text"
               value={search}
               onChange={(e) => { setSearch(e.target.value); setShowList(true); }}
               onFocus={() => setShowList(true)}
               placeholder="Поиск по названию или автору..."
-              className="w-full px-4 py-3 rounded-xl border text-base outline-none focus:ring-2 focus:ring-purple-300"
-              style={{
-                borderColor: "var(--line)",
-                background: "var(--soft)",
-                color: "var(--ink)",
-              }}
+              className="glass-input"
             />
             {showList && (
               <div
-                className="absolute top-full left-0 right-0 z-20 rounded-xl overflow-y-auto mt-1 border"
                 style={{
-                  background: "var(--white)",
-                  borderColor: "var(--line)",
+                  position: "absolute",
+                  top: "100%",
+                  left: 0,
+                  right: 0,
+                  zIndex: 20,
+                  borderRadius: 16,
+                  overflow: "hidden",
+                  marginTop: 4,
                   maxHeight: 240,
-                  boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+                  overflowY: "auto",
+                  background: "rgba(20,10,60,0.97)",
+                  backdropFilter: "blur(16px)",
+                  WebkitBackdropFilter: "blur(16px)",
+                  border: "1px solid rgba(255,255,255,0.2)",
                 }}
               >
                 {filtered.length === 0 ? (
-                  <p className="px-4 py-3 text-sm" style={{ color: "var(--muted)" }}>
+                  <p style={{ padding: "12px 16px", fontSize: 14, color: "rgba(255,255,255,0.6)", margin: 0 }}>
                     Ничего не найдено
                   </p>
                 ) : (
@@ -387,13 +382,23 @@ function Step1({
                       key={book.title}
                       type="button"
                       onClick={() => selectBook(book)}
-                      className="w-full text-left px-4 py-3 hover:bg-purple-50 transition-colors border-b last:border-0"
-                      style={{ borderColor: "var(--line)" }}
+                      style={{
+                        width: "100%",
+                        textAlign: "left",
+                        padding: "12px 16px",
+                        background: "transparent",
+                        border: "none",
+                        borderBottom: "1px solid rgba(255,255,255,0.1)",
+                        cursor: "pointer",
+                        fontFamily: "inherit",
+                      }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.1)"; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
                     >
-                      <p className="font-semibold text-sm" style={{ color: "var(--ink)" }}>
+                      <p style={{ fontWeight: 700, fontSize: 14, color: "#ffffff", margin: 0 }}>
                         {book.title}
                       </p>
-                      <p className="text-xs" style={{ color: "var(--muted)" }}>
+                      <p style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", margin: "2px 0 0" }}>
                         {book.author} · {book.pages} стр · {book.ageMin}–{book.ageMax} лет
                       </p>
                     </button>
@@ -406,30 +411,20 @@ function Step1({
       </div>
 
       <div>
-        <label
-          className="block text-xs font-semibold mb-1.5"
-          style={{ color: "var(--muted)" }}
-        >
-          Описание <span className="font-normal">(необязательно)</span>
+        <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+          Описание <span style={{ fontWeight: 400 }}>(необязательно)</span>
         </label>
-        <div className="relative">
+        <div style={{ position: "relative" }}>
           <textarea
             value={data.description}
             onChange={(e) => update({ description: e.target.value })}
             placeholder="Расскажи, о чём это задание..."
             rows={3}
             maxLength={500}
-            className="w-full px-4 py-3 rounded-xl border text-base outline-none focus:ring-2 focus:ring-purple-300 resize-none"
-            style={{
-              borderColor: "var(--line)",
-              background: "var(--soft)",
-              color: "var(--ink)",
-            }}
+            className="glass-input"
+            style={{ resize: "none" }}
           />
-          <span
-            className="absolute bottom-2 right-3 text-xs"
-            style={{ color: "var(--muted)" }}
-          >
+          <span style={{ position: "absolute", bottom: 8, right: 12, fontSize: 12, color: "rgba(255,255,255,0.45)" }}>
             {data.description.length}/500
           </span>
         </div>
@@ -438,11 +433,8 @@ function Step1({
       <button
         onClick={onNext}
         disabled={!valid}
-        className="w-full py-4 rounded-2xl font-bold text-white transition-opacity disabled:opacity-40"
-        style={{
-          background: "var(--purple)",
-          boxShadow: "0 6px 0 var(--purple-deep)",
-        }}
+        className="btn-white"
+        style={{ color: "#4776e6", marginTop: 4, opacity: valid ? 1 : 0.4 }}
       >
         Далее →
       </button>
@@ -475,7 +467,7 @@ function Step2({
   };
 
   return (
-    <div className="space-y-5">
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <NumberStepper
         label="Дней на задание"
         value={data.days}
@@ -485,10 +477,7 @@ function Step2({
       />
 
       <div>
-        <label
-          className="block text-xs font-semibold mb-1.5"
-          style={{ color: "var(--muted)" }}
-        >
+        <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>
           Всего страниц в книге
         </label>
         <input
@@ -497,98 +486,53 @@ function Step2({
           min={50}
           max={2000}
           onChange={(e) => handlePages(Number(e.target.value))}
-          className="w-full px-4 py-3 rounded-xl border text-base outline-none focus:ring-2 focus:ring-purple-300"
-          style={{
-            borderColor: "var(--line)",
-            background: "var(--soft)",
-            color: "var(--ink)",
-          }}
+          className="glass-input"
         />
       </div>
 
       <div>
-        <div className="flex items-center justify-between mb-1.5">
-          <label
-            className="text-xs font-semibold"
-            style={{ color: "var(--muted)" }}
-          >
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+          <label style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
             Страниц в день
           </label>
-          <span
-            className="text-xs px-2 py-0.5 rounded-full font-semibold"
-            style={{ background: "var(--lav)", color: "var(--purple)" }}
-          >
+          <span className="glass-chip" style={{ padding: "3px 10px", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.7)" }}>
             авто
           </span>
         </div>
-        <div className="flex items-center gap-3">
-          <div
-            className="flex-1 px-4 py-3 rounded-xl border text-base font-bold text-center"
-            style={{
-              borderColor: "var(--line)",
-              background: "var(--lav)",
-              color: "var(--purple)",
-            }}
-          >
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div className="glass-sm" style={{ flex: 1, padding: "14px 16px", borderRadius: 14, textAlign: "center", fontWeight: 700, color: "#ffffff" }}>
             ≈ {autoPPD} страниц/день
           </div>
           <input
             type="number"
             value={data.pagesPerDay}
-            onChange={(e) =>
-              update({ pagesPerDay: Math.max(1, Number(e.target.value)) })
-            }
-            className="w-24 text-center px-3 py-3 rounded-xl border text-base font-bold outline-none"
-            style={{
-              borderColor: "var(--line)",
-              background: "var(--soft)",
-              color: "var(--ink)",
-            }}
+            onChange={(e) => update({ pagesPerDay: Math.max(1, Number(e.target.value)) })}
+            className="glass-input"
+            style={{ width: 96, textAlign: "center", fontWeight: 700 }}
             placeholder="Своё"
           />
         </div>
-        <p className="text-xs mt-1.5" style={{ color: "var(--muted)" }}>
-          Авто = {data.pagesTotal} ÷ {data.days} = {autoPPD}. Можно задать своё
-          значение справа.
+        <p style={{ fontSize: 12, marginTop: 6, color: "rgba(255,255,255,0.55)" }}>
+          Авто = {data.pagesTotal} ÷ {data.days} = {autoPPD}. Можно задать своё значение справа.
         </p>
       </div>
 
-      <div
-        className="rounded-2xl p-4"
-        style={{
-          background: "var(--lav)",
-          border: "1.5px solid var(--purple-light)",
-        }}
-      >
-        <p
-          className="text-xs font-semibold mb-1"
-          style={{ color: "var(--purple)" }}
-        >
+      <div className="glass-sm" style={{ padding: 16, borderRadius: 16 }}>
+        <p style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>
           👀 Предпросмотр
         </p>
-        <p className="text-sm" style={{ color: "var(--ink)" }}>
+        <p style={{ fontSize: 14, color: "rgba(255,255,255,0.85)", margin: 0 }}>
           Ребёнок читает{" "}
-          <span className="font-bold">{data.pagesPerDay} страниц</span> в день
-          на протяжении <span className="font-bold">{data.days} дней</span>
+          <span style={{ fontWeight: 700, color: "#ffffff" }}>{data.pagesPerDay} страниц</span> в день
+          на протяжении <span style={{ fontWeight: 700, color: "#ffffff" }}>{data.days} дней</span>
         </p>
       </div>
 
-      <div className="flex gap-3 pt-2">
-        <button
-          onClick={onBack}
-          className="flex-1 py-4 rounded-2xl font-bold transition-opacity hover:opacity-80"
-          style={{ background: "var(--line)", color: "var(--ink)" }}
-        >
+      <div style={{ display: "flex", gap: 12, paddingTop: 8 }}>
+        <button onClick={onBack} className="btn-glass" style={{ flex: 1 }}>
           ← Назад
         </button>
-        <button
-          onClick={onNext}
-          className="flex-1 py-4 rounded-2xl font-bold text-white"
-          style={{
-            background: "var(--purple)",
-            boxShadow: "0 6px 0 var(--purple-deep)",
-          }}
-        >
+        <button onClick={onNext} className="btn-white" style={{ flex: 1, color: "#4776e6" }}>
           Далее →
         </button>
       </div>
@@ -611,7 +555,7 @@ function Step3({
   const earning = Math.round(data.price * 0.15);
 
   return (
-    <div className="space-y-5">
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <NumberStepper
         label="Стоимость задания для родителя"
         sublabel="(₸)"
@@ -621,60 +565,32 @@ function Step3({
         min={0}
       />
 
-      {/* Earning info */}
-      <div
-        className="rounded-2xl p-4 flex items-center justify-between"
-        style={{
-          background: "var(--green-light)",
-          border: "1px solid var(--green-light)",
-        }}
-      >
+      <div style={{ background: "rgba(0,200,100,0.15)", border: "1px solid rgba(100,255,150,0.2)", borderRadius: 16, padding: 16, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div>
-          <p
-            className="text-xs font-semibold"
-            style={{ color: "var(--green-deep)" }}
-          >
+          <p style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.75)", margin: 0 }}>
             Ваш заработок
           </p>
-          <p className="text-xs mt-0.5" style={{ color: "var(--green)" }}>
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", margin: "2px 0 0" }}>
             15% от стоимости
           </p>
         </div>
-        <p
-          className="text-2xl font-extrabold"
-          style={{ color: "var(--green-deep)" }}
-        >
+        <p style={{ fontSize: 26, fontWeight: 900, color: "#ffffff", margin: 0 }}>
           {earning.toLocaleString("ru-RU")} ₸
         </p>
       </div>
 
-      {/* Preview card */}
       <div>
-        <p
-          className="text-xs font-semibold mb-2"
-          style={{ color: "var(--muted)" }}
-        >
+        <p style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.6)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
           Предпросмотр карточки
         </p>
         <ChallengeCard data={data} />
       </div>
 
-      <div className="flex gap-3 pt-2">
-        <button
-          onClick={onBack}
-          className="flex-1 py-4 rounded-2xl font-bold transition-opacity hover:opacity-80"
-          style={{ background: "var(--line)", color: "var(--ink)" }}
-        >
+      <div style={{ display: "flex", gap: 12, paddingTop: 8 }}>
+        <button onClick={onBack} className="btn-glass" style={{ flex: 1 }}>
           ← Назад
         </button>
-        <button
-          onClick={onNext}
-          className="flex-1 py-4 rounded-2xl font-bold text-white"
-          style={{
-            background: "var(--purple)",
-            boxShadow: "0 6px 0 var(--purple-deep)",
-          }}
-        >
+        <button onClick={onNext} className="btn-white" style={{ flex: 1, color: "#4776e6" }}>
           Далее →
         </button>
       </div>
@@ -689,45 +605,32 @@ function ChallengeCard({ data }: { data: FormData }) {
   const bg = colors[colorIdx];
 
   return (
-    <div
-      className="rounded-2xl overflow-hidden"
-      style={{ background: "var(--white)", boxShadow: "var(--shadow-md)" }}
-    >
+    <div className="glass-sm" style={{ borderRadius: 20, overflow: "hidden" }}>
       <div
-        className="h-24 flex flex-col items-center justify-center px-4 py-3"
-        style={{ background: bg }}
+        style={{ height: 96, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "12px 16px", background: bg }}
       >
-        <p
-          className="text-white font-extrabold text-center text-sm leading-tight line-clamp-2"
-          style={{ textShadow: "0 1px 3px rgba(0,0,0,0.3)" }}
-        >
+        <p style={{ color: "#ffffff", fontWeight: 800, textAlign: "center", fontSize: 14, lineHeight: 1.3, margin: 0, WebkitLineClamp: 2, overflow: "hidden", textOverflow: "ellipsis", textShadow: "0 1px 3px rgba(0,0,0,0.3)" }}>
           {data.bookTitle || "Название книги"}
         </p>
         {data.bookAuthor && (
-          <p className="text-white text-xs mt-1 opacity-80 text-center line-clamp-1">
+          <p style={{ color: "#ffffff", fontSize: 12, marginTop: 4, opacity: 0.8, textAlign: "center", margin: "4px 0 0" }}>
             {data.bookAuthor}
           </p>
         )}
       </div>
-      <div className="p-4">
-        <p className="font-bold truncate" style={{ color: "var(--ink)" }}>
+      <div style={{ padding: 14 }}>
+        <p style={{ fontWeight: 700, color: "#ffffff", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {data.title || "Название задания"}
         </p>
-        <div className="flex items-center gap-3 mt-2 flex-wrap">
-          <span
-            className="text-xs px-2.5 py-1 rounded-full font-semibold"
-            style={{ background: "var(--purple-light)", color: "var(--purple)" }}
-          >
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+          <span className="glass-chip" style={{ padding: "3px 8px", fontSize: 11, fontWeight: 700, color: "#ffffff" }}>
             📅 {data.days} дней
           </span>
-          <span
-            className="text-xs px-2.5 py-1 rounded-full font-semibold"
-            style={{ background: "var(--green-light)", color: "var(--green-deep)" }}
-          >
+          <span style={{ background: "rgba(255,255,255,0.88)", color: "#4776e6", borderRadius: 9999, padding: "3px 8px", fontSize: 12, fontWeight: 800 }}>
             {data.price.toLocaleString("ru-RU")} ₸
           </span>
         </div>
-        <div className="mt-1.5 text-xs" style={{ color: "var(--muted)" }}>
+        <div style={{ marginTop: 6, fontSize: 12, color: "rgba(255,255,255,0.6)" }}>
           Возраст {data.ageMin}–{data.ageMax} лет · {data.pagesPerDay} стр/день
         </div>
       </div>
@@ -753,40 +656,19 @@ function Step4({
 }) {
   if (isSuccess) {
     return (
-      <div className="flex flex-col items-center text-center py-6 space-y-5">
-        <div
-          className="w-20 h-20 rounded-full flex items-center justify-center text-4xl"
-          style={{
-            background: "var(--green-light)",
-            boxShadow: "0 4px 0 #bbf7d0",
-          }}
-        >
-          ✅
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: "24px 0", gap: 20 }}>
+        <div className="glass" style={{ width: 80, height: 80, borderRadius: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <CheckCircle2 size={40} color="#aaffcc" strokeWidth={2} />
         </div>
         <div>
-          <h2
-            className="text-xl font-extrabold"
-            style={{ color: "var(--ink)" }}
-          >
+          <h2 style={{ fontSize: 22, fontWeight: 900, color: "#ffffff", margin: 0 }}>
             Задание отправлено!
           </h2>
-          <p
-            className="text-sm mt-2 max-w-xs mx-auto leading-relaxed"
-            style={{ color: "var(--muted)" }}
-          >
-            Задание отправлено на модерацию! Вы получите уведомление после
-            проверки.
+          <p style={{ fontSize: 14, marginTop: 8, color: "rgba(255,255,255,0.7)", maxWidth: 280, margin: "8px auto 0", lineHeight: 1.5 }}>
+            Задание отправлено на модерацию! Вы получите уведомление после проверки.
           </p>
         </div>
-        <button
-          onClick={onGoToBooks}
-          type="button"
-          className="w-full py-4 rounded-2xl font-bold text-white"
-          style={{
-            background: "var(--green)",
-            boxShadow: "0 4px 0 var(--green-deep)",
-          }}
-        >
+        <button onClick={onGoToBooks} type="button" className="btn-white" style={{ color: "#4776e6", width: "100%" }}>
           К моим заданиям 📋
         </button>
       </div>
@@ -794,93 +676,53 @@ function Step4({
   }
 
   return (
-    <div className="space-y-5">
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div>
-        <p
-          className="text-xs font-semibold mb-3"
-          style={{ color: "var(--muted)" }}
-        >
+        <p style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.6)", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.06em" }}>
           Финальный предпросмотр
         </p>
         <ChallengeCard data={data} />
       </div>
 
-      {/* Summary table */}
-      <div
-        className="rounded-2xl p-4 space-y-2.5"
-        style={{ background: "var(--white)", boxShadow: "var(--shadow-sm)" }}
-      >
+      <div className="glass-sm" style={{ padding: 16, borderRadius: 16 }}>
         {[
-          [
-            "Категория",
-            data.category === "reading" ? "📖 Чтение" : data.category,
-          ],
-          [
-            "Книга",
-            `${data.bookTitle}${data.bookAuthor ? ` (${data.bookAuthor})` : ""}`,
-          ],
+          ["Категория", data.category === "reading" ? "📖 Чтение" : data.category],
+          ["Книга", `${data.bookTitle}${data.bookAuthor ? ` (${data.bookAuthor})` : ""}`],
           ["Возраст", `${data.ageMin}–${data.ageMax} лет`],
           ["Продолжительность", `${data.days} дней`],
           ["Всего страниц", `${data.pagesTotal}`],
           ["Страниц в день", `${data.pagesPerDay}`],
           ["Цена", `${data.price.toLocaleString("ru-RU")} ₸`],
-          [
-            "Ваш заработок (15%)",
-            `${Math.round(data.price * 0.15).toLocaleString("ru-RU")} ₸`,
-          ],
+          ["Ваш заработок (15%)", `${Math.round(data.price * 0.15).toLocaleString("ru-RU")} ₸`],
         ].map(([key, val]) => (
           <div
             key={key}
-            className="flex justify-between gap-2 py-0.5 border-b last:border-0"
-            style={{ borderColor: "var(--line)" }}
+            style={{ display: "flex", justifyContent: "space-between", gap: 8, padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.1)" }}
           >
-            <span className="text-xs" style={{ color: "var(--muted)" }}>
-              {key}
-            </span>
-            <span
-              className="text-xs font-semibold text-right"
-              style={{ color: "var(--ink)" }}
-            >
-              {val}
-            </span>
+            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.6)" }}>{key}</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: "#ffffff", textAlign: "right" }}>{val}</span>
           </div>
         ))}
       </div>
 
-      <div
-        className="rounded-xl p-3 text-xs"
-        style={{
-          background: "var(--orange-light)",
-          color: "var(--orange-deep)",
-        }}
-      >
-        После отправки задание попадёт на модерацию. Обычно это занимает 1–2
-        дня.
+      <div style={{ background: "rgba(255,160,0,0.15)", border: "1px solid rgba(255,200,0,0.25)", borderRadius: 12, padding: 12, color: "rgba(255,200,100,0.9)", fontSize: 12 }}>
+        После отправки задание попадёт на модерацию. Обычно это занимает 1–2 дня.
       </div>
 
-      <div className="flex gap-3 pt-2">
-        <button
-          onClick={onBack}
-          disabled={isLoading}
-          type="button"
-          className="flex-1 py-4 rounded-2xl font-bold transition-opacity hover:opacity-80 disabled:opacity-40"
-          style={{ background: "var(--line)", color: "var(--ink)" }}
-        >
+      <div style={{ display: "flex", gap: 12, paddingTop: 8 }}>
+        <button onClick={onBack} disabled={isLoading} type="button" className="btn-glass" style={{ flex: 1, opacity: isLoading ? 0.4 : 1 }}>
           ← Назад
         </button>
         <button
           onClick={onPublish}
           disabled={isLoading}
           type="button"
-          className="flex-1 py-4 rounded-2xl font-bold text-white transition-opacity disabled:opacity-60"
-          style={{
-            background: "var(--purple)",
-            boxShadow: "0 6px 0 var(--purple-deep)",
-          }}
+          className="btn-white"
+          style={{ flex: 1, color: "#4776e6", opacity: isLoading ? 0.6 : 1 }}
         >
           {isLoading ? (
-            <span className="flex items-center justify-center gap-2">
-              <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
+            <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+              <span style={{ width: 16, height: 16, border: "2px solid rgba(71,118,230,0.3)", borderTop: "2px solid #4776e6", borderRadius: "50%", display: "inline-block", animation: "spin 0.8s linear infinite" }} />
               Отправка...
             </span>
           ) : (
@@ -953,65 +795,57 @@ function ExpertCreateInner() {
   });
 
   return (
-    <main
-      className="min-h-screen p-6 max-w-md mx-auto"
-      style={{ background: "var(--background)" }}
-    >
+    <main style={{ minHeight: "100dvh", padding: "0 0 32px" }}>
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
+      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "52px 20px 20px" }}>
         <button
           onClick={() => (step > 0 ? setStep(step - 1) : router.back())}
-          className="w-10 h-10 rounded-xl flex items-center justify-center transition-opacity hover:opacity-70"
-          style={{
-            background: "var(--white)",
-            boxShadow: "var(--shadow-sm)",
-            color: "var(--ink)",
-          }}
+          className="glass-chip"
+          style={{ width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", border: "none", cursor: "pointer", flexShrink: 0 }}
         >
-          ←
+          <ChevronLeft size={20} color="#ffffff" strokeWidth={2.5} />
         </button>
-        <h1 className="text-xl font-extrabold" style={{ color: "var(--ink)" }}>
+        <h1 style={{ fontSize: 20, fontWeight: 900, color: "#ffffff", margin: 0 }}>
           {editId ? "Редактировать задание" : "Создать задание"}
         </h1>
       </div>
 
-      {/* Progress */}
-      <ProgressBar step={step} />
+      <div style={{ padding: "0 20px" }}>
+        {/* Progress */}
+        <ProgressBar step={step} />
 
-      {/* Card wrapper */}
-      <div
-        className="rounded-3xl p-6"
-        style={{ background: "var(--white)", boxShadow: "var(--shadow-lg)" }}
-      >
-        {step === 0 && (
-          <Step1 data={form} update={update} onNext={() => setStep(1)} />
-        )}
-        {step === 1 && (
-          <Step2
-            data={form}
-            update={update}
-            onNext={() => setStep(2)}
-            onBack={() => setStep(0)}
-          />
-        )}
-        {step === 2 && (
-          <Step3
-            data={form}
-            update={update}
-            onNext={() => setStep(3)}
-            onBack={() => setStep(1)}
-          />
-        )}
-        {step === 3 && (
-          <Step4
-            data={form}
-            onBack={() => setStep(2)}
-            onPublish={() => publishMutation.mutate()}
-            isLoading={publishMutation.isPending}
-            isSuccess={success}
-            onGoToBooks={() => router.push("/expert/books")}
-          />
-        )}
+        {/* Card wrapper */}
+        <div className="glass" style={{ padding: 24, borderRadius: 24 }}>
+          {step === 0 && (
+            <Step1 data={form} update={update} onNext={() => setStep(1)} />
+          )}
+          {step === 1 && (
+            <Step2
+              data={form}
+              update={update}
+              onNext={() => setStep(2)}
+              onBack={() => setStep(0)}
+            />
+          )}
+          {step === 2 && (
+            <Step3
+              data={form}
+              update={update}
+              onNext={() => setStep(3)}
+              onBack={() => setStep(1)}
+            />
+          )}
+          {step === 3 && (
+            <Step4
+              data={form}
+              onBack={() => setStep(2)}
+              onPublish={() => publishMutation.mutate()}
+              isLoading={publishMutation.isPending}
+              isSuccess={success}
+              onGoToBooks={() => router.push("/expert/books")}
+            />
+          )}
+        </div>
       </div>
     </main>
   );
@@ -1021,11 +855,8 @@ export default function ExpertCreatePage() {
   return (
     <Suspense
       fallback={
-        <main
-          className="min-h-screen flex items-center justify-center"
-          style={{ background: "var(--background)" }}
-        >
-          <p style={{ color: "var(--muted)" }}>Загрузка...</p>
+        <main style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <p style={{ color: "rgba(255,255,255,0.6)" }}>Загрузка...</p>
         </main>
       }
     >

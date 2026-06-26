@@ -1,9 +1,18 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { BookOpen, CreditCard, LogOut, Search, Users, Users2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { adminApi } from "@/lib/api/admin";
 import { useAuthStore } from "@/stores/auth-store";
+
+const GLASS: React.CSSProperties = {
+  background: "rgba(255,255,255,0.13)",
+  backdropFilter: "blur(20px)",
+  WebkitBackdropFilter: "blur(20px)",
+  border: "1px solid rgba(255,255,255,0.2)",
+  borderRadius: 20,
+};
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -20,149 +29,132 @@ export default function AdminDashboardPage() {
   };
 
   const statCards = [
-    { label: "Пользователи", value: stats?.totalUsers, icon: "👥" },
-    { label: "Дети", value: stats?.totalChildren, icon: "👶" },
-    { label: "Платежи", value: stats?.totalPayments, icon: "💳" },
+    { label: "Пользователи", value: stats?.totalUsers, Icon: Users },
+    { label: "Дети", value: stats?.totalChildren, Icon: Users2 },
+    { label: "Платежи", value: stats?.totalPayments, Icon: CreditCard },
     {
       label: "Выручка",
       value: stats?.totalRevenueTg != null ? `${stats.totalRevenueTg} ₸` : "—",
-      icon: "💰",
+      Icon: CreditCard,
     },
     {
       label: "Ожид. платежи",
       value: stats?.pendingPayments,
-      icon: "⏳",
+      Icon: CreditCard,
       urgent: stats?.pendingPayments > 0,
     },
     {
       label: "Ожид. эксперты",
       value: stats?.pendingExperts,
-      icon: "🔎",
+      Icon: Search,
       urgent: stats?.pendingExperts > 0,
     },
     {
       label: "Ожид. задания",
       value: stats?.pendingChallenges,
-      icon: "📚",
+      Icon: BookOpen,
       urgent: stats?.pendingChallenges > 0,
     },
   ];
 
   const navCards = [
-    {
-      label: "💳 Платежи",
-      href: "/admin/payments",
-      badge: stats?.pendingPayments,
-    },
-    {
-      label: "🔎 Эксперты",
-      href: "/admin/experts",
-      badge: stats?.pendingExperts,
-    },
-    {
-      label: "📚 Задания",
-      href: "/admin/challenges",
-      badge: stats?.pendingChallenges,
-    },
+    { label: "Платежи", Icon: CreditCard, href: "/admin/payments", badge: stats?.pendingPayments },
+    { label: "Эксперты", Icon: Search, href: "/admin/experts", badge: stats?.pendingExperts },
+    { label: "Задания", Icon: BookOpen, href: "/admin/challenges", badge: stats?.pendingChallenges },
   ];
 
   return (
-    <main className="min-h-screen p-6 max-w-lg mx-auto">
+    <main style={{ minHeight: "100dvh", padding: "0 0 32px" }}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div
+        className="glass-header"
+        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "52px 20px 20px" }}
+      >
         <div>
-          <h1
-            className="text-2xl font-extrabold"
-            style={{ color: "var(--ink)" }}
-          >
-            Панель администратора
-          </h1>
-          <p className="text-sm" style={{ color: "var(--muted)" }}>
+          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.65)", textTransform: "uppercase", letterSpacing: "0.1em" }}>
             Barsum Admin
           </p>
+          <h1 style={{ margin: "4px 0 0", fontSize: 26, fontWeight: 900, color: "#ffffff" }}>
+            Панель
+          </h1>
         </div>
         <button
           onClick={handleLogout}
-          className="text-sm px-3 py-2 rounded-xl"
-          style={{ color: "var(--muted)", background: "var(--surface)" }}
+          className="glass-chip"
+          style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", border: "none", cursor: "pointer", fontFamily: "inherit", color: "#ffffff", fontWeight: 700, fontSize: 13 }}
         >
+          <LogOut size={14} strokeWidth={2.5} />
           Выйти
         </button>
       </div>
 
-      {/* Stats grid */}
-      {isLoading ? (
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              className="rounded-2xl p-4 h-20 animate-pulse"
-              style={{ background: "var(--surface)" }}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          {statCards.map((card) => (
-            <div
-              key={card.label}
-              className="rounded-2xl p-4"
-              style={{
-                background: card.urgent ? "var(--purple)" : "var(--surface)",
-                color: card.urgent ? "#fff" : "inherit",
-              }}
-            >
-              <p className="text-2xl mb-1">{card.icon}</p>
-              <p
-                className="text-xl font-extrabold"
-                style={{ color: card.urgent ? "#fff" : "var(--ink)" }}
-              >
-                {card.value ?? "—"}
-              </p>
-              <p
-                className="text-xs"
+      <div style={{ padding: "20px 20px 0" }}>
+        {/* Stats grid */}
+        {isLoading ? (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} style={{ ...GLASS, height: 80, animation: "pulse 2s infinite" }} />
+            ))}
+          </div>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
+            {statCards.map((card) => (
+              <div
+                key={card.label}
                 style={{
-                  color: card.urgent ? "rgba(255,255,255,0.8)" : "var(--muted)",
+                  ...GLASS,
+                  padding: "14px 14px",
+                  background: card.urgent ? "rgba(255,80,80,0.25)" : GLASS.background,
                 }}
               >
-                {card.label}
-              </p>
-            </div>
+                <card.Icon size={18} color="rgba(255,255,255,0.8)" style={{ display: "block", marginBottom: 6 }} />
+                <p style={{ margin: 0, fontSize: 20, fontWeight: 900, color: "#ffffff" }}>
+                  {card.value ?? "—"}
+                </p>
+                <p style={{ margin: "2px 0 0", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.6)" }}>
+                  {card.label}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Navigation cards */}
+        <p style={{ margin: "0 0 10px", fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+          Разделы
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {navCards.map((card) => (
+            <button
+              key={card.href}
+              onClick={() => router.push(card.href)}
+              style={{
+                ...GLASS,
+                width: "100%",
+                padding: "16px 18px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                border: "1px solid rgba(255,255,255,0.2)",
+                cursor: "pointer",
+                fontFamily: "inherit",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <card.Icon size={18} color="rgba(255,255,255,0.85)" strokeWidth={2.5} />
+                <span style={{ fontWeight: 700, fontSize: 15, color: "#ffffff" }}>{card.label}</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                {card.badge > 0 && (
+                  <span style={{ fontSize: 12, fontWeight: 900, padding: "3px 10px", borderRadius: 9999, background: "rgba(255,100,100,0.4)", color: "#ffffff" }}>
+                    {card.badge}
+                  </span>
+                )}
+                <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 20 }}>›</span>
+              </div>
+            </button>
           ))}
         </div>
-      )}
-
-      {/* Navigation cards */}
-      <h2 className="text-lg font-bold mb-3" style={{ color: "var(--ink)" }}>
-        Разделы
-      </h2>
-      <div className="space-y-3">
-        {navCards.map((card) => (
-          <button
-            key={card.href}
-            onClick={() => router.push(card.href)}
-            className="w-full rounded-2xl p-4 flex items-center justify-between"
-            style={{ background: "var(--surface)" }}
-          >
-            <span
-              className="font-semibold text-base"
-              style={{ color: "var(--ink)" }}
-            >
-              {card.label}
-            </span>
-            <div className="flex items-center gap-2">
-              {card.badge > 0 && (
-                <span
-                  className="text-xs font-bold px-2 py-0.5 rounded-full text-white"
-                  style={{ background: "var(--purple)" }}
-                >
-                  {card.badge}
-                </span>
-              )}
-              <span style={{ color: "var(--muted)" }}>›</span>
-            </div>
-          </button>
-        ))}
       </div>
     </main>
   );
