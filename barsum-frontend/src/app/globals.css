@@ -7,21 +7,23 @@
   --color-purple: #7B61FF;
   --color-purple-deep: #5B41DF;
   --color-purple-light: #EDE9FF;
-  --color-green: #1FA463;
-  --color-green-deep: #168A50;
-  --color-green-light: #F0FDF6;
-  --color-orange: #EA8C2D;
-  --color-orange-deep: #C4721F;
-  --color-orange-light: #FFF8F0;
+  --color-green: #10B981;
+  --color-green-deep: #059669;
+  --color-green-light: #ECFDF5;
+  --color-orange: #F97316;
+  --color-orange-deep: #EA580C;
+  --color-orange-light: #FFF7ED;
+  --color-pink: #F472B6;
+  --color-pink-light: #FDF2F8;
   --color-ink: #1E1B2E;
-  --color-muted: #9AA0AE;
-  --color-line: #EDEAF7;
-  --color-lav: #F3F0FF;
-  --color-soft: #F6F4FC;
-  --color-background: #EFEBFB;
+  --color-muted: #6B7280;
+  --color-line: #FDEBD0;
+  --color-lav: #F0EEFF;
+  --color-soft: #FFF8F0;
+  --color-background: #FFF8F0;
   --color-destructive: #DC2626;
 
-  --font-family-sans: 'Manrope', system-ui, -apple-system, sans-serif;
+  --font-family-sans: 'Nunito', system-ui, -apple-system, sans-serif;
 
   --border-radius-sm: 8px;
   --border-radius-md: 12px;
@@ -35,21 +37,29 @@
   --purple: #7B61FF;
   --purple-deep: #5B41DF;
   --purple-light: #EDE9FF;
-  --green: #1FA463;
-  --green-deep: #168A50;
-  --green-light: #F0FDF6;
-  --orange: #EA8C2D;
-  --orange-deep: #C4721F;
-  --orange-light: #FFF8F0;
+  --green: #10B981;
+  --green-deep: #059669;
+  --green-light: #ECFDF5;
+  --orange: #F97316;
+  --orange-deep: #EA580C;
+  --orange-light: #FFF7ED;
+  --pink: #F472B6;
+  --pink-deep: #EC4899;
+  --pink-light: #FDF2F8;
   --ink: #1E1B2E;
-  --muted: #9AA0AE;
-  --line: #EDEAF7;
-  --lav: #F3F0FF;
-  --soft: #F6F4FC;
-  --background: #EFEBFB;
+  --muted: #6B7280;
+  --line: #FDEBD0;
+  --lav: #F0EEFF;
+  --soft: #FFF8F0;
+  --background: #FFF8F0;
   --foreground: #1E1B2E;
   --white: #FFFFFF;
   --destructive: #DC2626;
+
+  /* Surface/card backgrounds */
+  --card: #FFFFFF;
+  --surface: #FFF3E8;
+  --bg: #FFF8F0;
 
   /* Spacing */
   --space-xs: 4px;
@@ -66,15 +76,22 @@
   --radius-lg: 16px;
   --radius-xl: 20px;
   --radius-2xl: 24px;
+  --radius-3xl: 32px;
   --radius-full: 9999px;
   --radius: 0.75rem;
 
-  /* Claymorphism Shadows */
-  --shadow-sm: 0 2px 4px rgba(123, 97, 255, 0.08);
-  --shadow-md: 0 4px 12px rgba(123, 97, 255, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.6);
-  --shadow-lg: 0 8px 24px rgba(123, 97, 255, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.7);
-  --shadow-xl: 0 16px 40px rgba(123, 97, 255, 0.2), inset 0 2px 0 rgba(255, 255, 255, 0.8);
-  --shadow-clay: 0 6px 0 rgba(0, 0, 0, 0.15);
+  /* Claymorphism Shadows — true 3D bottom shadow */
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.06), 0 3px 0 rgba(0,0,0,0.08);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.08), 0 4px 0 rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.7);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.10), 0 6px 0 rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.8);
+  --shadow-xl: 0 12px 32px rgba(0,0,0,0.12), 0 8px 0 rgba(0,0,0,0.14), inset 0 2px 0 rgba(255,255,255,0.85);
+  --shadow-clay: 0 6px 0 rgba(0,0,0,0.15);
+
+  /* Colored clay shadows */
+  --shadow-purple: 0 4px 16px rgba(123,97,255,0.3), 0 4px 0 #5B41DF;
+  --shadow-green: 0 4px 16px rgba(16,185,129,0.3), 0 4px 0 #059669;
+  --shadow-orange: 0 4px 16px rgba(249,115,22,0.3), 0 4px 0 #EA580C;
+  --shadow-pink: 0 4px 16px rgba(244,114,182,0.3), 0 4px 0 #EC4899;
 
   /* Animation */
   --transition-fast: 150ms ease;
@@ -89,7 +106,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: 'Manrope', system-ui, -apple-system, sans-serif;
+  font-family: 'Nunito', system-ui, -apple-system, sans-serif;
   font-size: 16px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
@@ -100,7 +117,7 @@ body {
   background: var(--white);
   border-radius: var(--radius-2xl);
   box-shadow: var(--shadow-md);
-  border: 1px solid rgba(123, 97, 255, 0.08);
+  border: 2px solid rgba(255,255,255,0.8);
   transition: all var(--transition-normal);
 }
 .clay-card:hover {
@@ -110,14 +127,62 @@ body {
 
 /* Clay button base */
 .clay-btn {
-  border-radius: var(--radius-md);
-  font-weight: 700;
-  font-family: 'Manrope', sans-serif;
+  border-radius: var(--radius-lg);
+  font-weight: 800;
+  font-family: 'Nunito', sans-serif;
   transition: all var(--transition-normal);
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .clay-btn:active {
-  transform: translateY(2px);
+  transform: translateY(3px);
+}
+
+/* Clay button variants */
+.clay-btn-purple {
+  background: var(--purple);
+  color: #fff;
+  box-shadow: 0 4px 0 var(--purple-deep), 0 4px 16px rgba(123,97,255,0.25);
+}
+.clay-btn-purple:active { box-shadow: none; }
+
+.clay-btn-green {
+  background: var(--green);
+  color: #fff;
+  box-shadow: 0 4px 0 var(--green-deep), 0 4px 16px rgba(16,185,129,0.25);
+}
+.clay-btn-green:active { box-shadow: none; }
+
+.clay-btn-orange {
+  background: var(--orange);
+  color: #fff;
+  box-shadow: 0 4px 0 var(--orange-deep), 0 4px 16px rgba(249,115,22,0.25);
+}
+.clay-btn-orange:active { box-shadow: none; }
+
+/* Input style */
+.clay-input {
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--line);
+  background: var(--white);
+  padding: 12px 16px;
+  font-size: 16px;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 600;
+  color: var(--ink);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  outline: none;
+  width: 100%;
+}
+.clay-input:focus {
+  border-color: var(--purple);
+  box-shadow: 0 0 0 3px rgba(123,97,255,0.15);
+}
+.clay-input::placeholder {
+  color: var(--muted);
+  font-weight: 400;
 }
 
 /* Focus ring */
@@ -138,4 +203,13 @@ body {
 /* Mobile safe area */
 .safe-bottom {
   padding-bottom: calc(var(--space-md) + env(safe-area-inset-bottom));
+}
+
+/* Scrollbar hide */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
