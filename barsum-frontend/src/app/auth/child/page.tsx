@@ -15,7 +15,7 @@ const schema = z.object({
 });
 type Form = z.infer<typeof schema>;
 
-const BG = "linear-gradient(135deg, #0f9b8e 0%, #11d5a3 50%, #38ef7d 100%)";
+const BG = "linear-gradient(135deg, #4776e6 0%, #6a3de8 60%, #8e54e9 100%)";
 
 export default function ChildAuthPage() {
   const router = useRouter();
@@ -99,7 +99,7 @@ export default function ChildAuthPage() {
             <input {...register("password")} type="password" placeholder="Твой пароль" autoComplete="current-password" className="glass-input" />
             {errors.password && <p style={{ color: "#ffd6d6", fontSize: 12, fontWeight: 600, marginTop: 6 }}>{errors.password.message}</p>}
           </div>
-          <button type="submit" disabled={isSubmitting} className="btn-white" style={{ marginTop: 8, color: "#0a7a62" }}>
+          <button type="submit" disabled={isSubmitting} className="btn-white" style={{ marginTop: 8, color: "#4776e6" }}>
             {isSubmitting ? "Загрузка..." : "Войти"}
           </button>
         </form>

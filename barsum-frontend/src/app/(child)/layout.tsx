@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { coinsApi } from "@/lib/api/coins";
 import { dreamsApi } from "@/lib/api/dreams";
 
-const BG = "linear-gradient(135deg, #0f9b8e 0%, #0bbfa0 40%, #38ef7d 100%)";
+const BG = "linear-gradient(135deg, #4776e6 0%, #6a3de8 60%, #8e54e9 100%)";
 
 const tabs = [
   { label: "Задания", Icon: BookOpen, href: "/child/home", match: "/child/home" },

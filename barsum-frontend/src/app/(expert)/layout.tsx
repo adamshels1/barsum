@@ -3,7 +3,7 @@ export default function ExpertLayout({ children }: { children: React.ReactNode }
     <div
       style={{
         minHeight: "100dvh",
-        background: "linear-gradient(135deg, #f7971e 0%, #e8a020 50%, #ffd200 100%)",
+        background: "linear-gradient(135deg, #4776e6 0%, #6a3de8 60%, #8e54e9 100%)",
         position: "relative",
       }}
     >

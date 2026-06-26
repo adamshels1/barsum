@@ -37,7 +37,7 @@ export default function LandingPage() {
     <main
       style={{
         minHeight: "100dvh",
-        background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 45%, #0f3460 100%)",
+        background: "linear-gradient(135deg, #4776e6 0%, #6a3de8 60%, #8e54e9 100%)",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -46,8 +46,8 @@ export default function LandingPage() {
       }}
     >
       {/* Decorative blobs */}
-      <div style={{ position: "fixed", top: "-20%", left: "-10%", width: 320, height: 320, borderRadius: "50%", background: "rgba(71,118,230,0.22)", filter: "blur(80px)", pointerEvents: "none" }} />
-      <div style={{ position: "fixed", bottom: "-15%", right: "-10%", width: 280, height: 280, borderRadius: "50%", background: "rgba(142,84,233,0.18)", filter: "blur(70px)", pointerEvents: "none" }} />
+      <div style={{ position: "fixed", top: "-20%", left: "-10%", width: 320, height: 320, borderRadius: "50%", background: "rgba(255,255,255,0.15)", filter: "blur(80px)", pointerEvents: "none" }} />
+      <div style={{ position: "fixed", bottom: "-15%", right: "-10%", width: 280, height: 280, borderRadius: "50%", background: "rgba(0,0,0,0.15)", filter: "blur(70px)", pointerEvents: "none" }} />
 
       {/* Logo */}
       <div style={{ textAlign: "center", marginBottom: 52, position: "relative", zIndex: 1 }}>

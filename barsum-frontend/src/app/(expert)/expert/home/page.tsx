@@ -18,7 +18,7 @@ interface Challenge {
 const STATUS: Record<string, { label: string; color: string; bg: string }> = {
   draft:      { label: "Черновик",      color: "rgba(255,255,255,0.6)",  bg: "rgba(255,255,255,0.1)" },
   moderation: { label: "На модерации",  color: "#ffffff",               bg: "rgba(255,255,255,0.2)" },
-  published:  { label: "Опубликован",   color: "#1a4a00",               bg: "rgba(255,255,255,0.85)" },
+  published:  { label: "Опубликован",   color: "#4776e6",               bg: "rgba(255,255,255,0.85)" },
   rejected:   { label: "Отклонён",      color: "#ffffff",               bg: "rgba(200,0,0,0.35)" },
 };
 
@@ -96,7 +96,7 @@ export default function ExpertHomePage() {
               borderRadius: 9999,
               border: "none",
               background: "rgba(255,255,255,0.9)",
-              color: "#c97000",
+              color: "#4776e6",
               fontWeight: 900,
               fontSize: 14,
               cursor: "pointer",
@@ -179,7 +179,7 @@ export default function ExpertHomePage() {
                         <Users2 size={12} /> {c.membersCount}
                       </span>
                       <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.55)" }}>🪙 {c.coinsReward}</span>
-                      <span style={{ fontSize: 14, fontWeight: 900, color: "#1a4a00", background: "rgba(255,255,255,0.85)", borderRadius: 9999, padding: "3px 10px", marginLeft: "auto" }}>
+                      <span style={{ fontSize: 14, fontWeight: 900, color: "#4776e6", background: "rgba(255,255,255,0.85)", borderRadius: 9999, padding: "3px 10px", marginLeft: "auto" }}>
                         {c.price.toLocaleString("ru-RU")} ₸
                       </span>
                     </div>

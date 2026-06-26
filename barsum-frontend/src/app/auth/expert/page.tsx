@@ -17,7 +17,7 @@ const schema = z.object({
 });
 type Form = z.infer<typeof schema>;
 
-const BG = "linear-gradient(135deg, #f7971e 0%, #ffd200 100%)";
+const BG = "linear-gradient(135deg, #4776e6 0%, #6a3de8 60%, #8e54e9 100%)";
 
 export default function ExpertAuthPage() {
   const router = useRouter();
@@ -61,7 +61,7 @@ export default function ExpertAuthPage() {
           {["Войти", "Регистрация"].map((label, i) => {
             const active = isRegister === (i === 1);
             return (
-              <button key={label} onClick={() => setIsRegister(i === 1)} style={{ flex: 1, padding: "10px 0", borderRadius: 9999, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 14, fontFamily: "inherit", background: active ? "rgba(255,255,255,0.9)" : "transparent", color: active ? "#c97000" : "rgba(255,255,255,0.65)", transition: "all 0.18s" }}>
+              <button key={label} onClick={() => setIsRegister(i === 1)} style={{ flex: 1, padding: "10px 0", borderRadius: 9999, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 14, fontFamily: "inherit", background: active ? "rgba(255,255,255,0.9)" : "transparent", color: active ? "#4776e6" : "rgba(255,255,255,0.65)", transition: "all 0.18s" }}>
                 {label}
               </button>
             );
@@ -73,20 +73,20 @@ export default function ExpertAuthPage() {
             <div>
               <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Ваше имя</label>
               <input {...register("name")} placeholder="Например: Айгерим" className="glass-input" />
-              {errors.name && <p style={{ color: "#3a1500", fontSize: 12, fontWeight: 600, marginTop: 6 }}>{errors.name.message}</p>}
+              {errors.name && <p style={{ color: "#ffd6d6", fontSize: 12, fontWeight: 600, marginTop: 6 }}>{errors.name.message}</p>}
             </div>
           )}
           <div>
             <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Email</label>
             <input {...register("email")} type="email" placeholder="email@example.com" autoComplete="email" className="glass-input" />
-            {errors.email && <p style={{ color: "#3a1500", fontSize: 12, fontWeight: 600, marginTop: 6 }}>{errors.email.message}</p>}
+            {errors.email && <p style={{ color: "#ffd6d6", fontSize: 12, fontWeight: 600, marginTop: 6 }}>{errors.email.message}</p>}
           </div>
           <div>
             <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Пароль</label>
             <input {...register("password")} type="password" placeholder={isRegister ? "Минимум 6 символов" : "Ваш пароль"} autoComplete={isRegister ? "new-password" : "current-password"} className="glass-input" />
-            {errors.password && <p style={{ color: "#3a1500", fontSize: 12, fontWeight: 600, marginTop: 6 }}>{errors.password.message}</p>}
+            {errors.password && <p style={{ color: "#ffd6d6", fontSize: 12, fontWeight: 600, marginTop: 6 }}>{errors.password.message}</p>}
           </div>
-          <button type="submit" disabled={isSubmitting} className="btn-white" style={{ marginTop: 8, color: "#c97000" }}>
+          <button type="submit" disabled={isSubmitting} className="btn-white" style={{ marginTop: 8, color: "#4776e6" }}>
             {isSubmitting ? "Загрузка..." : isRegister ? "Зарегистрироваться" : "Войти"}
           </button>
         </form>
