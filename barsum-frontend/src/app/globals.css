@@ -1,0 +1,141 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-purple: #7B61FF;
+  --color-purple-deep: #5B41DF;
+  --color-purple-light: #EDE9FF;
+  --color-green: #1FA463;
+  --color-green-deep: #168A50;
+  --color-green-light: #F0FDF6;
+  --color-orange: #EA8C2D;
+  --color-orange-deep: #C4721F;
+  --color-orange-light: #FFF8F0;
+  --color-ink: #1E1B2E;
+  --color-muted: #9AA0AE;
+  --color-line: #EDEAF7;
+  --color-lav: #F3F0FF;
+  --color-soft: #F6F4FC;
+  --color-background: #EFEBFB;
+  --color-destructive: #DC2626;
+
+  --font-family-sans: 'Manrope', system-ui, -apple-system, sans-serif;
+
+  --border-radius-sm: 8px;
+  --border-radius-md: 12px;
+  --border-radius-lg: 16px;
+  --border-radius-xl: 20px;
+  --border-radius-2xl: 24px;
+}
+
+:root {
+  /* Brand Colors */
+  --purple: #7B61FF;
+  --purple-deep: #5B41DF;
+  --purple-light: #EDE9FF;
+  --green: #1FA463;
+  --green-deep: #168A50;
+  --green-light: #F0FDF6;
+  --orange: #EA8C2D;
+  --orange-deep: #C4721F;
+  --orange-light: #FFF8F0;
+  --ink: #1E1B2E;
+  --muted: #9AA0AE;
+  --line: #EDEAF7;
+  --lav: #F3F0FF;
+  --soft: #F6F4FC;
+  --background: #EFEBFB;
+  --foreground: #1E1B2E;
+  --white: #FFFFFF;
+  --destructive: #DC2626;
+
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  --space-3xl: 64px;
+
+  /* Border Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+  --radius: 0.75rem;
+
+  /* Claymorphism Shadows */
+  --shadow-sm: 0 2px 4px rgba(123, 97, 255, 0.08);
+  --shadow-md: 0 4px 12px rgba(123, 97, 255, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  --shadow-lg: 0 8px 24px rgba(123, 97, 255, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --shadow-xl: 0 16px 40px rgba(123, 97, 255, 0.2), inset 0 2px 0 rgba(255, 255, 255, 0.8);
+  --shadow-clay: 0 6px 0 rgba(0, 0, 0, 0.15);
+
+  /* Animation */
+  --transition-fast: 150ms ease;
+  --transition-normal: 200ms ease-out;
+  --transition-slow: 300ms ease;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: 'Manrope', system-ui, -apple-system, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Claymorphism base card */
+.clay-card {
+  background: var(--white);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-md);
+  border: 1px solid rgba(123, 97, 255, 0.08);
+  transition: all var(--transition-normal);
+}
+.clay-card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+/* Clay button base */
+.clay-btn {
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  font-family: 'Manrope', sans-serif;
+  transition: all var(--transition-normal);
+  cursor: pointer;
+}
+.clay-btn:active {
+  transform: translateY(2px);
+}
+
+/* Focus ring */
+*:focus-visible {
+  outline: 2px solid var(--purple);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Mobile safe area */
+.safe-bottom {
+  padding-bottom: calc(var(--space-md) + env(safe-area-inset-bottom));
+}
