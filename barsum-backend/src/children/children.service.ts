@@ -1,0 +1,98 @@
+import { Injectable, ConflictException, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { DataSource, Repository } from 'typeorm';
+import { Child } from './entities/child.entity';
+import * as bcrypt from 'bcrypt';
+
+@Injectable()
+export class ChildrenService {
+  constructor(
+    @InjectRepository(Child)
+    private childRepo: Repository<Child>,
+    private dataSource: DataSource,
+  ) {}
+
+  async findByLogin(login: string): Promise<Child | null> {
+    return this.childRepo.findOne({ where: { login } });
+  }
+
+  async findById(id: string): Promise<Child | null> {
+    return this.childRepo.findOne({ where: { id } });
+  }
+
+  async findByParentId(parentId: string): Promise<Child[]> {
+    return this.childRepo.find({ where: { parentId } });
+  }
+
+  async create(dto: { name: string; age: number; login: string; password: string; parentId: string }): Promise<Child> {
+    const existing = await this.findByLogin(dto.login);
+    if (existing) throw new ConflictException('Login already taken');
+    const hashed = await bcrypt.hash(dto.password, 10);
+    const child = this.childRepo.create({ ...dto, password: hashed });
+    return this.childRepo.save(child);
+  }
+
+  async update(id: string, parentId: string, dto: { name?: string; age?: number; password?: string }): Promise<Child> {
+    const child = await this.findById(id);
+    if (!child) throw new NotFoundException('Child not found');
+    if (child.parentId !== parentId) throw new ForbiddenException('Not your child');
+    if (dto.password) {
+      dto.password = await bcrypt.hash(dto.password, 10);
+    }
+    Object.assign(child, dto);
+    return this.childRepo.save(child);
+  }
+
+  async incrementStreak(id: string): Promise<void> {
+    await this.childRepo.increment({ id }, 'streak', 1);
+  }
+
+  async resetStreak(id: string): Promise<void> {
+    await this.childRepo.update(id, { streak: 0 });
+  }
+
+  async count(): Promise<number> {
+    return this.childRepo.count();
+  }
+
+  async getStats(id: string): Promise<{
+    streak: number;
+    totalSessions: number;
+    totalCoinsEarned: number;
+    activeEnrollments: number;
+    childBalance: number;
+  }> {
+    const child = await this.findById(id);
+    if (!child) throw new NotFoundException('Child not found');
+
+    const [sessionsRow, coinsRow, enrollmentsRow, balanceRow] = await Promise.all([
+      this.dataSource.query(
+        `SELECT COUNT(*) AS count FROM sessions WHERE "childId" = $1`,
+        [id],
+      ),
+      this.dataSource.query(
+        `SELECT COALESCE(SUM(amount), 0) AS total FROM coin_transactions WHERE "toId" = $1 AND "toType" = 'child' AND status = 'confirmed'`,
+        [id],
+      ),
+      this.dataSource.query(
+        `SELECT COUNT(*) AS count FROM challenge_enrollments WHERE "childId" = $1 AND status = 'active'`,
+        [id],
+      ),
+      this.dataSource.query(
+        `SELECT COALESCE(
+          SUM(CASE WHEN "toId" = $1 AND "toType" = 'child' THEN amount ELSE 0 END) -
+          SUM(CASE WHEN "fromId" = $1 AND "fromType" = 'child' THEN amount ELSE 0 END)
+        , 0) AS balance FROM coin_transactions WHERE status = 'confirmed'`,
+        [id],
+      ),
+    ]);
+
+    return {
+      streak: child.streak,
+      totalSessions: Number(sessionsRow[0]?.count ?? 0),
+      totalCoinsEarned: Number(coinsRow[0]?.total ?? 0),
+      activeEnrollments: Number(enrollmentsRow[0]?.count ?? 0),
+      childBalance: Number(balanceRow[0]?.balance ?? 0),
+    };
+  }
+}

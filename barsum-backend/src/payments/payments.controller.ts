@@ -1,0 +1,68 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  UseGuards,
+  Request,
+  UploadedFile,
+  UseInterceptors,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PaymentsService } from './payments.service';
+import { FilesService } from '../files/files.service';
+import { Challenge } from '../challenges/entities/challenge.entity';
+
+@ApiTags('payments')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
+@Controller('payments')
+export class PaymentsController {
+  constructor(
+    private readonly paymentsService: PaymentsService,
+    private readonly filesService: FilesService,
+    @InjectRepository(Challenge)
+    private readonly challengeRepo: Repository<Challenge>,
+  ) {}
+
+  @Post()
+  async create(
+    @Request() req: any,
+    @Body()
+    body: {
+      childId: string;
+      challengeId: string;
+      coinsAmount: number;
+    },
+  ) {
+    const challenge = await this.challengeRepo.findOne({ where: { id: body.challengeId } });
+    if (!challenge) throw new NotFoundException('Challenge not found');
+    return this.paymentsService.create({
+      ...body,
+      parentId: req.user.sub,
+      challengePrice: challenge.price,
+    });
+  }
+
+  @Post(':id/receipt')
+  @UseInterceptors(FileInterceptor('receipt'))
+  async uploadReceipt(
+    @Request() req: any,
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const url = await this.filesService.uploadReceipt(file, id);
+    return this.paymentsService.uploadReceipt(id, req.user.sub, url);
+  }
+
+  @Get()
+  list(@Request() req: any) {
+    return this.paymentsService.findByParent(req.user.sub);
+  }
+}
