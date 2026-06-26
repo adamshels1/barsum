@@ -13,21 +13,17 @@ const schema = z.object({
   login: z.string().min(1, "Введите логин"),
   password: z.string().min(1, "Введите пароль"),
 });
-
 type Form = z.infer<typeof schema>;
 
-const BRAND = "#10B981";
-const BRAND_DEEP = "#059669";
+const BG = "linear-gradient(135deg, #0f9b8e 0%, #11d5a3 50%, #38ef7d 100%)";
 
 export default function ChildAuthPage() {
   const router = useRouter();
   const setAuth = useAuthStore((s) => s.setAuth);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<Form>({ resolver: zodResolver(schema) });
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<Form>({
+    resolver: zodResolver(schema),
+  });
 
   const onSubmit = async (data: Form) => {
     try {
@@ -42,88 +38,72 @@ export default function ChildAuthPage() {
   };
 
   return (
-    <main className="min-h-screen flex flex-col" style={{ background: "var(--background)" }}>
-      {/* Brand header */}
-      <div
-        className="flex-shrink-0 flex flex-col items-center justify-center pt-14 pb-12 px-6"
-        style={{
-          background: BRAND,
-          boxShadow: `0 8px 32px ${BRAND}66`,
-        }}
-      >
+    <main style={{ minHeight: "100dvh", background: BG, display: "flex", flexDirection: "column" }}>
+      {/* Blobs */}
+      <div style={{ position: "fixed", top: "-15%", right: "-10%", width: 240, height: 240, borderRadius: "50%", background: "rgba(255,255,255,0.15)", filter: "blur(60px)", pointerEvents: "none" }} />
+      <div style={{ position: "fixed", bottom: "-10%", left: "-10%", width: 200, height: 200, borderRadius: "50%", background: "rgba(0,0,0,0.12)", filter: "blur(50px)", pointerEvents: "none" }} />
+
+      {/* Hero */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", paddingTop: 60, paddingBottom: 32, position: "relative", zIndex: 1 }}>
         <div
-          className="w-20 h-20 rounded-3xl flex items-center justify-center mb-4"
-          style={{ background: "rgba(255,255,255,0.2)" }}
+          style={{
+            width: 72,
+            height: 72,
+            borderRadius: 24,
+            background: "rgba(255,255,255,0.2)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            border: "1px solid rgba(255,255,255,0.35)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            marginBottom: 16,
+          }}
         >
-          <BookOpen size={40} color="#fff" strokeWidth={2} />
+          <BookOpen size={32} color="#ffffff" strokeWidth={2} />
         </div>
-        <h1 className="text-3xl font-black text-white">Привет!</h1>
-        <p className="text-white mt-1 text-sm font-semibold" style={{ opacity: 0.85 }}>
+        <h1 style={{ fontSize: 32, fontWeight: 900, color: "#ffffff", margin: 0 }}>Привет!</h1>
+        <p style={{ color: "rgba(255,255,255,0.72)", fontSize: 15, fontWeight: 600, marginTop: 6 }}>
           Войди и начни читать 📚
         </p>
       </div>
 
-      {/* Form area */}
+      {/* Form card */}
       <div
-        className="flex-1 rounded-t-[32px] p-6 pt-8 -mt-5 relative"
-        style={{ background: "#fff" }}
+        style={{
+          background: "rgba(255,255,255,0.12)",
+          backdropFilter: "blur(24px)",
+          WebkitBackdropFilter: "blur(24px)",
+          borderTop: "1px solid rgba(255,255,255,0.22)",
+          borderRadius: "28px 28px 0 0",
+          padding: "32px 24px 40px",
+          position: "relative",
+          zIndex: 1,
+        }}
       >
-        <h2
-          className="text-xl font-black mb-6"
-          style={{ color: "var(--ink)" }}
-        >
+        <h2 style={{ fontSize: 20, fontWeight: 900, color: "#ffffff", margin: "0 0 24px" }}>
           Вход для ребёнка
         </h2>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div>
-            <label className="block text-xs font-bold mb-1.5" style={{ color: "var(--ink)" }}>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
               Логин
             </label>
-            <input
-              {...register("login")}
-              placeholder="Твой логин"
-              autoComplete="username"
-              className="clay-input"
-            />
-            {errors.login && (
-              <p className="text-xs mt-1.5 font-semibold" style={{ color: "var(--destructive)" }}>
-                {errors.login.message}
-              </p>
-            )}
+            <input {...register("login")} placeholder="Твой логин" autoComplete="username" className="glass-input" />
+            {errors.login && <p style={{ color: "#ffd6d6", fontSize: 12, fontWeight: 600, marginTop: 6 }}>{errors.login.message}</p>}
           </div>
-
           <div>
-            <label className="block text-xs font-bold mb-1.5" style={{ color: "var(--ink)" }}>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
               Пароль
             </label>
-            <input
-              {...register("password")}
-              type="password"
-              placeholder="Твой пароль"
-              autoComplete="current-password"
-              className="clay-input"
-            />
-            {errors.password && (
-              <p className="text-xs mt-1.5 font-semibold" style={{ color: "var(--destructive)" }}>
-                {errors.password.message}
-              </p>
-            )}
+            <input {...register("password")} type="password" placeholder="Твой пароль" autoComplete="current-password" className="glass-input" />
+            {errors.password && <p style={{ color: "#ffd6d6", fontSize: 12, fontWeight: 600, marginTop: 6 }}>{errors.password.message}</p>}
           </div>
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="clay-btn clay-btn-green w-full py-4 rounded-2xl text-base mt-2 disabled:opacity-60"
-          >
+          <button type="submit" disabled={isSubmitting} className="btn-white" style={{ marginTop: 8, color: "#0a7a62" }}>
             {isSubmitting ? "Загрузка..." : "Войти"}
           </button>
         </form>
-
-        <p
-          className="text-xs text-center mt-6 font-semibold"
-          style={{ color: "var(--muted)" }}
-        >
+        <p style={{ textAlign: "center", marginTop: 20, fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.45)" }}>
           Логин и пароль выдаёт родитель
         </p>
       </div>

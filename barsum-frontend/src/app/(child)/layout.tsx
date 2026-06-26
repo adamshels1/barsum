@@ -7,10 +7,12 @@ import { useQuery } from "@tanstack/react-query";
 import { coinsApi } from "@/lib/api/coins";
 import { dreamsApi } from "@/lib/api/dreams";
 
+const BG = "linear-gradient(135deg, #0f9b8e 0%, #0bbfa0 40%, #38ef7d 100%)";
+
 const tabs = [
   { label: "Задания", Icon: BookOpen, href: "/child/home", match: "/child/home" },
   { label: "Магазин", Icon: ShoppingBag, href: "/child/shop", match: "/child/shop" },
-  { label: "Мечта", Icon: Sparkles, href: "/child/shop?tab=dream", match: "", badge: false },
+  { label: "Мечта", Icon: Sparkles, href: "/child/shop?tab=dream", match: "" },
 ];
 
 export default function ChildLayout({ children }: { children: React.ReactNode }) {
@@ -39,59 +41,64 @@ export default function ChildLayout({ children }: { children: React.ReactNode })
     pathname === "/child/home" ? 0 : pathname?.startsWith("/child/shop") ? 1 : -1;
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--background)" }}>
+    <div style={{ minHeight: "100dvh", background: BG, position: "relative" }}>
+      {/* Fixed bg layer for mobile */}
+      <div style={{ position: "fixed", inset: 0, background: BG, zIndex: 0 }} />
+
+      {/* Blobs */}
+      <div style={{ position: "fixed", top: "-10%", right: "-5%", width: 200, height: 200, borderRadius: "50%", background: "rgba(255,255,255,0.15)", filter: "blur(60px)", pointerEvents: "none", zIndex: 0 }} />
+      <div style={{ position: "fixed", bottom: "15%", left: "-8%", width: 160, height: 160, borderRadius: "50%", background: "rgba(0,0,0,0.1)", filter: "blur(50px)", pointerEvents: "none", zIndex: 0 }} />
+
+      {/* Header */}
       {!isSession && (
         <div
-          className="sticky top-0 z-40 flex items-center justify-between px-5 py-3"
+          className="glass-header"
           style={{
-            background: "rgba(255,248,240,0.96)",
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
-            borderBottom: "1px solid var(--line)",
+            position: "sticky",
+            top: 0,
+            zIndex: 40,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "12px 20px",
           }}
         >
-          <p className="font-black text-base" style={{ color: "var(--ink)" }}>
+          <p style={{ fontWeight: 900, fontSize: 16, color: "#ffffff", margin: 0 }}>
             {user?.name?.split(" ")[0] || "Читатель"} 👋
           </p>
-          <div className="flex items-center gap-2">
-            <div
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
-              style={{
-                background: "#FFF7ED",
-                border: "1.5px solid #FDEBD0",
-              }}
-            >
-              <Flame size={14} color="#EA580C" strokeWidth={2.5} />
-              <span className="font-black text-sm" style={{ color: "#EA580C" }}>
-                {streak}
-              </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div className="glass-chip" style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px" }}>
+              <Flame size={14} color="#ffffff" strokeWidth={2.5} />
+              <span style={{ fontWeight: 900, fontSize: 14, color: "#ffffff" }}>{streak}</span>
             </div>
-            <div
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
-              style={{
-                background: "var(--purple-light)",
-                border: "1.5px solid #ddd6ff",
-              }}
-            >
-              <span className="text-sm leading-none">🪙</span>
-              <span className="font-black text-sm" style={{ color: "var(--purple)" }}>
-                {balance.toLocaleString()}
-              </span>
+            <div className="glass-chip" style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px" }}>
+              <span style={{ fontSize: 14, lineHeight: 1 }}>🪙</span>
+              <span style={{ fontWeight: 900, fontSize: 14, color: "#ffffff" }}>{balance.toLocaleString()}</span>
             </div>
           </div>
         </div>
       )}
 
-      <div className={!isSession ? "pb-24" : ""}>{children}</div>
+      {/* Content */}
+      <div style={{ position: "relative", zIndex: 1, paddingBottom: isSession ? 0 : 96 }}>
+        {children}
+      </div>
 
+      {/* Bottom nav */}
       {!isSession && (
         <div
-          className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around px-2 pt-3"
+          className="glass-nav"
           style={{
-            background: "#fff",
-            boxShadow: "0 -2px 20px rgba(0,0,0,0.08)",
-            borderTop: "1.5px solid var(--line)",
-            paddingBottom: "max(20px, env(safe-area-inset-bottom))",
+            position: "fixed",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            zIndex: 40,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-around",
+            padding: "12px 8px",
+            paddingBottom: `max(16px, env(safe-area-inset-bottom))`,
           }}
         >
           {tabs.map((tab, i) => {
@@ -103,32 +110,39 @@ export default function ChildLayout({ children }: { children: React.ReactNode })
               <button
                 key={tab.href}
                 onClick={() => router.push(tab.href)}
-                className="flex flex-col items-center gap-1 relative min-w-[72px] transition-transform active:scale-90"
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 4,
+                  position: "relative",
+                  minWidth: 72,
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: 4,
+                }}
                 aria-label={tab.label}
               >
                 <div
-                  className="flex items-center justify-center w-14 h-8 rounded-full transition-all duration-200"
                   style={{
-                    background: isActive ? "var(--purple-light)" : "transparent",
+                    width: 56,
+                    height: 32,
+                    borderRadius: 9999,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: isActive ? "rgba(255,255,255,0.22)" : "transparent",
+                    transition: "all 0.15s",
                   }}
                 >
-                  <Icon
-                    size={20}
-                    strokeWidth={isActive ? 2.5 : 2}
-                    color={isActive ? "var(--purple)" : "var(--muted)"}
-                  />
+                  <Icon size={20} strokeWidth={isActive ? 2.5 : 2} color={isActive ? "#ffffff" : "rgba(255,255,255,0.5)"} />
                 </div>
-                <span
-                  className="text-xs font-bold transition-colors"
-                  style={{ color: isActive ? "var(--purple)" : "var(--muted)" }}
-                >
+                <span style={{ fontSize: 11, fontWeight: isActive ? 800 : 600, color: isActive ? "#ffffff" : "rgba(255,255,255,0.5)", transition: "all 0.15s" }}>
                   {tab.label}
                 </span>
                 {showBadge && (
-                  <span
-                    className="absolute top-0 right-3 w-2.5 h-2.5 rounded-full border-2 border-white"
-                    style={{ background: "var(--orange)" }}
-                  />
+                  <span style={{ position: "absolute", top: 4, right: 14, width: 8, height: 8, borderRadius: "50%", background: "#ffd200", border: "1.5px solid rgba(0,0,0,0.2)" }} />
                 )}
               </button>
             );

@@ -10,208 +10,86 @@ import { z } from "zod";
 import { apiClient } from "@/lib/api/client";
 import { useAuthStore } from "@/stores/auth-store";
 
-const loginSchema = z.object({
+const schema = z.object({
   email: z.string().email("Введите корректный email"),
   password: z.string().min(6, "Минимум 6 символов"),
+  name: z.string().min(2, "Введите имя").optional(),
+  phone: z.string().optional(),
 });
+type Form = z.infer<typeof schema>;
 
-const registerSchema = z.object({
-  name: z.string().min(2, "Минимум 2 символа"),
-  email: z.string().email("Введите корректный email"),
-  password: z.string().min(6, "Минимум 6 символов"),
-});
-
-type LoginForm = z.infer<typeof loginSchema>;
-type RegisterForm = z.infer<typeof registerSchema>;
-
-const BRAND = "#7B61FF";
-const BRAND_DEEP = "#5B41DF";
+const BG = "linear-gradient(135deg, #4776e6 0%, #6a3de8 60%, #8e54e9 100%)";
 
 export default function ParentAuthPage() {
   const router = useRouter();
   const setAuth = useAuthStore((s) => s.setAuth);
   const [isRegister, setIsRegister] = useState(false);
 
-  const loginForm = useForm<LoginForm>({ resolver: zodResolver(loginSchema) });
-  const registerForm = useForm<RegisterForm>({ resolver: zodResolver(registerSchema) });
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<Form>({
+    resolver: zodResolver(schema),
+  });
 
-  const onLogin = async (data: LoginForm) => {
+  const onSubmit = async (data: Form) => {
     try {
-      const res = await apiClient.post("/auth/parent/login", data);
+      const endpoint = isRegister ? "/auth/parent/register" : "/auth/parent/login";
+      const res = await apiClient.post(endpoint, data);
       const { access_token, user } = res.data;
       setAuth(access_token, "parent", user);
-      router.push("/parent/cabinet");
+      router.push("/parent/home");
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Ошибка входа");
     }
   };
 
-  const onRegister = async (data: RegisterForm) => {
-    try {
-      const res = await apiClient.post("/auth/parent/register", data);
-      const { access_token, user } = res.data;
-      setAuth(access_token, "parent", user);
-      router.push("/parent/onboarding");
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Ошибка регистрации");
-    }
-  };
-
   return (
-    <main className="min-h-screen flex flex-col" style={{ background: "var(--background)" }}>
-      {/* Brand header */}
-      <div
-        className="flex-shrink-0 flex flex-col items-center justify-center pt-14 pb-12 px-6"
-        style={{
-          background: BRAND,
-          boxShadow: `0 8px 32px ${BRAND}66`,
-        }}
-      >
-        <div
-          className="w-20 h-20 rounded-3xl flex items-center justify-center mb-4"
-          style={{ background: "rgba(255,255,255,0.2)" }}
-        >
-          <Users size={40} color="#fff" strokeWidth={2} />
+    <main style={{ minHeight: "100dvh", background: BG, display: "flex", flexDirection: "column" }}>
+      <div style={{ position: "fixed", top: "-15%", right: "-10%", width: 260, height: 260, borderRadius: "50%", background: "rgba(255,255,255,0.12)", filter: "blur(70px)", pointerEvents: "none" }} />
+      <div style={{ position: "fixed", bottom: "-10%", left: "-10%", width: 220, height: 220, borderRadius: "50%", background: "rgba(0,0,0,0.15)", filter: "blur(60px)", pointerEvents: "none" }} />
+
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", paddingTop: 60, paddingBottom: 32, position: "relative", zIndex: 1 }}>
+        <div style={{ width: 72, height: 72, borderRadius: 24, background: "rgba(255,255,255,0.2)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.35)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+          <Users size={32} color="#ffffff" strokeWidth={2} />
         </div>
-        <h1 className="text-3xl font-black text-white">Родитель</h1>
-        <p className="text-white mt-1 text-sm font-semibold" style={{ opacity: 0.85 }}>
-          Управляйте обучением детей
+        <h1 style={{ fontSize: 32, fontWeight: 900, color: "#ffffff", margin: 0 }}>Родитель</h1>
+        <p style={{ color: "rgba(255,255,255,0.68)", fontSize: 15, fontWeight: 600, marginTop: 6 }}>
+          Мотивируй своего ребёнка
         </p>
       </div>
 
-      {/* Form area */}
-      <div
-        className="flex-1 rounded-t-[32px] p-6 pt-8 -mt-5 relative"
-        style={{ background: "#fff" }}
-      >
-        {/* Tab toggle */}
-        <div
-          className="flex rounded-2xl p-1 mb-7"
-          style={{ background: "var(--soft)" }}
-        >
-          {[
-            { label: "Войти", active: !isRegister },
-            { label: "Регистрация", active: isRegister },
-          ].map(({ label, active }, i) => (
-            <button
-              key={label}
-              onClick={() => setIsRegister(i === 1)}
-              className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all"
-              style={{
-                background: active ? "#fff" : "transparent",
-                color: active ? BRAND : "var(--muted)",
-                boxShadow: active ? "var(--shadow-sm)" : "none",
-              }}
-            >
-              {label}
-            </button>
-          ))}
+      <div style={{ background: "rgba(255,255,255,0.1)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", borderTop: "1px solid rgba(255,255,255,0.2)", borderRadius: "28px 28px 0 0", padding: "32px 24px 40px", position: "relative", zIndex: 1 }}>
+        <div style={{ display: "flex", background: "rgba(0,0,0,0.2)", borderRadius: 9999, padding: 4, marginBottom: 24 }}>
+          {["Войти", "Регистрация"].map((label, i) => {
+            const active = isRegister === (i === 1);
+            return (
+              <button key={label} onClick={() => setIsRegister(i === 1)} style={{ flex: 1, padding: "10px 0", borderRadius: 9999, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 14, fontFamily: "inherit", background: active ? "rgba(255,255,255,0.9)" : "transparent", color: active ? "#4776e6" : "rgba(255,255,255,0.62)", transition: "all 0.18s" }}>
+                {label}
+              </button>
+            );
+          })}
         </div>
 
-        {isRegister ? (
-          <form onSubmit={registerForm.handleSubmit(onRegister)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {isRegister && (
             <div>
-              <label className="block text-xs font-bold mb-1.5" style={{ color: "var(--ink)" }}>
-                Ваше имя
-              </label>
-              <input
-                {...registerForm.register("name")}
-                placeholder="Например: Анара"
-                className="clay-input"
-              />
-              {registerForm.formState.errors.name && (
-                <p className="text-xs mt-1.5 font-semibold" style={{ color: "var(--destructive)" }}>
-                  {registerForm.formState.errors.name.message}
-                </p>
-              )}
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.65)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Ваше имя</label>
+              <input {...register("name")} placeholder="Например: Айгерим" className="glass-input" />
+              {errors.name && <p style={{ color: "#ffd6d6", fontSize: 12, fontWeight: 600, marginTop: 6 }}>{errors.name.message}</p>}
             </div>
-            <div>
-              <label className="block text-xs font-bold mb-1.5" style={{ color: "var(--ink)" }}>
-                Email
-              </label>
-              <input
-                {...registerForm.register("email")}
-                type="email"
-                placeholder="email@example.com"
-                autoComplete="email"
-                className="clay-input"
-              />
-              {registerForm.formState.errors.email && (
-                <p className="text-xs mt-1.5 font-semibold" style={{ color: "var(--destructive)" }}>
-                  {registerForm.formState.errors.email.message}
-                </p>
-              )}
-            </div>
-            <div>
-              <label className="block text-xs font-bold mb-1.5" style={{ color: "var(--ink)" }}>
-                Пароль
-              </label>
-              <input
-                {...registerForm.register("password")}
-                type="password"
-                placeholder="Минимум 6 символов"
-                autoComplete="new-password"
-                className="clay-input"
-              />
-              {registerForm.formState.errors.password && (
-                <p className="text-xs mt-1.5 font-semibold" style={{ color: "var(--destructive)" }}>
-                  {registerForm.formState.errors.password.message}
-                </p>
-              )}
-            </div>
-            <button
-              type="submit"
-              disabled={registerForm.formState.isSubmitting}
-              className="clay-btn clay-btn-purple w-full py-4 rounded-2xl text-base mt-2 disabled:opacity-60"
-            >
-              {registerForm.formState.isSubmitting ? "Загрузка..." : "Зарегистрироваться"}
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold mb-1.5" style={{ color: "var(--ink)" }}>
-                Email
-              </label>
-              <input
-                {...loginForm.register("email")}
-                type="email"
-                placeholder="email@example.com"
-                autoComplete="email"
-                className="clay-input"
-              />
-              {loginForm.formState.errors.email && (
-                <p className="text-xs mt-1.5 font-semibold" style={{ color: "var(--destructive)" }}>
-                  {loginForm.formState.errors.email.message}
-                </p>
-              )}
-            </div>
-            <div>
-              <label className="block text-xs font-bold mb-1.5" style={{ color: "var(--ink)" }}>
-                Пароль
-              </label>
-              <input
-                {...loginForm.register("password")}
-                type="password"
-                placeholder="Ваш пароль"
-                autoComplete="current-password"
-                className="clay-input"
-              />
-              {loginForm.formState.errors.password && (
-                <p className="text-xs mt-1.5 font-semibold" style={{ color: "var(--destructive)" }}>
-                  {loginForm.formState.errors.password.message}
-                </p>
-              )}
-            </div>
-            <button
-              type="submit"
-              disabled={loginForm.formState.isSubmitting}
-              className="clay-btn clay-btn-purple w-full py-4 rounded-2xl text-base mt-2 disabled:opacity-60"
-            >
-              {loginForm.formState.isSubmitting ? "Загрузка..." : "Войти"}
-            </button>
-          </form>
-        )}
+          )}
+          <div>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.65)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Email</label>
+            <input {...register("email")} type="email" placeholder="email@example.com" autoComplete="email" className="glass-input" />
+            {errors.email && <p style={{ color: "#ffd6d6", fontSize: 12, fontWeight: 600, marginTop: 6 }}>{errors.email.message}</p>}
+          </div>
+          <div>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.65)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Пароль</label>
+            <input {...register("password")} type="password" placeholder={isRegister ? "Минимум 6 символов" : "Ваш пароль"} autoComplete={isRegister ? "new-password" : "current-password"} className="glass-input" />
+            {errors.password && <p style={{ color: "#ffd6d6", fontSize: 12, fontWeight: 600, marginTop: 6 }}>{errors.password.message}</p>}
+          </div>
+          <button type="submit" disabled={isSubmitting} className="btn-white" style={{ marginTop: 8, color: "#4776e6" }}>
+            {isSubmitting ? "Загрузка..." : isRegister ? "Зарегистрироваться" : "Войти"}
+          </button>
+        </form>
       </div>
     </main>
   );

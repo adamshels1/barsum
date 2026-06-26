@@ -15,104 +15,70 @@ const COMMISSION = 0.15;
 
 const AGE_FILTERS = [
   { label: "Все", value: "", min: 0, max: 99 },
-  { label: "👶 6–8", value: "6-8", min: 6, max: 8 },
-  { label: "🧒 9–11", value: "9-11", min: 9, max: 11 },
-  { label: "👦 12–14", value: "12-14", min: 12, max: 14 },
-  { label: "🧑 14+", value: "14+", min: 14, max: 99 },
+  { label: "6–8", value: "6-8", min: 6, max: 8 },
+  { label: "9–11", value: "9-11", min: 9, max: 11 },
+  { label: "12–14", value: "12-14", min: 12, max: 14 },
+  { label: "14+", value: "14+", min: 14, max: 99 },
 ];
 
-const CARD_COLORS = ["#7B61FF", "#1FA463", "#EA8C2D", "#E879A0", "#38BDF8"];
+const CARD_GRADS = [
+  "linear-gradient(135deg, #667eea, #764ba2)",
+  "linear-gradient(135deg, #f7971e, #ffd200)",
+  "linear-gradient(135deg, #fc4a1a, #f7b733)",
+  "linear-gradient(135deg, #a18cd1, #fbc2eb)",
+  "linear-gradient(135deg, #0f9b8e, #38ef7d)",
+];
 
-function ChallengeGridCard({
+function ChallengeCard({
   challenge,
   onBuy,
 }: {
   challenge: Challenge & { author?: { name?: string } };
   onBuy: () => void;
 }) {
-  const colorIdx = challenge.title.charCodeAt(0) % CARD_COLORS.length;
-  const bg = CARD_COLORS[colorIdx];
+  const colorIdx = challenge.title.charCodeAt(0) % CARD_GRADS.length;
+  const grad = CARD_GRADS[colorIdx];
 
   return (
     <div
-      className="rounded-3xl overflow-hidden flex flex-col"
-      style={{
-        background: "var(--card)",
-        boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
-        border: "1.5px solid rgba(0,0,0,0.04)",
-      }}
+      className="glass-card"
+      style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}
     >
-      {/* Cover — книжная типографика */}
-      <div
-        className="h-36 flex flex-col items-center justify-center p-4 relative overflow-hidden"
-        style={{ background: bg }}
-      >
-        <p
-          className="text-white font-extrabold text-center leading-tight line-clamp-3 text-sm"
-          style={{ textShadow: "0 1px 4px rgba(0,0,0,0.25)" }}
-        >
+      <div style={{ height: 120, background: grad, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 12, position: "relative" }}>
+        <p style={{ color: "#ffffff", fontWeight: 900, textAlign: "center", fontSize: 12, lineHeight: 1.3, margin: 0, textShadow: "0 1px 4px rgba(0,0,0,0.25)", WebkitLineClamp: 3, overflow: "hidden", display: "-webkit-box", WebkitBoxOrient: "vertical" }}>
           {challenge.bookTitle || challenge.title}
         </p>
         {challenge.bookAuthor && (
-          <p className="text-white text-xs mt-1 opacity-80 text-center line-clamp-1">
+          <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 10, margin: "4px 0 0", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>
             {challenge.bookAuthor}
           </p>
         )}
-        <span
-          className="absolute top-2 left-2 text-xs font-bold px-2 py-1 rounded-full"
-          style={{ background: "rgba(0,0,0,0.25)", color: "#fff" }}
-        >
-          📅 {challenge.days} дн
+        <span style={{ position: "absolute", top: 8, left: 8, fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 9999, background: "rgba(0,0,0,0.25)", color: "#ffffff" }}>
+          {challenge.days} дн
         </span>
         {challenge.membersCount > 0 && (
-          <span
-            className="absolute top-2 right-2 text-xs font-bold px-2 py-1 rounded-full"
-            style={{ background: "rgba(0,0,0,0.25)", color: "#fff" }}
-          >
+          <span style={{ position: "absolute", top: 8, right: 8, fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 9999, background: "rgba(0,0,0,0.25)", color: "#ffffff" }}>
             👥 {challenge.membersCount}
           </span>
         )}
       </div>
-
-      {/* Body */}
-      <div className="p-3 flex flex-col flex-1">
-        <p
-          className="font-extrabold text-sm leading-tight mb-0.5 line-clamp-2"
-          style={{ color: "var(--ink)" }}
-        >
+      <div style={{ padding: "12px 12px 14px", flex: 1, display: "flex", flexDirection: "column" }}>
+        <p style={{ margin: 0, fontWeight: 900, fontSize: 13, color: "#ffffff", lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
           {challenge.title}
         </p>
-        <p className="text-xs mb-1 line-clamp-1" style={{ color: "var(--muted)" }}>
-          {challenge.bookTitle}
-        </p>
         {challenge.author?.name && (
-          <p className="text-xs mb-2 flex items-center gap-1" style={{ color: "var(--purple)" }}>
-            <span
-              className="inline-flex items-center justify-center w-4 h-4 rounded-full text-white font-bold flex-shrink-0"
-              style={{ background: bg, fontSize: 9 }}
-            >
-              {challenge.author.name[0]}
-            </span>
-            {challenge.author.name}
+          <p style={{ margin: "6px 0 0", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.6)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            👤 {challenge.author.name}
           </p>
         )}
-        <div className="mt-auto">
-          <div className="flex items-center justify-between mb-2">
-            <span
-              className="text-xs font-semibold px-2 py-0.5 rounded-full"
-              style={{ background: "rgba(31,164,99,0.1)", color: "var(--green)" }}
-            >
-              🎂 {challenge.ageMin}–{challenge.ageMax} лет
-            </span>
-          </div>
-          <div className="flex items-center justify-between gap-2">
-            <p className="font-extrabold text-base" style={{ color: "var(--ink)" }}>
+        <div style={{ marginTop: "auto", paddingTop: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <p style={{ margin: 0, fontWeight: 900, fontSize: 16, color: "#ffffff" }}>
               {challenge.price.toLocaleString()} ₸
             </p>
             <button
               onClick={onBuy}
-              className="px-3 py-2 rounded-xl text-xs font-bold text-white transition-opacity active:opacity-70 flex-shrink-0"
-              style={{ background: "var(--purple)" }}
+              style={{ padding: "7px 14px", borderRadius: 9999, border: "none", background: "rgba(255,255,255,0.88)", color: "#4776e6", fontWeight: 900, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}
             >
               Купить
             </button>
@@ -124,10 +90,7 @@ function ChallengeGridCard({
 }
 
 function PurchaseModal({
-  challenge,
-  children,
-  onClose,
-  onSuccess,
+  challenge, children, onClose, onSuccess,
 }: {
   challenge: Challenge & { author?: { name?: string } };
   children: Child[];
@@ -136,119 +99,71 @@ function PurchaseModal({
 }) {
   const [childId, setChildId] = useState("");
   const [coinsAmount, setCoinsAmount] = useState(0);
-  const [showBreakdown, setShowBreakdown] = useState(false);
 
   const coinsTg = Math.round(coinsAmount / 10);
-  const expert = Math.round(challenge.price * COMMISSION);
-  const platform = challenge.price - expert;
   const total = challenge.price + coinsTg;
 
-  const totalW = challenge.price + Math.max(coinsTg, 1);
-  const expPct = (expert / totalW) * 100;
-  const platPct = (platform / totalW) * 100;
-  const coinPct = (Math.max(coinsTg, 1) / totalW) * 100;
-
-  const colorIdx = challenge.title.charCodeAt(0) % CARD_COLORS.length;
-  const bg = CARD_COLORS[colorIdx];
-
   const createMutation = useMutation({
-    mutationFn: () =>
-      paymentsApi.create({ childId, challengeId: challenge.id, coinsAmount }),
+    mutationFn: () => paymentsApi.create({ childId, challengeId: challenge.id, coinsAmount }),
     onSuccess: (payment: Payment) => onSuccess(payment),
-    onError: (err: any) => {
-      toast.error(err?.response?.data?.message || "Ошибка оформления");
-    },
+    onError: (err: any) => { toast.error(err?.response?.data?.message || "Ошибка оформления"); },
   });
+
+  const colorIdx = challenge.title.charCodeAt(0) % CARD_GRADS.length;
+  const grad = CARD_GRADS[colorIdx];
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
-      style={{ background: "rgba(0,0,0,0.5)" }}
+      style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center", padding: "0 0", background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="w-full max-w-sm rounded-3xl overflow-hidden"
-        style={{ background: "#fff", maxHeight: "92vh", overflowY: "auto" }}
+        style={{
+          width: "100%",
+          maxWidth: 480,
+          maxHeight: "92dvh",
+          overflowY: "auto",
+          background: "rgba(30,20,80,0.92)",
+          backdropFilter: "blur(30px)",
+          WebkitBackdropFilter: "blur(30px)",
+          border: "1px solid rgba(255,255,255,0.18)",
+          borderRadius: "28px 28px 0 0",
+        }}
       >
-        {/* Challenge header with book typography */}
-        <div
-          className="p-5 relative"
-          style={{ background: bg, minHeight: 100 }}
-        >
+        {/* Cover */}
+        <div style={{ height: 120, background: grad, position: "relative", borderRadius: "28px 28px 0 0", display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "flex-end", padding: "16px 20px" }}>
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center text-lg font-bold"
-            style={{ background: "rgba(0,0,0,0.2)", color: "#fff" }}
+            style={{ position: "absolute", top: 16, right: 16, width: 32, height: 32, borderRadius: "50%", background: "rgba(0,0,0,0.3)", border: "none", color: "#ffffff", fontSize: 16, fontWeight: 900, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
           >
             ✕
           </button>
-          <span
-            className="inline-block text-xs font-bold px-3 py-1 rounded-full mb-3"
-            style={{ background: "rgba(0,0,0,0.2)", color: "#fff" }}
-          >
-            📖 Чтение
-          </span>
-          <h2 className="text-xl font-extrabold leading-tight text-white" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.2)" }}>
-            {challenge.bookTitle || challenge.title}
-          </h2>
-          {challenge.bookAuthor && (
-            <p className="text-sm mt-1 text-white opacity-80">
-              {challenge.bookAuthor}
-            </p>
-          )}
-          <div className="flex gap-3 mt-3">
-            <span className="text-xs text-white opacity-70">
-              🎂 {challenge.ageMin}–{challenge.ageMax} лет
-            </span>
-            <span className="text-xs text-white opacity-70">
-              📅 {challenge.days} дней
-            </span>
-          </div>
+          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 900, color: "#ffffff", lineHeight: 1.2 }}>{challenge.bookTitle || challenge.title}</h2>
+          <p style={{ margin: "4px 0 0", fontSize: 13, color: "rgba(255,255,255,0.75)" }}>
+            {challenge.ageMin}–{challenge.ageMax} лет · {challenge.days} дней
+          </p>
         </div>
 
-        <div className="p-5 space-y-4">
-          {/* Expert */}
-          {challenge.author?.name && (
-            <div
-              className="flex items-center gap-3 rounded-2xl p-3"
-              style={{ border: "1px solid var(--line)" }}
-            >
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
-                style={{ background: bg }}
-              >
-                {challenge.author.name[0]}
-              </div>
-              <div>
-                <p className="font-bold text-sm" style={{ color: "var(--ink)" }}>
-                  {challenge.author.name}
-                </p>
-                <p className="text-xs" style={{ color: "var(--muted)" }}>
-                  Автор челленджа
-                </p>
-              </div>
-            </div>
-          )}
-
+        <div style={{ padding: "20px 20px 32px", display: "flex", flexDirection: "column", gap: 16 }}>
           {/* Child selector */}
           <div>
-            <label className="block text-xs font-semibold mb-1.5" style={{ color: "var(--muted)" }}>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.65)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
               Для кого покупаем?
             </label>
             {children.length === 0 ? (
-              <p className="text-sm py-3 text-center rounded-xl" style={{ background: "var(--soft)", color: "var(--muted)" }}>
+              <p style={{ fontSize: 14, textAlign: "center", padding: "12px 0", color: "rgba(255,255,255,0.55)" }}>
                 Нет детей. Добавьте в кабинете.
               </p>
             ) : (
               <select
                 value={childId}
                 onChange={(e) => setChildId(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border text-base outline-none appearance-none"
-                style={{ borderColor: "var(--line)", color: "var(--ink)", background: "var(--soft)" }}
+                className="glass-input"
+                style={{ appearance: "none", cursor: "pointer" }}
               >
-                <option value="">— выберите ребёнка —</option>
+                <option value="" style={{ background: "#2a1a60" }}>— выберите ребёнка —</option>
                 {children.map((ch) => (
-                  <option key={ch.id} value={ch.id}>
+                  <option key={ch.id} value={ch.id} style={{ background: "#2a1a60" }}>
                     {ch.name}, {ch.age} лет
                   </option>
                 ))}
@@ -256,143 +171,61 @@ function PurchaseModal({
             )}
           </div>
 
-          {/* Challenge price (fixed) */}
-          <div
-            className="rounded-2xl p-4 flex items-center justify-between"
-            style={{ border: "1px solid var(--line)" }}
-          >
+          {/* Price */}
+          <div className="glass-sm" style={{ padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div>
-              <p className="font-bold text-sm" style={{ color: "var(--ink)" }}>
-                {challenge.title}
-              </p>
-              <p className="text-xs mt-0.5" style={{ color: "var(--muted)" }}>
-                Цену задаёт автор
-              </p>
+              <p style={{ margin: 0, fontWeight: 800, fontSize: 14, color: "#ffffff" }}>{challenge.title}</p>
+              <p style={{ margin: "3px 0 0", fontSize: 12, color: "rgba(255,255,255,0.55)" }}>Цена задания</p>
             </div>
-            <p className="text-xl font-extrabold" style={{ color: "var(--ink)" }}>
-              {challenge.price.toLocaleString()} ₸
-            </p>
+            <p style={{ margin: 0, fontWeight: 900, fontSize: 22, color: "#ffffff" }}>{challenge.price.toLocaleString()} ₸</p>
           </div>
 
-          {/* Coins for child */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <p className="text-sm font-bold" style={{ color: "var(--ink)" }}>
-                Монеты для ребёнка 🪙
-              </p>
-              <span className="text-xs" style={{ color: "var(--muted)" }}>
-                Сколько получит
-              </span>
+          {/* Coins slider */}
+          <div className="glass-sm" style={{ padding: 16 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
+              <p style={{ margin: 0, fontWeight: 800, fontSize: 14, color: "#ffffff" }}>Монеты для ребёнка 🪙</p>
+              <p style={{ margin: 0, fontWeight: 900, fontSize: 18, color: "#ffd200" }}>{coinsAmount.toLocaleString()}</p>
             </div>
-            <div
-              className="rounded-2xl p-4"
-              style={{ background: "linear-gradient(135deg, #f4f1ff, #efeaff)", border: "1px solid #e6dffb" }}
-            >
-              <div className="flex items-baseline justify-between mb-2">
-                <p className="text-2xl font-extrabold" style={{ color: "var(--green)" }}>
-                  {coinsAmount.toLocaleString()}{" "}
-                  <span className="text-base font-bold">монет</span>
-                </p>
-                <p className="text-lg font-extrabold" style={{ color: "var(--ink)" }}>
-                  {coinsTg.toLocaleString()} ₸
-                </p>
-              </div>
-              <span
-                className="inline-block text-xs font-bold px-3 py-1 rounded-full mb-3"
-                style={{ background: "#fff", border: "1px solid #e6dffb", color: "var(--purple)" }}
-              >
-                Курс: 1 ₸ = 10 монет
-              </span>
-              <input
-                type="range"
-                min={0}
-                max={COIN_MAX}
-                step={COIN_STEP}
-                value={coinsAmount}
-                onChange={(e) => setCoinsAmount(Number(e.target.value))}
-                className="w-full"
-                style={{ accentColor: "var(--green)" }}
-              />
-              <div className="flex justify-between text-xs mt-1" style={{ color: "var(--muted)" }}>
-                <span>0</span>
-                <span>50 000 монет</span>
-              </div>
-              {coinsTg > 0 && (
-                <p className="text-xs text-center mt-2 font-semibold" style={{ color: "var(--green)" }}>
-                  + {coinsTg.toLocaleString()} ₸ доп. оплата за монеты
-                </p>
-              )}
+            <p style={{ margin: "0 0 12px", fontSize: 12, color: "rgba(255,255,255,0.55)" }}>+ {coinsTg.toLocaleString()} ₸</p>
+            <input
+              type="range"
+              min={0}
+              max={COIN_MAX}
+              step={COIN_STEP}
+              value={coinsAmount}
+              onChange={(e) => setCoinsAmount(Number(e.target.value))}
+              style={{ width: "100%", accentColor: "#ffd200" }}
+            />
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 4 }}>
+              <span>0</span>
+              <span>50 000 монет</span>
             </div>
-          </div>
-
-          {/* Breakdown — collapsible */}
-          <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid var(--line)" }}>
-            <button
-              onClick={() => setShowBreakdown(!showBreakdown)}
-              className="w-full p-4 flex items-center justify-between text-left"
-              style={{ background: "var(--soft)" }}
-            >
-              <p className="text-xs font-bold uppercase tracking-wide" style={{ color: "var(--muted)" }}>
-                Детали оплаты
-              </p>
-              <span style={{ color: "var(--muted)", fontSize: 12 }}>
-                {showBreakdown ? "▲" : "▼"}
-              </span>
-            </button>
-            {showBreakdown && (
-              <div className="p-4 pt-0" style={{ background: "var(--soft)" }}>
-                <div className="flex h-2 rounded-full overflow-hidden gap-0.5 mb-3 mt-3">
-                  <div style={{ flex: expPct, background: "var(--purple)", borderRadius: 4 }} />
-                  <div style={{ flex: platPct, background: "var(--orange)", borderRadius: 4 }} />
-                  {coinsTg > 0 && <div style={{ flex: coinPct, background: "var(--green)", borderRadius: 4 }} />}
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="flex items-center gap-2" style={{ color: "#4a4658" }}>
-                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: "var(--purple)" }} />
-                      Эксперт (15%)
-                    </span>
-                    <span className="font-bold" style={{ color: "var(--ink)" }}>{expert.toLocaleString()} ₸</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="flex items-center gap-2" style={{ color: "#4a4658" }}>
-                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: "var(--orange)" }} />
-                      Платформа Barsum (85%)
-                    </span>
-                    <span className="font-bold" style={{ color: "var(--ink)" }}>{platform.toLocaleString()} ₸</span>
-                  </div>
-                  {coinsTg > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span className="flex items-center gap-2" style={{ color: "#4a4658" }}>
-                        <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: "var(--green)" }} />
-                        Монеты ребёнку
-                      </span>
-                      <span className="font-bold" style={{ color: "var(--ink)" }}>{coinsTg.toLocaleString()} ₸</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Total + buy */}
-          <div className="flex items-center justify-between pt-1">
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 4 }}>
             <div>
-              <p className="text-xs" style={{ color: "var(--muted)" }}>Итого к оплате</p>
-              <p className="text-2xl font-extrabold" style={{ color: "var(--ink)" }}>
-                {total.toLocaleString()} ₸
-              </p>
+              <p style={{ margin: 0, fontSize: 12, color: "rgba(255,255,255,0.55)" }}>Итого</p>
+              <p style={{ margin: "2px 0 0", fontWeight: 900, fontSize: 26, color: "#ffffff" }}>{total.toLocaleString()} ₸</p>
             </div>
             <button
               onClick={() => createMutation.mutate()}
               disabled={!childId || createMutation.isPending}
-              className="px-5 py-4 rounded-2xl font-bold text-white text-sm transition-opacity disabled:opacity-40"
               style={{
-                background: "var(--purple)",
-                boxShadow: "0 8px 20px -6px rgba(123,97,255,0.6)",
+                padding: "16px 20px",
+                borderRadius: 16,
+                border: "none",
+                background: "rgba(255,255,255,0.9)",
+                color: "#4776e6",
+                fontWeight: 900,
+                fontSize: 14,
+                cursor: "pointer",
+                fontFamily: "inherit",
+                opacity: (!childId || createMutation.isPending) ? 0.45 : 1,
+                transition: "opacity 0.15s",
               }}
             >
-              {createMutation.isPending ? "Оформление..." : `Купить за ${total.toLocaleString()} ₸ 🚀`}
+              {createMutation.isPending ? "Оформление..." : `Купить 🚀`}
             </button>
           </div>
         </div>
@@ -403,29 +236,21 @@ function PurchaseModal({
 
 function SuccessModal({ onClose }: { onClose: () => void }) {
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: "rgba(0,0,0,0.5)" }}
-    >
-      <div className="w-full max-w-sm rounded-3xl p-8 text-center" style={{ background: "#fff" }}>
-        <div
-          className="w-20 h-20 rounded-full flex items-center justify-center text-4xl mx-auto mb-5"
-          style={{ background: "#DCFCE7", boxShadow: "0 4px 0 #bbf7d0" }}
-        >
-          ✅
-        </div>
-        <h2 className="text-2xl font-extrabold mb-2" style={{ color: "var(--ink)" }}>
-          Покупка оформлена!
-        </h2>
-        <p className="text-sm mb-6" style={{ color: "var(--muted)" }}>
-          Ребёнок получит доступ к челленджу после подтверждения оплаты.
+    <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: 24, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}>
+      <div
+        className="glass"
+        style={{ width: "100%", maxWidth: 340, padding: 40, textAlign: "center" }}
+      >
+        <div style={{ fontSize: 64, marginBottom: 20 }}>🎉</div>
+        <h2 style={{ margin: 0, fontSize: 24, fontWeight: 900, color: "#ffffff" }}>Покупка оформлена!</h2>
+        <p style={{ margin: "10px 0 28px", fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.65)", lineHeight: 1.5 }}>
+          Ребёнок получит доступ к заданию после подтверждения оплаты.
         </p>
         <button
           onClick={onClose}
-          className="w-full py-4 rounded-2xl font-bold text-white"
-          style={{ background: "var(--green)", boxShadow: "0 4px 0 var(--green-deep)" }}
+          style={{ width: "100%", padding: "15px 0", borderRadius: 9999, border: "none", background: "rgba(255,255,255,0.9)", color: "#4776e6", fontWeight: 900, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}
         >
-          Перейти к покупкам
+          Отлично!
         </button>
       </div>
     </div>
@@ -451,7 +276,6 @@ export default function ParentHomePage() {
   });
 
   const ageConfig = AGE_FILTERS.find((f) => f.value === ageFilter);
-
   const filteredChallenges = (challenges as any[]).filter((c) => {
     if (c.status !== "published") return false;
     if (ageConfig && ageConfig.value !== "") {
@@ -466,73 +290,72 @@ export default function ParentHomePage() {
     queryClient.invalidateQueries({ queryKey: ["payments"] });
   };
 
-  const handleSuccessClose = () => {
-    setShowSuccess(false);
-    router.push("/parent/cabinet");
-  };
-
   return (
-    <main className="min-h-screen pb-16" style={{ background: "var(--bg)" }}>
-      {/* Top bar */}
+    <main style={{ minHeight: "100dvh", paddingBottom: 24 }}>
+      {/* Header */}
       <div
-        className="sticky top-0 z-10 px-5 pt-5 pb-3"
-        style={{ background: "var(--bg)" }}
+        className="glass-header"
+        style={{ padding: "52px 20px 16px", position: "sticky", top: 0, zIndex: 10 }}
       >
-        <div className="flex items-center justify-between mb-3">
-          <h1 className="text-2xl font-extrabold" style={{ color: "var(--ink)" }}>
-            Каталог челленджей
-          </h1>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 900, color: "#ffffff" }}>Каталог заданий</h1>
           <button
             onClick={() => router.push("/parent/cabinet")}
-            className="text-sm font-semibold px-3 py-2 rounded-xl"
-            style={{ background: "var(--surface)", color: "var(--muted)" }}
+            className="glass-chip"
+            style={{ padding: "8px 14px", border: "1px solid rgba(255,255,255,0.25)", cursor: "pointer", background: "rgba(255,255,255,0.12)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", borderRadius: 9999, color: "#ffffff", fontWeight: 700, fontSize: 13, fontFamily: "inherit" }}
           >
             ← Кабинет
           </button>
         </div>
 
-        {/* Age filter chips */}
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-          {AGE_FILTERS.map((f) => (
-            <button
-              key={f.value}
-              onClick={() => setAgeFilter(f.value)}
-              className="flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold transition-all"
-              style={
-                ageFilter === f.value
-                  ? { background: "var(--purple)", color: "#fff" }
-                  : { background: "var(--card)", color: "var(--muted)", border: "1.5px solid rgba(124,58,237,0.15)" }
-              }
-            >
-              {f.label}
-            </button>
-          ))}
+        {/* Age filters */}
+        <div className="scrollbar-hide" style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
+          {AGE_FILTERS.map((f) => {
+            const active = ageFilter === f.value;
+            return (
+              <button
+                key={f.value}
+                onClick={() => setAgeFilter(f.value)}
+                style={{
+                  flexShrink: 0,
+                  padding: "8px 16px",
+                  borderRadius: 9999,
+                  border: active ? "none" : "1px solid rgba(255,255,255,0.22)",
+                  background: active ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.1)",
+                  color: active ? "#4776e6" : "rgba(255,255,255,0.75)",
+                  fontWeight: active ? 900 : 600,
+                  fontSize: 13,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  transition: "all 0.15s",
+                }}
+              >
+                {f.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      <div className="px-5">
+      <div style={{ padding: "16px 20px 0" }}>
         {loadingChallenges ? (
-          <div className="grid grid-cols-2 gap-3">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="rounded-3xl h-56 animate-pulse" style={{ background: "var(--card)" }} />
+              <div key={i} className="glass-card" style={{ height: 220, animation: "pulse 2s infinite" }} />
             ))}
           </div>
         ) : filteredChallenges.length === 0 ? (
-          <div className="rounded-3xl p-12 text-center" style={{ background: "var(--card)" }}>
-            <p className="text-6xl mb-4">📚</p>
-            <p className="font-extrabold text-lg" style={{ color: "var(--ink)" }}>Нет челленджей</p>
-            <p className="text-sm mt-2 max-w-xs mx-auto" style={{ color: "var(--muted)" }}>
-              Попробуйте изменить фильтр возраста или зайдите позже
+          <div className="glass" style={{ padding: 48, textAlign: "center" }}>
+            <p style={{ fontSize: 56, margin: "0 0 16px" }}>📚</p>
+            <p style={{ margin: 0, fontWeight: 900, fontSize: 18, color: "#ffffff" }}>Нет заданий</p>
+            <p style={{ margin: "8px 0 0", fontSize: 14, color: "rgba(255,255,255,0.55)" }}>
+              Попробуйте изменить фильтр возраста
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             {filteredChallenges.map((c: any) => (
-              <ChallengeGridCard
-                key={c.id}
-                challenge={c}
-                onBuy={() => setSelectedChallenge(c)}
-              />
+              <ChallengeCard key={c.id} challenge={c} onBuy={() => setSelectedChallenge(c)} />
             ))}
           </div>
         )}
@@ -547,7 +370,7 @@ export default function ParentHomePage() {
         />
       )}
 
-      {showSuccess && <SuccessModal onClose={handleSuccessClose} />}
+      {showSuccess && <SuccessModal onClose={() => { setShowSuccess(false); router.push("/parent/cabinet"); }} />}
     </main>
   );
 }

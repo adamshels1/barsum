@@ -1,115 +1,130 @@
-import Link from "next/link";
-import { BookOpen, Users, Star } from "lucide-react";
+"use client";
 
-const roles = [
+import { BookOpen, Star, Users } from "lucide-react";
+import { useRouter } from "next/navigation";
+
+const ROLES = [
   {
-    href: "/auth/parent",
-    label: "Я родитель",
-    desc: "Покупаю курсы и слежу за прогрессом ребёнка",
-    Icon: Users,
-    bg: "#7B61FF",
-    shadow: "#5B41DF",
-  },
-  {
-    href: "/auth/child",
-    label: "Я ребёнок",
-    desc: "Читаю книги и зарабатываю монеты",
+    key: "child",
+    label: "Ребёнок",
+    sub: "Читай книги, зарабатывай монеты",
     Icon: BookOpen,
-    bg: "#10B981",
-    shadow: "#059669",
+    gradient: "linear-gradient(135deg, #11998e, #38ef7d)",
+    href: "/auth/child",
   },
   {
-    href: "/auth/expert",
-    label: "Я эксперт",
-    desc: "Создаю образовательные задания",
+    key: "parent",
+    label: "Родитель",
+    sub: "Мотивируй своего ребёнка",
+    Icon: Users,
+    gradient: "linear-gradient(135deg, #4776e6, #8e54e9)",
+    href: "/auth/parent",
+  },
+  {
+    key: "expert",
+    label: "Эксперт",
+    sub: "Создавай задания для детей",
     Icon: Star,
-    bg: "#F97316",
-    shadow: "#EA580C",
+    gradient: "linear-gradient(135deg, #fc4a1a, #f7b733)",
+    href: "/auth/expert",
   },
 ];
 
-export default function HomePage() {
+export default function LandingPage() {
+  const router = useRouter();
+
   return (
     <main
-      className="min-h-screen flex flex-col items-center justify-center p-6"
-      style={{ background: "var(--background)" }}
+      style={{
+        minHeight: "100dvh",
+        background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 45%, #0f3460 100%)",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "28px 20px",
+      }}
     >
+      {/* Decorative blobs */}
+      <div style={{ position: "fixed", top: "-20%", left: "-10%", width: 320, height: 320, borderRadius: "50%", background: "rgba(71,118,230,0.22)", filter: "blur(80px)", pointerEvents: "none" }} />
+      <div style={{ position: "fixed", bottom: "-15%", right: "-10%", width: 280, height: 280, borderRadius: "50%", background: "rgba(142,84,233,0.18)", filter: "blur(70px)", pointerEvents: "none" }} />
+
       {/* Logo */}
-      <div className="mb-10 text-center">
+      <div style={{ textAlign: "center", marginBottom: 52, position: "relative", zIndex: 1 }}>
         <div
-          className="inline-flex items-center justify-center w-24 h-24 rounded-3xl mb-5"
           style={{
-            background: "var(--purple)",
-            boxShadow: "0 6px 0 var(--purple-deep), 0 10px 32px rgba(123,97,255,0.35)",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 72,
+            height: 72,
+            borderRadius: 24,
+            marginBottom: 16,
+            background: "rgba(255,255,255,0.1)",
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+            border: "1px solid rgba(255,255,255,0.18)",
           }}
         >
-          <BookOpen size={44} color="#fff" strokeWidth={2.5} />
+          <span style={{ fontSize: 36 }}>📚</span>
         </div>
-        <h1
-          className="text-5xl font-black tracking-tight leading-none"
-          style={{ color: "var(--ink)" }}
-        >
-          Barsum
+        <h1 style={{ fontSize: 40, fontWeight: 900, color: "#ffffff", lineHeight: 1, letterSpacing: "-1px", margin: 0 }}>
+          barsum
         </h1>
-        <p
-          className="text-base mt-2.5 font-semibold"
-          style={{ color: "var(--muted)" }}
-        >
-          Читай книги — исполняй мечты ✨
+        <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, fontWeight: 600, marginTop: 8, letterSpacing: "0.12em", textTransform: "uppercase" }}>
+          Читай · Зарабатывай · Мечтай
         </p>
       </div>
 
       {/* Role cards */}
-      <div className="w-full max-w-sm flex flex-col gap-4">
-        {roles.map((role) => {
-          const { Icon } = role;
-          return (
-            <Link
-              key={role.href}
-              href={role.href}
-              className="flex items-center gap-4 p-5 rounded-3xl transition-transform active:scale-[0.97] active:translate-y-1 cursor-pointer"
+      <div style={{ width: "100%", maxWidth: 380, display: "flex", flexDirection: "column", gap: 12, position: "relative", zIndex: 1 }}>
+        {ROLES.map(({ key, label, sub, Icon, gradient, href }) => (
+          <button
+            key={key}
+            onClick={() => router.push(href)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 16,
+              padding: "18px 20px",
+              background: "rgba(255,255,255,0.07)",
+              backdropFilter: "blur(20px)",
+              WebkitBackdropFilter: "blur(20px)",
+              border: "1px solid rgba(255,255,255,0.13)",
+              borderRadius: 20,
+              textAlign: "left",
+              cursor: "pointer",
+              width: "100%",
+            }}
+          >
+            <div
               style={{
-                background: role.bg,
-                boxShadow: `0 5px 0 ${role.shadow}, 0 10px 28px ${role.shadow}55`,
+                width: 52,
+                height: 52,
+                borderRadius: 16,
+                background: gradient,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+                boxShadow: "0 4px 16px rgba(0,0,0,0.25)",
               }}
             >
-              <div
-                className="flex items-center justify-center w-14 h-14 rounded-2xl flex-shrink-0"
-                style={{ background: "rgba(255,255,255,0.22)" }}
-              >
-                <Icon size={28} color="#fff" strokeWidth={2.5} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-lg font-black text-white leading-tight">
-                  {role.label}
-                </p>
-                <p className="text-sm text-white mt-0.5" style={{ opacity: 0.82 }}>
-                  {role.desc}
-                </p>
-              </div>
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="white"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{ opacity: 0.7, flexShrink: 0 }}
-              >
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
-            </Link>
-          );
-        })}
+              <Icon size={24} color="#ffffff" strokeWidth={2.5} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <p style={{ color: "#ffffff", fontWeight: 800, fontSize: 17, margin: 0 }}>{label}</p>
+              <p style={{ color: "rgba(255,255,255,0.48)", fontSize: 13, fontWeight: 500, margin: "3px 0 0" }}>{sub}</p>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.32)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </button>
+        ))}
       </div>
 
-      <p
-        className="mt-10 text-xs text-center font-semibold"
-        style={{ color: "var(--muted)" }}
-      >
-        Образовательная платформа для детей Казахстана 🇰🇿
+      <p style={{ color: "rgba(255,255,255,0.22)", fontSize: 12, marginTop: 40, fontWeight: 600, position: "relative", zIndex: 1 }}>
+        Образовательная платформа · Казахстан
       </p>
     </main>
   );

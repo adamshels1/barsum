@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, LogOut, Rocket, Star } from "lucide-react";
+import { BookOpen, LogOut, Rocket, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -11,56 +11,54 @@ import { sessionsApi } from "@/lib/api/sessions";
 import { useAuthStore } from "@/stores/auth-store";
 
 const DAY_LABELS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
-const CARD_COLORS = ["#7B61FF", "#10B981", "#F97316", "#F472B6", "#38BDF8"];
+const CARD_COLORS = [
+  "linear-gradient(135deg, #667eea, #764ba2)",
+  "linear-gradient(135deg, #f7971e, #ffd200)",
+  "linear-gradient(135deg, #fc4a1a, #f7b733)",
+  "linear-gradient(135deg, #a18cd1, #fbc2eb)",
+  "linear-gradient(135deg, #0f9b8e, #38ef7d)",
+];
 
 function StreakRow({ streak }: { streak: number }) {
   const today = new Date().getDay();
   const todayIdx = today === 0 ? 6 : today - 1;
 
   return (
-    <div
-      className="rounded-2xl p-4 mb-4"
-      style={{ background: "#fff", boxShadow: "var(--shadow-sm)" }}
-    >
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-xs font-black uppercase tracking-wide" style={{ color: "var(--muted)" }}>
+    <div className="glass" style={{ padding: 16, marginBottom: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+        <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.65)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
           Серия дней
         </p>
-        <div
-          className="flex items-center gap-1.5 px-3 py-1 rounded-full"
-          style={{ background: "#FFF7ED" }}
-        >
-          <span className="text-sm">🔥</span>
-          <span className="font-black text-sm" style={{ color: "#EA580C" }}>
-            {streak} дней
-          </span>
+        <div className="glass-chip" style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 12px" }}>
+          <span style={{ fontSize: 14 }}>🔥</span>
+          <span style={{ fontWeight: 900, fontSize: 14, color: "#ffd200" }}>{streak} дней</span>
         </div>
       </div>
-      <div className="flex gap-1.5">
+      <div style={{ display: "flex", gap: 6 }}>
         {DAY_LABELS.map((day, i) => {
           const daysAgo = todayIdx - i;
           const isFilled = daysAgo >= 0 && daysAgo < streak;
           const isToday = i === todayIdx;
-
           return (
-            <div key={day} className="flex flex-col items-center gap-1 flex-1">
+            <div key={day} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, flex: 1 }}>
               <div
-                className="w-full aspect-square rounded-xl flex items-center justify-center text-xs font-black transition-all"
                 style={{
-                  background: isFilled
-                    ? isToday ? "#EA580C" : "#FED7AA"
-                    : isToday ? "var(--purple-light)" : "#F3F4F6",
-                  color: isFilled
-                    ? isToday ? "#fff" : "#EA580C"
-                    : isToday ? "var(--purple)" : "var(--muted)",
-                  border: isToday ? `2px solid ${isFilled ? "#EA580C" : "var(--purple)"}` : "2px solid transparent",
+                  width: "100%",
+                  aspectRatio: "1/1",
+                  borderRadius: 10,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 12,
+                  fontWeight: 900,
+                  background: isFilled ? "rgba(255,255,255,0.9)" : isToday ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.08)",
+                  color: isFilled ? "#0a7a62" : "rgba(255,255,255,0.7)",
+                  border: isToday ? "1px solid rgba(255,255,255,0.5)" : "1px solid transparent",
                 }}
               >
                 {isFilled ? "✓" : "·"}
               </div>
-              <span className="text-xs font-bold" style={{ color: "var(--muted)", fontSize: 9 }}>
-                {day}
-              </span>
+              <span style={{ fontWeight: 700, color: "rgba(255,255,255,0.45)", fontSize: 9 }}>{day}</span>
             </div>
           );
         })}
@@ -69,144 +67,98 @@ function StreakRow({ streak }: { streak: number }) {
   );
 }
 
-function DreamCard({
-  dream,
-  currentBalance,
-  onSend,
-  isSending,
-}: {
-  dream: any;
-  currentBalance: number;
-  onSend: (amount: number) => void;
-  isSending: boolean;
+function DreamCard({ dream, currentBalance, onSend, isSending }: {
+  dream: any; currentBalance: number;
+  onSend: (amount: number) => void; isSending: boolean;
 }) {
   const [sendAmount, setSendAmount] = useState("");
-  const progress =
-    dream.status === "active" && dream.targetCoins > 0
-      ? Math.min((dream.savedCoins / dream.targetCoins) * 100, 100)
-      : 0;
+  const progress = dream.status === "active" && dream.targetCoins > 0
+    ? Math.min((dream.savedCoins / dream.targetCoins) * 100, 100) : 0;
 
   if (dream.status === "pending_approval") {
     return (
-      <div
-        className="rounded-2xl p-4 mb-4 flex items-center gap-3"
-        style={{ background: "#FEF3C7", border: "1.5px solid #FDE68A" }}
-      >
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-xl" style={{ background: "#FDE68A" }}>
-          ⏳
-        </div>
+      <div className="glass" style={{ padding: 16, marginBottom: 12, display: "flex", alignItems: "center", gap: 12, border: "1px solid rgba(255,210,0,0.4)" }}>
+        <span style={{ fontSize: 28 }}>⏳</span>
         <div>
-          <p className="font-black text-sm" style={{ color: "#78350F" }}>{dream.name}</p>
-          <p className="text-xs mt-0.5" style={{ color: "#92400E" }}>Ждёт одобрения родителя</p>
+          <p style={{ margin: 0, fontWeight: 900, fontSize: 15, color: "#ffffff" }}>{dream.name}</p>
+          <p style={{ margin: "4px 0 0", fontSize: 12, fontWeight: 600, color: "#ffd200" }}>Ждёт одобрения родителя</p>
         </div>
       </div>
     );
   }
-
   if (dream.status === "rejected") {
     return (
-      <div
-        className="rounded-2xl p-4 mb-4"
-        style={{ background: "#FEE2E2", border: "1.5px solid #FECACA" }}
-      >
-        <p className="font-black text-sm mb-1" style={{ color: "#7F1D1D" }}>{dream.name}</p>
-        <p className="text-xs" style={{ color: "#B91C1C" }}>Мечта отклонена</p>
-        {dream.rejectedReason && (
-          <p className="text-xs mt-1" style={{ color: "#B91C1C" }}>
-            Причина: {dream.rejectedReason}
-          </p>
-        )}
+      <div className="glass" style={{ padding: 16, marginBottom: 12, border: "1px solid rgba(255,120,100,0.4)" }}>
+        <p style={{ margin: 0, fontWeight: 900, fontSize: 15, color: "#ffffff" }}>{dream.name}</p>
+        <p style={{ margin: "4px 0 0", fontSize: 12, fontWeight: 600, color: "#ffb3b3" }}>
+          Мечта отклонена{dream.rejectedReason ? `: ${dream.rejectedReason}` : ""}
+        </p>
       </div>
     );
   }
 
   return (
     <div
-      className="rounded-2xl mb-4 overflow-hidden relative"
+      className="glass"
       style={{
+        marginBottom: 12,
+        overflow: "hidden",
+        position: "relative",
         minHeight: 140,
-        background: dream.photoUrl
-          ? `url(${dream.photoUrl}) center/cover`
-          : "linear-gradient(135deg, var(--purple-light), #ddd6ff)",
-        border: "1.5px solid #ddd6ff",
+        ...(dream.photoUrl ? {
+          backgroundImage: `url(${dream.photoUrl})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        } : {}),
       }}
     >
-      {dream.photoUrl && (
-        <div
-          className="absolute inset-0"
-          style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.65))" }}
-        />
-      )}
-      <div className="relative p-4">
-        <div className="flex items-center justify-between mb-2">
+      {dream.photoUrl && <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)", borderRadius: 20 }} />}
+      <div style={{ position: "relative", padding: 16 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
           <div>
-            <p
-              className="text-xs font-black uppercase tracking-wide"
-              style={{ color: dream.photoUrl ? "rgba(255,255,255,0.85)" : "var(--purple)" }}
-            >
-              Моя мечта 💫
-            </p>
-            <p
-              className="font-black text-base"
-              style={{ color: dream.photoUrl ? "#fff" : "var(--ink)" }}
-            >
-              {dream.name}
-            </p>
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.7)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Моя мечта</p>
+            <p style={{ margin: "4px 0 0", fontWeight: 900, fontSize: 16, color: "#ffffff" }}>{dream.name}</p>
           </div>
-          <span
-            className="text-sm font-black px-3 py-1 rounded-full"
-            style={{
-              background: dream.photoUrl ? "rgba(255,255,255,0.25)" : "var(--purple)",
-              color: "#fff",
-            }}
-          >
+          <span className="glass-chip" style={{ padding: "4px 10px", fontSize: 13, fontWeight: 900, color: "#ffffff" }}>
             {Math.round(progress)}%
           </span>
         </div>
-        <div
-          className="w-full h-2.5 rounded-full overflow-hidden mb-2"
-          style={{ background: dream.photoUrl ? "rgba(255,255,255,0.3)" : "#ddd6ff" }}
-        >
-          <div
-            className="h-full rounded-full transition-all duration-700"
-            style={{
-              width: `${progress}%`,
-              background: dream.photoUrl ? "#fff" : "var(--purple)",
-            }}
-          />
+        <div style={{ height: 6, borderRadius: 9999, background: "rgba(255,255,255,0.2)", overflow: "hidden", marginBottom: 8 }}>
+          <div style={{ height: "100%", width: `${progress}%`, background: "rgba(255,255,255,0.9)", borderRadius: 9999, transition: "width 0.7s ease" }} />
         </div>
-        <div
-          className="flex justify-between text-xs mb-3 font-semibold"
-          style={{ color: dream.photoUrl ? "rgba(255,255,255,0.75)" : "var(--muted)" }}
-        >
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.6)", marginBottom: 12 }}>
           <span>🪙 {dream.savedCoins.toLocaleString()} накоплено</span>
           <span>цель: {dream.targetCoins.toLocaleString()}</span>
         </div>
         {currentBalance > 0 && (
-          <div className="flex gap-2">
+          <div style={{ display: "flex", gap: 8 }}>
             <input
               type="number"
               value={sendAmount}
               onChange={(e) => setSendAmount(e.target.value)}
               placeholder="Монет в мечту..."
-              className="flex-1 px-3 py-2 rounded-xl text-sm font-semibold outline-none"
-              style={{
-                background: dream.photoUrl ? "rgba(255,255,255,0.2)" : "#fff",
-                color: dream.photoUrl ? "#fff" : "var(--ink)",
-                border: dream.photoUrl ? "1px solid rgba(255,255,255,0.4)" : "1.5px solid #ddd6ff",
-              }}
+              className="glass-input"
+              style={{ flex: 1, padding: "10px 14px", fontSize: 14, borderRadius: 12 }}
             />
             <button
               onClick={() => {
                 const amt = Number(sendAmount);
-                if (amt > 0 && amt <= currentBalance) {
-                  onSend(amt);
-                  setSendAmount("");
-                }
+                if (amt > 0 && amt <= currentBalance) { onSend(amt); setSendAmount(""); }
               }}
               disabled={!sendAmount || Number(sendAmount) < 1 || Number(sendAmount) > currentBalance || isSending}
-              className="px-3 py-2 rounded-xl text-sm font-black flex-shrink-0 disabled:opacity-50 transition-opacity"
-              style={{ background: "var(--purple)", color: "#fff" }}
+              style={{
+                padding: "10px 16px",
+                borderRadius: 12,
+                border: "none",
+                background: "rgba(255,255,255,0.9)",
+                color: "#0a7a62",
+                fontWeight: 900,
+                fontSize: 13,
+                cursor: "pointer",
+                flexShrink: 0,
+                fontFamily: "inherit",
+                opacity: (!sendAmount || Number(sendAmount) < 1 || Number(sendAmount) > currentBalance || isSending) ? 0.4 : 1,
+              }}
             >
               Внести
             </button>
@@ -258,115 +210,70 @@ export default function ChildHomePage() {
   });
 
   const totalCoinsToEarn = (enrollments as any[]).reduce(
-    (sum: number, e: any) => sum + (e.challenge?.coinsReward ?? 0),
-    0
+    (sum: number, e: any) => sum + (e.challenge?.coinsReward ?? 0), 0
   );
 
   return (
-    <main className="min-h-screen p-5 max-w-lg mx-auto">
+    <main style={{ padding: "20px 20px 8px", maxWidth: 480, margin: "0 auto" }}>
       <StreakRow streak={streak} />
 
       {totalCoinsToEarn > 0 && (
-        <div
-          className="rounded-2xl p-4 mb-4 flex items-center gap-3"
-          style={{ background: "#fff", boxShadow: "var(--shadow-sm)" }}
-        >
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: "var(--green-light)" }}
-          >
-            <Rocket size={20} color="var(--green)" strokeWidth={2.5} />
+        <div className="glass" style={{ padding: 16, marginBottom: 12, display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ width: 44, height: 44, borderRadius: 14, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <Rocket size={20} color="#ffffff" strokeWidth={2.5} />
           </div>
           <div>
-            <p className="text-xs font-bold" style={{ color: "var(--muted)" }}>
-              Ещё заработаю за все курсы
-            </p>
-            <p className="font-black text-lg" style={{ color: "var(--green)" }}>
-              +{totalCoinsToEarn.toLocaleString()} монет
-            </p>
+            <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.65)" }}>Ещё заработаю за все курсы</p>
+            <p style={{ margin: "2px 0 0", fontWeight: 900, fontSize: 18, color: "#ffffff" }}>+{totalCoinsToEarn.toLocaleString()} монет</p>
           </div>
         </div>
       )}
 
       {dream ? (
-        <DreamCard
-          dream={dream}
-          currentBalance={currentBalance}
-          onSend={(amt) => sendMutation.mutate(amt)}
-          isSending={sendMutation.isPending}
-        />
+        <DreamCard dream={dream} currentBalance={currentBalance} onSend={(amt) => sendMutation.mutate(amt)} isSending={sendMutation.isPending} />
       ) : (
         <button
           onClick={() => router.push("/child/shop?tab=dream")}
-          className="w-full rounded-2xl p-4 mb-4 flex items-center gap-3 text-left transition-transform active:scale-[0.98]"
-          style={{
-            background: "linear-gradient(135deg, var(--purple-light), #ddd6ff)",
-            border: "1.5px solid #ddd6ff",
-          }}
+          className="glass"
+          style={{ width: "100%", marginBottom: 12, padding: 16, display: "flex", alignItems: "center", gap: 12, textAlign: "left", cursor: "pointer", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 20, background: "rgba(255,255,255,0.08)" }}
         >
-          <div
-            className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: "var(--purple)", boxShadow: "0 3px 0 var(--purple-deep)" }}
-          >
-            <Star size={22} color="#fff" strokeWidth={2.5} />
+          <div style={{ width: 48, height: 48, borderRadius: 16, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <Sparkles size={22} color="#ffffff" strokeWidth={2.5} />
           </div>
-          <div className="flex-1">
-            <p className="font-black text-sm" style={{ color: "var(--purple)" }}>
-              Добавь свою мечту!
-            </p>
-            <p className="text-xs font-semibold mt-0.5" style={{ color: "var(--muted)" }}>
-              Родители помогут её осуществить
-            </p>
+          <div style={{ flex: 1 }}>
+            <p style={{ margin: 0, fontWeight: 900, fontSize: 15, color: "#ffffff" }}>Добавь свою мечту!</p>
+            <p style={{ margin: "3px 0 0", fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.55)" }}>Родители помогут её осуществить</p>
           </div>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="9 18 15 12 9 6" />
           </svg>
         </button>
       )}
 
-      <h2 className="text-lg font-black mb-3" style={{ color: "var(--ink)" }}>
-        Мои книги
-      </h2>
+      <p style={{ fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>Мои книги</p>
 
       {isLoading ? (
-        <div className="flex gap-3 overflow-x-auto pb-2">
+        <div style={{ display: "flex", gap: 12, overflowX: "auto" }}>
           {[1, 2].map((i) => (
-            <div
-              key={i}
-              className="rounded-2xl h-44 w-52 flex-shrink-0 animate-pulse"
-              style={{ background: "#fff" }}
-            />
+            <div key={i} style={{ width: 176, height: 200, borderRadius: 20, flexShrink: 0, background: "rgba(255,255,255,0.1)", animation: "pulse 2s infinite" }} />
           ))}
         </div>
       ) : (enrollments as any[]).length === 0 ? (
-        <div
-          className="rounded-2xl p-10 text-center"
-          style={{ background: "#fff", boxShadow: "var(--shadow-sm)" }}
-        >
-          <div
-            className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
-            style={{ background: "var(--purple-light)" }}
-          >
-            <BookOpen size={28} color="var(--purple)" strokeWidth={2} />
+        <div className="glass" style={{ padding: 40, textAlign: "center" }}>
+          <div style={{ width: 56, height: 56, borderRadius: 18, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+            <BookOpen size={26} color="#ffffff" strokeWidth={2} />
           </div>
-          <p className="font-black text-base" style={{ color: "var(--ink)" }}>
-            Нет активных заданий
-          </p>
-          <p className="text-sm mt-1 font-semibold" style={{ color: "var(--muted)" }}>
-            Попроси родителей записать тебя на курс
-          </p>
+          <p style={{ margin: 0, fontWeight: 900, fontSize: 16, color: "#ffffff" }}>Нет активных заданий</p>
+          <p style={{ margin: "6px 0 0", fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.55)" }}>Попроси родителей записать тебя на курс</p>
         </div>
       ) : (
-        <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
+        <div className="scrollbar-hide" style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 8, marginLeft: -4, paddingLeft: 4 }}>
           {(enrollments as any[]).map((enrollment, idx) => {
             const ch = enrollment.challenge;
-            const colorIdx = (ch?.title ? ch.title.charCodeAt(0) % CARD_COLORS.length : idx % CARD_COLORS.length);
-            const cardColor = CARD_COLORS[colorIdx];
+            const colorIdx = ch?.title ? ch.title.charCodeAt(0) % CARD_COLORS.length : idx % CARD_COLORS.length;
+            const cardGrad = CARD_COLORS[colorIdx];
             const startDate = new Date(enrollment.startedAt || enrollment.createdAt);
-            const daysElapsed = Math.max(
-              1,
-              Math.floor((Date.now() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
-            );
+            const daysElapsed = Math.max(1, Math.floor((Date.now() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
             const currentDay = Math.min(daysElapsed, ch?.days ?? 1);
             const progress = ch?.days ? (currentDay / ch.days) * 100 : 0;
 
@@ -375,47 +282,38 @@ export default function ChildHomePage() {
                 key={enrollment.id}
                 onClick={() => startSession.mutate(enrollment.id)}
                 disabled={startSession.isPending}
-                className="flex-shrink-0 w-52 rounded-2xl overflow-hidden text-left transition-transform active:scale-95 disabled:opacity-70"
-                style={{ boxShadow: "var(--shadow-md)" }}
+                style={{
+                  flexShrink: 0,
+                  width: 176,
+                  borderRadius: 20,
+                  overflow: "hidden",
+                  textAlign: "left",
+                  cursor: startSession.isPending ? "not-allowed" : "pointer",
+                  opacity: startSession.isPending ? 0.7 : 1,
+                  background: "rgba(255,255,255,0.1)",
+                  backdropFilter: "blur(16px)",
+                  WebkitBackdropFilter: "blur(16px)",
+                  border: "1px solid rgba(255,255,255,0.18)",
+                  padding: 0,
+                  transition: "transform 0.15s",
+                }}
               >
-                {/* Cover */}
-                <div
-                  className="h-28 flex flex-col items-center justify-center p-3 relative"
-                  style={{ background: cardColor }}
-                >
-                  <p
-                    className="text-white font-black text-center leading-tight line-clamp-2 text-xs"
-                    style={{ textShadow: "0 1px 4px rgba(0,0,0,0.2)" }}
-                  >
+                <div style={{ height: 96, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 12, background: cardGrad }}>
+                  <p style={{ color: "#ffffff", fontWeight: 900, textAlign: "center", lineHeight: 1.3, fontSize: 12, margin: 0, textShadow: "0 1px 4px rgba(0,0,0,0.3)", WebkitLineClamp: 3, overflow: "hidden", display: "-webkit-box", WebkitBoxOrient: "vertical" }}>
                     {ch?.bookTitle || ch?.title || "Задание"}
                   </p>
                   {ch?.bookAuthor && (
-                    <p className="text-white text-xs mt-1 opacity-80 text-center">
-                      {ch.bookAuthor}
-                    </p>
+                    <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 10, margin: "4px 0 0", textAlign: "center" }}>{ch.bookAuthor}</p>
                   )}
                 </div>
-                {/* Info */}
-                <div className="p-3 bg-white">
-                  <p className="font-black text-sm line-clamp-1 mb-1" style={{ color: "var(--ink)" }}>
-                    {ch?.title || "Задание"}
-                  </p>
-                  <div className="w-full h-2 rounded-full overflow-hidden mb-1.5" style={{ background: "#F3F4F6" }}>
-                    <div
-                      className="h-full rounded-full"
-                      style={{ width: `${progress}%`, background: cardColor }}
-                    />
+                <div style={{ padding: 12 }}>
+                  <p style={{ fontWeight: 900, fontSize: 13, color: "#ffffff", margin: "0 0 8px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ch?.title || "Задание"}</p>
+                  <div style={{ height: 4, borderRadius: 9999, background: "rgba(255,255,255,0.2)", overflow: "hidden", marginBottom: 8 }}>
+                    <div style={{ height: "100%", width: `${progress}%`, background: "rgba(255,255,255,0.85)", borderRadius: 9999 }} />
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold" style={{ color: "var(--muted)" }}>
-                      День {currentDay}/{ch?.days}
-                    </span>
-                    <span
-                      className="text-xs font-black px-2 py-0.5 rounded-full"
-                      style={{ background: "var(--green-light)", color: "var(--green-deep)" }}
-                    >
-                      🪙 +{(ch?.coinsReward ?? 0).toLocaleString()}
-                    </span>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.55)" }}>День {currentDay}/{ch?.days}</span>
+                    <span style={{ fontSize: 11, fontWeight: 900, color: "#ffd200" }}>🪙 +{(ch?.coinsReward ?? 0).toLocaleString()}</span>
                   </div>
                 </div>
               </button>
@@ -426,8 +324,7 @@ export default function ChildHomePage() {
 
       <button
         onClick={() => { clearAuth(); router.push("/auth/child"); }}
-        className="w-full mt-8 flex items-center justify-center gap-2 text-xs font-semibold"
-        style={{ color: "var(--muted)" }}
+        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 32, width: "100%", background: "transparent", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.35)", fontFamily: "inherit" }}
       >
         <LogOut size={12} />
         Выйти из аккаунта
