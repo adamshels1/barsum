@@ -10,7 +10,7 @@ import { apiClient } from "@/lib/api/client";
 import { useAuthStore } from "@/stores/auth-store";
 
 const schema = z.object({
-  login: z.string().min(1, "Введите логин"),
+  identifier: z.string().min(1, "Введите логин"),
   password: z.string().min(1, "Введите пароль"),
 });
 type Form = z.infer<typeof schema>;
@@ -27,39 +27,23 @@ export default function ChildAuthPage() {
 
   const onSubmit = async (data: Form) => {
     try {
-      const res = await apiClient.post("/auth/child/login", data);
-      const { access_token, child } = res.data;
-      setAuth(access_token, "child", child);
-      localStorage.setItem("access_token", access_token);
-      router.push("/child/home");
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Неверный логин или пароль");
+      const res = await apiClient.post("/auth/login", data);
+      const { access_token, role, user, child, expert } = res.data;
+      setAuth(access_token, role, user ?? child, expert?.status);
+      redirectByRole(role, expert?.status, router);
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      toast.error(error.response?.data?.message || "Неверный логин или пароль");
     }
   };
 
   return (
     <main style={{ minHeight: "100dvh", background: BG, display: "flex", flexDirection: "column" }}>
-      {/* Blobs */}
       <div style={{ position: "fixed", top: "-15%", right: "-10%", width: 240, height: 240, borderRadius: "50%", background: "rgba(255,255,255,0.15)", filter: "blur(60px)", pointerEvents: "none" }} />
       <div style={{ position: "fixed", bottom: "-10%", left: "-10%", width: 200, height: 200, borderRadius: "50%", background: "rgba(0,0,0,0.12)", filter: "blur(50px)", pointerEvents: "none" }} />
 
-      {/* Hero */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", paddingTop: 60, paddingBottom: 32, position: "relative", zIndex: 1 }}>
-        <div
-          style={{
-            width: 72,
-            height: 72,
-            borderRadius: 24,
-            background: "rgba(255,255,255,0.2)",
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
-            border: "1px solid rgba(255,255,255,0.35)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            marginBottom: 16,
-          }}
-        >
+        <div style={{ width: 72, height: 72, borderRadius: 24, background: "rgba(255,255,255,0.2)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.35)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
           <BookOpen size={32} color="#ffffff" strokeWidth={2} />
         </div>
         <h1 style={{ fontSize: 32, fontWeight: 900, color: "#ffffff", margin: 0 }}>Привет!</h1>
@@ -68,19 +52,7 @@ export default function ChildAuthPage() {
         </p>
       </div>
 
-      {/* Form card */}
-      <div
-        style={{
-          background: "rgba(255,255,255,0.12)",
-          backdropFilter: "blur(24px)",
-          WebkitBackdropFilter: "blur(24px)",
-          borderTop: "1px solid rgba(255,255,255,0.22)",
-          borderRadius: "28px 28px 0 0",
-          padding: "32px 24px 40px",
-          position: "relative",
-          zIndex: 1,
-        }}
-      >
+      <div style={{ background: "rgba(255,255,255,0.12)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", borderTop: "1px solid rgba(255,255,255,0.22)", borderRadius: "28px 28px 0 0", padding: "32px 24px 40px", position: "relative", zIndex: 1 }}>
         <h2 style={{ fontSize: 20, fontWeight: 900, color: "#ffffff", margin: "0 0 24px" }}>
           Вход для ребёнка
         </h2>
@@ -89,8 +61,8 @@ export default function ChildAuthPage() {
             <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
               Логин
             </label>
-            <input {...register("login")} placeholder="Твой логин" autoComplete="username" className="glass-input" />
-            {errors.login && <p style={{ color: "#ffd6d6", fontSize: 12, fontWeight: 600, marginTop: 6 }}>{errors.login.message}</p>}
+            <input {...register("identifier")} placeholder="Твой логин" autoComplete="username" className="glass-input" />
+            {errors.identifier && <p style={{ color: "#ffd6d6", fontSize: 12, fontWeight: 600, marginTop: 6 }}>{errors.identifier.message}</p>}
           </div>
           <div>
             <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
@@ -109,4 +81,11 @@ export default function ChildAuthPage() {
       </div>
     </main>
   );
+}
+
+function redirectByRole(role: string, expertStatus: string | undefined, router: ReturnType<typeof useRouter>) {
+  if (role === "child") router.push("/child/home");
+  else if (role === "parent") router.push("/parent/home");
+  else if (role === "expert") router.push(expertStatus === "approved" ? "/expert/home" : "/expert/onboarding");
+  else if (role === "admin") router.push("/admin");
 }

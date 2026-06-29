@@ -10,12 +10,17 @@ import { z } from "zod";
 import { apiClient } from "@/lib/api/client";
 import { useAuthStore } from "@/stores/auth-store";
 
-const schema = z.object({
-  email: z.string().email("Введите корректный email"),
-  password: z.string().min(6, "Минимум 6 символов"),
-  name: z.string().min(2, "Введите имя").optional(),
+const loginSchema = z.object({
+  identifier: z.string().min(1, "Введите email или логин"),
+  password: z.string().min(1, "Введите пароль"),
 });
-type Form = z.infer<typeof schema>;
+const registerSchema = z.object({
+  identifier: z.string().email("Введите корректный email"),
+  password: z.string().min(6, "Минимум 6 символов"),
+  name: z.string().min(2, "Введите имя"),
+});
+
+type Form = z.infer<typeof loginSchema> & { name?: string };
 
 const BG = "linear-gradient(135deg, #4776e6 0%, #6a3de8 60%, #8e54e9 100%)";
 
@@ -24,17 +29,35 @@ export default function ExpertAuthPage() {
   const setAuth = useAuthStore((s) => s.setAuth);
   const [isRegister, setIsRegister] = useState(false);
 
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<Form>({
-    resolver: zodResolver(schema),
+  const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm<Form>({
+    resolver: zodResolver(isRegister ? registerSchema : loginSchema),
   });
+
+  const switchTab = (reg: boolean) => {
+    setIsRegister(reg);
+    reset();
+  };
 
   const onSubmit = async (data: Form) => {
     try {
-      const endpoint = isRegister ? "/auth/expert/register" : "/auth/expert/login";
-      const res = await apiClient.post(endpoint, data);
-      const { access_token, user, expert } = res.data;
-      setAuth(access_token, "expert", user, expert?.status);
-      router.push(expert?.status === "approved" ? "/expert/home" : "/expert/onboarding");
+      if (isRegister) {
+        const res = await apiClient.post("/auth/expert/register", {
+          email: data.identifier,
+          password: data.password,
+          name: data.name,
+        });
+        const { access_token, user, expert } = res.data;
+        setAuth(access_token, "expert", user, expert?.status);
+        router.push(expert?.status === "approved" ? "/expert/home" : "/expert/onboarding");
+      } else {
+        const res = await apiClient.post("/auth/login", {
+          identifier: data.identifier,
+          password: data.password,
+        });
+        const { access_token, role, user, child, expert } = res.data;
+        setAuth(access_token, role, user ?? child, expert?.status);
+        redirectByRole(role, expert?.status, router);
+      }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
       toast.error(error.response?.data?.message || "Ошибка входа");
@@ -61,7 +84,7 @@ export default function ExpertAuthPage() {
           {["Войти", "Регистрация"].map((label, i) => {
             const active = isRegister === (i === 1);
             return (
-              <button key={label} onClick={() => setIsRegister(i === 1)} style={{ flex: 1, padding: "10px 0", borderRadius: 9999, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 14, fontFamily: "inherit", background: active ? "rgba(255,255,255,0.9)" : "transparent", color: active ? "#4776e6" : "rgba(255,255,255,0.65)", transition: "all 0.18s" }}>
+              <button key={label} type="button" onClick={() => switchTab(i === 1)} style={{ flex: 1, padding: "10px 0", borderRadius: 9999, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 14, fontFamily: "inherit", background: active ? "rgba(255,255,255,0.9)" : "transparent", color: active ? "#4776e6" : "rgba(255,255,255,0.65)", transition: "all 0.18s" }}>
                 {label}
               </button>
             );
@@ -77,9 +100,11 @@ export default function ExpertAuthPage() {
             </div>
           )}
           <div>
-            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Email</label>
-            <input {...register("email")} type="email" placeholder="email@example.com" autoComplete="email" className="glass-input" />
-            {errors.email && <p style={{ color: "#ffd6d6", fontSize: 12, fontWeight: 600, marginTop: 6 }}>{errors.email.message}</p>}
+            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              {isRegister ? "Email" : "Email или логин"}
+            </label>
+            <input {...register("identifier")} type={isRegister ? "email" : "text"} placeholder={isRegister ? "email@example.com" : "email@example.com или логин"} autoComplete="email" className="glass-input" />
+            {errors.identifier && <p style={{ color: "#ffd6d6", fontSize: 12, fontWeight: 600, marginTop: 6 }}>{errors.identifier.message}</p>}
           </div>
           <div>
             <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Пароль</label>
@@ -93,4 +118,11 @@ export default function ExpertAuthPage() {
       </div>
     </main>
   );
+}
+
+function redirectByRole(role: string, expertStatus: string | undefined, router: ReturnType<typeof useRouter>) {
+  if (role === "child") router.push("/child/home");
+  else if (role === "parent") router.push("/parent/home");
+  else if (role === "expert") router.push(expertStatus === "approved" ? "/expert/home" : "/expert/onboarding");
+  else if (role === "admin") router.push("/admin");
 }

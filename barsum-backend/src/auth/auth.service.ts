@@ -5,6 +5,7 @@ import { UsersService } from '../users/users.service';
 import { RegisterParentDto } from './dto/register-parent.dto';
 import { LoginDto } from './dto/login.dto';
 import { ChildLoginDto } from './dto/child-login.dto';
+import { UniversalLoginDto } from './dto/universal-login.dto';
 import { ChildrenService } from '../children/children.service';
 import { ExpertsService } from '../experts/experts.service';
 import { UserRole } from '../common/enums';
@@ -107,6 +108,51 @@ export class AuthService {
 
     const { password, ...result } = user as any;
     return { user: result, expert, access_token: token };
+  }
+
+  async universalLogin(dto: UniversalLoginDto) {
+    const { identifier, password } = dto;
+    const isEmail = identifier.includes('@');
+
+    if (isEmail) {
+      const user = await this.usersService.findByEmail(identifier);
+      if (user) {
+        const valid = await bcrypt.compare(password, user.password);
+        if (!valid) throw new UnauthorizedException('Неверный логин или пароль');
+
+        const role = user.role as string;
+        const payload: Record<string, any> = { sub: user.id, email: user.email, role };
+
+        if (role === UserRole.EXPERT) {
+          const expert = await this.expertsService.findByUserId(user.id);
+          payload.expertStatus = expert?.status;
+          const token = await this.jwtService.signAsync(payload);
+          const { password: _, ...result } = user as any;
+          return { access_token: token, role, user: result, expert };
+        }
+
+        const token = await this.jwtService.signAsync(payload);
+        const { password: _, ...result } = user as any;
+        return { access_token: token, role, user: result };
+      }
+    } else {
+      const child = await this.childrenService.findByLogin(identifier);
+      if (child) {
+        const valid = await bcrypt.compare(password, child.password);
+        if (!valid) throw new UnauthorizedException('Неверный логин или пароль');
+
+        const token = await this.jwtService.signAsync({
+          sub: child.id,
+          login: child.login,
+          role: 'child',
+          parentId: child.parentId,
+        });
+        const { password: _, ...result } = child as any;
+        return { access_token: token, role: 'child', child: result };
+      }
+    }
+
+    throw new UnauthorizedException('Неверный логин или пароль');
   }
 
   async loginAdmin(dto: LoginDto) {

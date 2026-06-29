@@ -4,11 +4,18 @@ import { AuthService } from './auth.service';
 import { RegisterParentDto } from './dto/register-parent.dto';
 import { LoginDto } from './dto/login.dto';
 import { ChildLoginDto } from './dto/child-login.dto';
+import { UniversalLoginDto } from './dto/universal-login.dto';
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  @Post('login')
+  @ApiOperation({ summary: 'Универсальный вход (email или логин)' })
+  universalLogin(@Body() dto: UniversalLoginDto) {
+    return this.authService.universalLogin(dto);
+  }
 
   @Post('parent/register')
   @ApiOperation({ summary: 'Регистрация родителя' })
