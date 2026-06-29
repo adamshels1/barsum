@@ -7,7 +7,17 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3011',
+    origin: (origin, callback) => {
+      const allowed = [
+        'http://localhost:3011',
+        process.env.FRONTEND_URL,
+      ].filter(Boolean);
+      if (!origin || allowed.some(o => origin === o) || origin.endsWith('.ngrok-free.app') || origin.endsWith('.ngrok.io')) {
+        callback(null, true);
+      } else {
+        callback(null, false);
+      }
+    },
     credentials: true,
   });
 

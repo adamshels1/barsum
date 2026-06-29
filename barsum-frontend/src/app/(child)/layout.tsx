@@ -1,7 +1,8 @@
 "use client";
 
 import { BookOpen, Flame, ShoppingBag, Sparkles } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { useAuthStore } from "@/stores/auth-store";
 import { useQuery } from "@tanstack/react-query";
 import { coinsApi } from "@/lib/api/coins";
@@ -15,9 +16,10 @@ const tabs = [
   { label: "Мечта", Icon: Sparkles, href: "/child/shop?tab=dream", match: "" },
 ];
 
-export default function ChildLayout({ children }: { children: React.ReactNode }) {
+function ChildLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const user = useAuthStore((s) => s.user);
   const isSession = pathname?.includes("/child/session");
 
@@ -37,8 +39,9 @@ export default function ChildLayout({ children }: { children: React.ReactNode })
   const streak: number = (user as any)?.streak ?? 0;
   const hasDreamBadge = dream?.status === "pending_approval";
 
+  const isDreamTab = pathname?.startsWith("/child/shop") && searchParams?.get("tab") === "dream";
   const activeTab =
-    pathname === "/child/home" ? 0 : pathname?.startsWith("/child/shop") ? 1 : -1;
+    pathname === "/child/home" ? 0 : isDreamTab ? 2 : pathname?.startsWith("/child/shop") ? 1 : -1;
 
   return (
     <div style={{ minHeight: "100dvh", background: BG, position: "relative" }}>
@@ -61,6 +64,7 @@ export default function ChildLayout({ children }: { children: React.ReactNode })
             alignItems: "center",
             justifyContent: "space-between",
             padding: "12px 20px",
+            background: "rgba(0,0,0,0.55)",
           }}
         >
           <p style={{ fontWeight: 900, fontSize: 16, color: "#ffffff", margin: 0 }}>
@@ -150,5 +154,13 @@ export default function ChildLayout({ children }: { children: React.ReactNode })
         </div>
       )}
     </div>
+  );
+}
+
+export default function ChildLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={<div style={{ minHeight: "100dvh", background: "linear-gradient(135deg, #4776e6 0%, #6a3de8 60%, #8e54e9 100%)" }} />}>
+      <ChildLayoutInner>{children}</ChildLayoutInner>
+    </Suspense>
   );
 }

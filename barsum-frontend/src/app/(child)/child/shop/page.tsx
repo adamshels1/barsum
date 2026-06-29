@@ -238,7 +238,6 @@ function RewardsTab({ childId }: { childId: string }) {
             {balance.toLocaleString()} 🪙
           </p>
         </div>
-        <span style={{ fontSize: 36 }}>💰</span>
       </div>
 
       {successId && (
@@ -348,8 +347,8 @@ function RewardsTab({ childId }: { childId: string }) {
                           Взять
                         </button>
                       ) : (
-                        <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,160,160,0.9)" }}>
-                          −{diff}
+                        <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,160,160,0.9)", textAlign: "right" }}>
+                          ещё {diff} 🪙
                         </span>
                       )}
                     </div>
@@ -726,7 +725,7 @@ function DreamTab({ childId }: { childId: string }) {
                   height: "100%",
                   borderRadius: 9999,
                   transition: "width 0.5s ease",
-                  width: `${Math.max(progress, 4)}%`,
+                  width: `${progress === 0 ? 0 : Math.max(progress, 4)}%`,
                   background: isCompleted ? "rgba(0,220,120,0.8)" : "rgba(255,255,255,0.85)",
                   display: "flex",
                   alignItems: "center",

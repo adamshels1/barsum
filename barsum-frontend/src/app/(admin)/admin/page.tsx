@@ -42,18 +42,21 @@ export default function AdminDashboardPage() {
       value: stats?.pendingPayments,
       Icon: CreditCard,
       urgent: stats?.pendingPayments > 0,
+      href: "/admin/payments",
     },
     {
       label: "Ожид. эксперты",
       value: stats?.pendingExperts,
       Icon: Search,
       urgent: stats?.pendingExperts > 0,
+      href: "/admin/experts",
     },
     {
       label: "Ожид. задания",
       value: stats?.pendingChallenges,
       Icon: BookOpen,
       urgent: stats?.pendingChallenges > 0,
+      href: "/admin/challenges",
     },
   ];
 
@@ -98,24 +101,34 @@ export default function AdminDashboardPage() {
           </div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
-            {statCards.map((card) => (
-              <div
-                key={card.label}
-                style={{
-                  ...GLASS,
-                  padding: "14px 14px",
-                  background: card.urgent ? "rgba(255,80,80,0.25)" : GLASS.background,
-                }}
-              >
-                <card.Icon size={18} color="rgba(255,255,255,0.8)" style={{ display: "block", marginBottom: 6 }} />
-                <p style={{ margin: 0, fontSize: 20, fontWeight: 900, color: "#ffffff" }}>
-                  {card.value ?? "—"}
-                </p>
-                <p style={{ margin: "2px 0 0", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.6)" }}>
-                  {card.label}
-                </p>
-              </div>
-            ))}
+            {statCards.map((card) => {
+              const Tag = card.href ? "button" : "div";
+              return (
+                <Tag
+                  key={card.label}
+                  onClick={card.href ? () => router.push(card.href!) : undefined}
+                  style={{
+                    ...GLASS,
+                    padding: "14px 14px",
+                    background: card.urgent ? "rgba(255,80,80,0.25)" : GLASS.background,
+                    ...(card.href ? { cursor: "pointer", fontFamily: "inherit", border: "1px solid rgba(255,255,255,0.2)", textAlign: "left" } : {}),
+                  }}
+                >
+                  <card.Icon size={18} color="rgba(255,255,255,0.8)" style={{ display: "block", marginBottom: 6 }} />
+                  <p style={{ margin: 0, fontSize: 20, fontWeight: 900, color: "#ffffff" }}>
+                    {card.value ?? "—"}
+                  </p>
+                  <p style={{ margin: "2px 0 0", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.6)" }}>
+                    {card.label}
+                  </p>
+                  {card.urgent && card.href && (
+                    <p style={{ margin: "4px 0 0", fontSize: 10, fontWeight: 700, color: "rgba(255,160,160,0.9)", letterSpacing: "0.04em" }}>
+                      ПЕРЕЙТИ →
+                    </p>
+                  )}
+                </Tag>
+              );
+            })}
           </div>
         )}
 

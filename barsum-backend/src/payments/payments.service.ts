@@ -74,6 +74,7 @@ export class PaymentsService {
   async findByStatus(status: string): Promise<Payment[]> {
     return this.paymentRepo.find({
       where: { status: status as PaymentStatus },
+      relations: ['parent', 'child', 'challenge'],
       order: { createdAt: 'DESC' },
     });
   }

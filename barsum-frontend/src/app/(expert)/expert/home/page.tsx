@@ -25,7 +25,7 @@ const STATUS: Record<string, { label: string; color: string; bg: string }> = {
 const stats_config = [
   { key: "challenges", label: "заданий",  Icon: BookMarked },
   { key: "students",   label: "учеников", Icon: Users2 },
-  { key: "revenueTg",  label: "₸ доход",  Icon: TrendingUp, isCurrency: true },
+  { key: "revenueTg",  label: "₸ всего",  Icon: TrendingUp, isCurrency: true },
 ];
 
 export default function ExpertHomePage() {

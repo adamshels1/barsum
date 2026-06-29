@@ -134,9 +134,9 @@ function RewardCard({ reward }: { reward: Reward }) {
       <button
         onClick={() => deactivateMutation.mutate()}
         disabled={deactivateMutation.isPending}
-        style={{ fontSize: 12, fontWeight: 700, padding: "6px 12px", borderRadius: 10, border: "none", cursor: "pointer", fontFamily: "inherit", background: "rgba(239,68,68,0.4)", color: "#ffffff", flexShrink: 0 }}
+        style={{ fontSize: 12, fontWeight: 700, padding: "6px 12px", borderRadius: 10, border: "none", cursor: "pointer", fontFamily: "inherit", background: deactivateMutation.isPending ? "rgba(255,255,255,0.2)" : "rgba(239,68,68,0.4)", color: "#ffffff", flexShrink: 0, transition: "background 0.15s" }}
       >
-        {deactivateMutation.isPending ? "..." : "Деакт."}
+        {deactivateMutation.isPending ? "..." : "Убрать"}
       </button>
     </div>
   );

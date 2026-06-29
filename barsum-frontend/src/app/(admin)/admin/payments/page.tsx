@@ -11,8 +11,11 @@ type PaymentStatus = "pending" | "confirmed" | "rejected";
 interface Payment {
   id: string;
   parentId: string;
+  parent?: { name?: string; email?: string };
   childId: string;
+  child?: { name?: string; login?: string };
   challengeId: string;
+  challenge?: { title?: string };
   challengePrice: number;
   coinsAmount: number;
   coinsTg: number;
@@ -158,8 +161,8 @@ export default function AdminPaymentsPage() {
                 <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 10 }}>
                   <div>
                     <p style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.55)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>Родитель</p>
-                    <p style={{ margin: "4px 0 0", fontSize: 13, fontFamily: "monospace", fontWeight: 700, color: "#ffffff", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {payment.parentId}
+                    <p style={{ margin: "4px 0 0", fontSize: 13, fontWeight: 700, color: "#ffffff", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {payment.parent?.name || payment.parent?.email || payment.parentId.slice(-8)}
                     </p>
                   </div>
                   <span style={statusBadgeStyle(payment.status)}>{statusLabel(payment.status)}</span>
@@ -168,9 +171,14 @@ export default function AdminPaymentsPage() {
                 {/* Child */}
                 <div style={{ marginBottom: 10 }}>
                   <p style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.55)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>Ребёнок</p>
-                  <p style={{ margin: "4px 0 0", fontSize: 13, fontFamily: "monospace", fontWeight: 700, color: "#ffffff", maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {payment.childId}
+                  <p style={{ margin: "4px 0 0", fontSize: 13, fontWeight: 700, color: "#ffffff", maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {payment.child?.name || payment.child?.login || payment.childId.slice(-8)}
                   </p>
+                  {payment.challenge?.title && (
+                    <p style={{ margin: "2px 0 0", fontSize: 11, color: "rgba(255,255,255,0.5)", fontWeight: 600 }}>
+                      📚 {payment.challenge.title}
+                    </p>
+                  )}
                 </div>
 
                 {/* Amount row */}

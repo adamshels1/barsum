@@ -51,25 +51,16 @@ export default function LandingPage() {
 
       {/* Logo */}
       <div style={{ textAlign: "center", marginBottom: 52, position: "relative", zIndex: 1 }}>
-        <div
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: 72,
-            height: 72,
-            borderRadius: 24,
-            marginBottom: 16,
-            background: "rgba(255,255,255,0.1)",
-            backdropFilter: "blur(20px)",
-            WebkitBackdropFilter: "blur(20px)",
-            border: "1px solid rgba(255,255,255,0.18)",
-          }}
-        >
-          <span style={{ fontSize: 36 }}>📚</span>
-        </div>
-        <h1 style={{ fontSize: 40, fontWeight: 900, color: "#ffffff", lineHeight: 1, letterSpacing: "-1px", margin: 0 }}>
-          barsum
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/mascot.png"
+          alt="Barsum"
+          width={200}
+          height={200}
+          style={{ objectFit: "contain", mixBlendMode: "screen", display: "block", margin: "0 auto" }}
+        />
+        <h1 style={{ fontSize: 40, fontWeight: 900, color: "#ffffff", lineHeight: 1, letterSpacing: "0.04em", margin: 0 }}>
+          BARSUM
         </h1>
         <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, fontWeight: 600, marginTop: 8, letterSpacing: "0.12em", textTransform: "uppercase" }}>
           Читай · Зарабатывай · Мечтай
