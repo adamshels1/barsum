@@ -17,7 +17,7 @@ interface Challenge {
   description?: string;
   price: number;
   coinsReward: number;
-  days: number;
+  totalParts: number;
   status: string;
   authorId: string;
   category?: string;
@@ -174,7 +174,7 @@ export default function AdminChallengesPage() {
                     </span>
                   )}
                   <span className="glass-chip" style={{ padding: "3px 10px", fontSize: 12, fontWeight: 600, color: "#ffffff" }}>
-                    {challenge.days} {challenge.days === 1 ? "день" : challenge.days < 5 ? "дня" : "дней"}
+                    {challenge.totalParts} частей
                   </span>
                 </div>
 

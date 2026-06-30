@@ -12,7 +12,7 @@ interface Challenge {
   title: string;
   bookTitle: string;
   bookAuthor: string;
-  days: number;
+  totalParts: number;
   price: number;
   coinsReward: number;
   category: string;
@@ -169,7 +169,7 @@ export default function ExpertBooksPage() {
 
                 {/* Meta row */}
                 <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 12, color: "rgba(255,255,255,0.6)", marginBottom: 10 }}>
-                  <span>📅 {challenge.days} дней</span>
+                  <span>📚 {challenge.totalParts} частей</span>
                   <span>💰 {challenge.price.toLocaleString("ru-RU")} ₸</span>
                   <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
                     <Users2 size={12} /> {challenge.membersCount}

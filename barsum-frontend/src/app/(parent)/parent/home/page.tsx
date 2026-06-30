@@ -54,7 +54,7 @@ function ChallengeCard({
           </p>
         )}
         <span style={{ position: "absolute", top: 8, left: 8, fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 9999, background: "rgba(0,0,0,0.25)", color: "#ffffff" }}>
-          {challenge.days} дн
+          {challenge.totalParts} частей
         </span>
         {challenge.membersCount > 0 && (
           <span style={{ position: "absolute", top: 8, right: 8, fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 9999, background: "rgba(0,0,0,0.25)", color: "#ffffff" }}>
@@ -140,7 +140,7 @@ function PurchaseModal({
           </button>
           <h2 style={{ margin: 0, fontSize: 20, fontWeight: 900, color: "#ffffff", lineHeight: 1.2 }}>{challenge.bookTitle || challenge.title}</h2>
           <p style={{ margin: "4px 0 0", fontSize: 13, color: "rgba(255,255,255,0.75)" }}>
-            {challenge.ageMin}–{challenge.ageMax} лет · {challenge.days} дней
+            {challenge.ageMin}–{challenge.ageMax} лет · {challenge.totalParts} частей
           </p>
         </div>
 

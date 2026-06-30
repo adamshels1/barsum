@@ -20,13 +20,13 @@ export class Challenge {
   pagesTotal: number;
 
   @Column({ default: 0 })
-  pagesPerDay: number;
+  pagesPerPart: number;
 
   @Column({ nullable: true, type: 'text' })
   description: string;
 
   @Column({ nullable: true, type: 'json' })
-  dailyTexts: string[];
+  partTexts: string[];
 
   @Column()
   authorId: string;
@@ -45,7 +45,7 @@ export class Challenge {
   ageMax: number;
 
   @Column({ default: 30 })
-  days: number;
+  totalParts: number;
 
   @Column({ default: 0 })
   price: number;

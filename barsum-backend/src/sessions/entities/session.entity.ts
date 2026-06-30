@@ -23,7 +23,7 @@ export class Session {
   child: Child;
 
   @Column({ default: 1 })
-  day: number;
+  partNumber: number;
 
   @Column({ type: 'enum', enum: SessionPhase, default: SessionPhase.READ })
   phase: SessionPhase;

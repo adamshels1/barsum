@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, LogOut, Rocket, Sparkles } from "lucide-react";
+import { BookOpen, LogOut, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -10,7 +10,6 @@ import { dreamsApi } from "@/lib/api/dreams";
 import { sessionsApi } from "@/lib/api/sessions";
 import { useAuthStore } from "@/stores/auth-store";
 
-const DAY_LABELS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 const CARD_COLORS = [
   "linear-gradient(135deg, #667eea, #764ba2)",
   "linear-gradient(135deg, #f7971e, #ffd200)",
@@ -19,50 +18,23 @@ const CARD_COLORS = [
   "linear-gradient(135deg, #0f9b8e, #38ef7d)",
 ];
 
-function StreakRow({ streak }: { streak: number }) {
-  const today = new Date().getDay();
-  const todayIdx = today === 0 ? 6 : today - 1;
-
+function HeroCard({ name, balance, streak }: { name: string; balance: number; streak: number }) {
   return (
-    <div className="glass" style={{ padding: 16, marginBottom: 12 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-        <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.65)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-          Серия дней
+    <div className="glass" style={{ padding: "18px 20px", marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div>
+        <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.6)" }}>Привет, {name}! 👋</p>
+        <p style={{ margin: "6px 0 0", fontSize: 32, fontWeight: 900, color: "#ffffff", lineHeight: 1 }}>
+          🪙 {balance.toLocaleString("ru-RU")}
         </p>
-        <div className="glass-chip" style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 12px" }}>
-          <span style={{ fontSize: 14 }}>🔥</span>
-          <span style={{ fontWeight: 900, fontSize: 14, color: "#ffd200" }}>{streak} дней</span>
+        <p style={{ margin: "4px 0 0", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.5)" }}>монет на счету</p>
+      </div>
+      {streak > 0 && (
+        <div className="glass-chip" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "10px 14px" }}>
+          <span style={{ fontSize: 22 }}>🔥</span>
+          <span style={{ fontWeight: 900, fontSize: 16, color: "#ffd200", lineHeight: 1 }}>{streak}</span>
+          <span style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.5)" }}>дней</span>
         </div>
-      </div>
-      <div style={{ display: "flex", gap: 6 }}>
-        {DAY_LABELS.map((day, i) => {
-          const daysAgo = todayIdx - i;
-          const isFilled = daysAgo >= 0 && daysAgo < streak;
-          const isToday = i === todayIdx;
-          return (
-            <div key={day} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, flex: 1 }}>
-              <div
-                style={{
-                  width: "100%",
-                  aspectRatio: "1/1",
-                  borderRadius: 10,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 12,
-                  fontWeight: 900,
-                  background: isFilled ? "rgba(255,255,255,0.9)" : isToday ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.08)",
-                  color: isFilled ? "#0a7a62" : "rgba(255,255,255,0.7)",
-                  border: isToday ? "1px solid rgba(255,255,255,0.5)" : "1px solid transparent",
-                }}
-              >
-                {isFilled ? "✓" : "·"}
-              </div>
-              <span style={{ fontWeight: 700, color: "rgba(255,255,255,0.45)", fontSize: 9 }}>{day}</span>
-            </div>
-          );
-        })}
-      </div>
+      )}
     </div>
   );
 }
@@ -175,11 +147,6 @@ export default function ChildHomePage() {
   const clearAuth = useAuthStore((s) => s.clearAuth);
   const queryClient = useQueryClient();
 
-  const startSession = useMutation({
-    mutationFn: (enrollmentId: string) => sessionsApi.create(enrollmentId),
-    onSuccess: (session) => router.push(`/child/session/${session.id}`),
-  });
-
   const { data: enrollments = [], isLoading } = useQuery({
     queryKey: ["enrollments"],
     queryFn: sessionsApi.listEnrollments,
@@ -209,25 +176,9 @@ export default function ChildHomePage() {
     onError: () => toast.error("Ошибка"),
   });
 
-  const totalCoinsToEarn = (enrollments as any[]).reduce(
-    (sum: number, e: any) => sum + (e.challenge?.coinsReward ?? 0), 0
-  );
-
   return (
     <main style={{ padding: "20px 20px 8px", maxWidth: 480, margin: "0 auto" }}>
-      <StreakRow streak={streak} />
-
-      {totalCoinsToEarn > 0 && (
-        <div className="glass" style={{ padding: 16, marginBottom: 12, display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ width: 44, height: 44, borderRadius: 14, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <Rocket size={20} color="#ffffff" strokeWidth={2.5} />
-          </div>
-          <div>
-            <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.65)" }}>Ещё заработаю за все курсы</p>
-            <p style={{ margin: "2px 0 0", fontWeight: 900, fontSize: 18, color: "#ffffff" }}>+{totalCoinsToEarn.toLocaleString()} монет</p>
-          </div>
-        </div>
-      )}
+      <HeroCard name={user?.name || "Читатель"} balance={currentBalance} streak={streak} />
 
       {dream ? (
         <DreamCard dream={dream} currentBalance={currentBalance} onSend={(amt) => sendMutation.mutate(amt)} isSending={sendMutation.isPending} />
@@ -272,24 +223,21 @@ export default function ChildHomePage() {
             const ch = enrollment.challenge;
             const colorIdx = ch?.title ? ch.title.charCodeAt(0) % CARD_COLORS.length : idx % CARD_COLORS.length;
             const cardGrad = CARD_COLORS[colorIdx];
-            const startDate = new Date(enrollment.startedAt || enrollment.createdAt);
-            const daysElapsed = Math.max(1, Math.floor((Date.now() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
-            const currentDay = Math.min(daysElapsed, ch?.days ?? 1);
-            const progress = ch?.days ? (currentDay / ch.days) * 100 : 0;
+            const completedParts: number = enrollment.completedParts ?? 0;
+            const totalParts: number = ch?.totalParts ?? 1;
+            const progress = totalParts > 0 ? (completedParts / totalParts) * 100 : 0;
 
             return (
               <button
                 key={enrollment.id}
-                onClick={() => startSession.mutate(enrollment.id)}
-                disabled={startSession.isPending}
+                onClick={() => router.push(`/child/book/${enrollment.id}`)}
                 style={{
                   flexShrink: 0,
                   width: 176,
                   borderRadius: 20,
                   overflow: "hidden",
                   textAlign: "left",
-                  cursor: startSession.isPending ? "not-allowed" : "pointer",
-                  opacity: startSession.isPending ? 0.7 : 1,
+                  cursor: "pointer",
                   background: "rgba(255,255,255,0.1)",
                   backdropFilter: "blur(16px)",
                   WebkitBackdropFilter: "blur(16px)",
@@ -312,7 +260,9 @@ export default function ChildHomePage() {
                     <div style={{ height: "100%", width: `${progress}%`, background: "rgba(255,255,255,0.85)", borderRadius: 9999 }} />
                   </div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.55)" }}>День {currentDay}/{ch?.days}</span>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.55)" }}>
+                      {completedParts}/{totalParts} частей
+                    </span>
                     <span style={{ fontSize: 11, fontWeight: 900, color: "#ffd200" }}>🪙 +{(ch?.coinsReward ?? 0).toLocaleString()}</span>
                   </div>
                 </div>

@@ -15,11 +15,11 @@ export class ReviewQueue {
   session: Session;
 
   @Column()
-  parentId: string;
+  expertId: string;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'parentId' })
-  parent: User;
+  @JoinColumn({ name: 'expertId' })
+  expert: User;
 
   @Column({ default: false })
   resolved: boolean;

@@ -35,14 +35,14 @@ export interface Challenge {
   bookTitle: string;
   bookAuthor: string;
   pagesTotal: number;
-  pagesPerDay: number;
+  pagesPerPart: number;
   description?: string;
   authorId: string;
   author?: User;
   category: "reading";
   ageMin: number;
   ageMax: number;
-  days: number;
+  totalParts: number;
   price: number;
   coinsReward: number;
   status: "draft" | "moderation" | "published" | "rejected";
@@ -69,7 +69,7 @@ export interface Session {
   enrollmentId: string;
   enrollment?: ChallengeEnrollment;
   childId: string;
-  day: number;
+  partNumber: number;
   phase: "read" | "recording" | "transcribing" | "analyzing" | "done";
   audioUrl?: string;
   transcription?: string;

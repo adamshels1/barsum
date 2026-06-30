@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, Flame, ShoppingBag, Sparkles } from "lucide-react";
+import { BookOpen, ShoppingBag, Sparkles } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { useAuthStore } from "@/stores/auth-store";
@@ -36,7 +36,6 @@ function ChildLayoutInner({ children }: { children: React.ReactNode }) {
   });
 
   const balance: number = balanceData?.balance ?? 0;
-  const streak: number = (user as any)?.streak ?? 0;
   const hasDreamBadge = dream?.status === "pending_approval";
 
   const isDreamTab = pathname?.startsWith("/child/shop") && searchParams?.get("tab") === "dream";
@@ -70,15 +69,9 @@ function ChildLayoutInner({ children }: { children: React.ReactNode }) {
           <p style={{ fontWeight: 900, fontSize: 16, color: "#ffffff", margin: 0 }}>
             {user?.name?.split(" ")[0] || "Читатель"} 👋
           </p>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div className="glass-chip" style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px" }}>
-              <Flame size={14} color="#ffffff" strokeWidth={2.5} />
-              <span style={{ fontWeight: 900, fontSize: 14, color: "#ffffff" }}>{streak}</span>
-            </div>
-            <div className="glass-chip" style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px" }}>
-              <span style={{ fontSize: 14, lineHeight: 1 }}>🪙</span>
-              <span style={{ fontWeight: 900, fontSize: 14, color: "#ffffff" }}>{balance.toLocaleString()}</span>
-            </div>
+          <div className="glass-chip" style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px" }}>
+            <span style={{ fontSize: 14, lineHeight: 1 }}>🪙</span>
+            <span style={{ fontWeight: 900, fontSize: 14, color: "#ffffff" }}>{balance.toLocaleString()}</span>
           </div>
         </div>
       )}

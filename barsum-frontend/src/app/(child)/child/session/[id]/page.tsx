@@ -10,7 +10,7 @@ interface Session {
   id: string;
   enrollmentId: string;
   childId: string;
-  day: number;
+  partNumber: number;
   phase: "read" | "recording" | "transcribing" | "analyzing" | "done";
   audioUrl?: string;
   transcription?: string;
@@ -56,9 +56,6 @@ function PhaseRead({
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const pagesPerDay = 10;
-  const startPage = (session.day - 1) * pagesPerDay + 1;
-  const endPage = session.day * pagesPerDay;
 
   const startRecording = async () => {
     try {
@@ -119,7 +116,7 @@ function PhaseRead({
       {/* Text block */}
       <div className="glass" style={{ padding: 20, borderRadius: 20 }}>
         <p style={{ fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12, margin: "0 0 12px" }}>
-          День {session.day} · Страницы {startPage}–{endPage}
+          Часть {session.partNumber}
         </p>
         {dayText ? (
           <p style={{ fontSize: 16, lineHeight: 1.7, color: "rgba(255,255,255,0.9)", fontFamily: "Georgia, serif", margin: 0 }}>
@@ -127,7 +124,7 @@ function PhaseRead({
           </p>
         ) : (
           <p style={{ fontSize: 14, fontStyle: "italic", color: "rgba(255,255,255,0.55)", margin: 0 }}>
-            Прочитай страницы {startPage}–{endPage} из книги
+            Читай вслух эту часть книги
           </p>
         )}
       </div>
@@ -349,7 +346,7 @@ function PhaseDone({ session }: { session: Session }) {
           <div>
             <h2 style={{ fontSize: 28, fontWeight: 900, color: "#ffffff", margin: "0 0 6px" }}>Отлично!</h2>
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.65)", margin: 0 }}>
-              Ты прочитал сегодня — молодец!
+              Часть прочитана — молодец!
             </p>
           </div>
           <div className="glass" style={{ width: "100%", padding: 24, borderRadius: 20, display: "flex", flexDirection: "column", gap: 8, alignItems: "center" }}>
@@ -380,7 +377,7 @@ function PhaseDone({ session }: { session: Session }) {
             style={{ width: "100%", padding: 16, borderRadius: 16, background: "rgba(255,180,0,0.15)", border: "1px solid rgba(255,200,0,0.25)" }}
           >
             <p style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,220,100,0.9)", margin: 0 }}>
-              Родитель проверит и начислит монеты
+              Эксперт проверит и начислит монеты
             </p>
           </div>
         </>
@@ -411,11 +408,12 @@ export default function SessionPage() {
     refetchInterval: (query) => (isPolling(query.state.data) ? 3000 : false),
   });
 
-  const { data: dayTextData } = useQuery<{ text: string | null; day: number }>({
+  const { data: partText } = useQuery<{ text: string | null; partNumber: number }>({
     queryKey: ["session-text", id],
-    queryFn: () => sessionsApi.getDayText(id),
+    queryFn: () => sessionsApi.getPartText(id),
     enabled: !!session && (session.phase === "read" || session.phase === "recording"),
   });
+  const dayTextData = partText;
 
   const refetch = () =>
     queryClient.invalidateQueries({ queryKey: ["session", id] });
@@ -446,14 +444,14 @@ export default function SessionPage() {
             flexShrink: 0,
           }}
         >
-          {session.day}
+          {session.partNumber}
         </div>
         <div>
           <p style={{ fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em", margin: 0 }}>
-            День {session.day}
+            Часть {session.partNumber}
           </p>
           <p style={{ fontWeight: 900, fontSize: 16, color: "#ffffff", margin: "2px 0 0" }}>
-            Ежедневное чтение
+            Чтение вслух
           </p>
         </div>
       </div>

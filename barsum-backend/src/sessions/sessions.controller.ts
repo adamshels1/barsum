@@ -20,16 +20,23 @@ export class SessionsController {
   }
 
   @Get()
-  list(@Request() req: any, @Query('childId') childId?: string) {
+  list(
+    @Request() req: any,
+    @Query('childId') childId?: string,
+    @Query('enrollmentId') enrollmentId?: string,
+  ) {
     if (childId && req.user.role === 'parent') {
       return this.sessionsService.findByChildForParent(childId, req.user.sub);
+    }
+    if (enrollmentId) {
+      return this.sessionsService.findByEnrollment(enrollmentId, req.user.sub);
     }
     return this.sessionsService.findByChild(req.user.sub);
   }
 
   @Get(':id/text')
-  getDayText(@Request() req: any, @Param('id') id: string) {
-    return this.sessionsService.getDayText(id, req.user.sub);
+  getPartText(@Request() req: any, @Param('id') id: string) {
+    return this.sessionsService.getPartText(id, req.user.sub);
   }
 
   @Get(':id')

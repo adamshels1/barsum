@@ -49,9 +49,9 @@ interface FormData {
   bookTitle: string;
   bookAuthor: string;
   description: string;
-  days: number;
+  totalParts: number;
   pagesTotal: number;
-  pagesPerDay: number;
+  pagesPerPart: number;
   coinsReward: number;
   price: number;
 }
@@ -64,9 +64,9 @@ const DEFAULT: FormData = {
   bookTitle: "",
   bookAuthor: "",
   description: "",
-  days: 30,
+  totalParts: 30,
   pagesTotal: 300,
-  pagesPerDay: 10,
+  pagesPerPart: 10,
   coinsReward: 500,
   price: 2990,
 };
@@ -250,7 +250,7 @@ function Step1({
       pagesTotal: book.pages,
       ageMin: book.ageMin,
       ageMax: book.ageMax,
-      pagesPerDay: Math.ceil(book.pages / data.days),
+      pagesPerPart: Math.ceil(book.pages / data.totalParts),
     });
     setSearch(book.title);
     setShowList(false);
@@ -454,26 +454,26 @@ function Step2({
   onNext: () => void;
   onBack: () => void;
 }) {
-  const autoPPD = data.days > 0 ? Math.ceil(data.pagesTotal / data.days) : 0;
+  const autoPPP = data.totalParts > 0 ? Math.ceil(data.pagesTotal / data.totalParts) : 0;
 
-  const handleDays = (v: number) => {
-    const d = Math.max(7, Math.min(365, v));
-    update({ days: d, pagesPerDay: Math.ceil(data.pagesTotal / d) });
+  const handleParts = (v: number) => {
+    const d = Math.max(1, Math.min(365, v));
+    update({ totalParts: d, pagesPerPart: Math.ceil(data.pagesTotal / d) });
   };
 
   const handlePages = (v: number) => {
     const p = Math.max(50, Math.min(2000, v));
-    update({ pagesTotal: p, pagesPerDay: Math.ceil(p / data.days) });
+    update({ pagesTotal: p, pagesPerPart: Math.ceil(p / data.totalParts) });
   };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <NumberStepper
-        label="Дней на задание"
-        value={data.days}
-        onChange={handleDays}
+        label="Количество частей"
+        value={data.totalParts}
+        onChange={handleParts}
         step={1}
-        min={7}
+        min={1}
       />
 
       <div>
@@ -493,7 +493,7 @@ function Step2({
       <div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
           <label style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-            Страниц в день
+            Страниц в одной части
           </label>
           <span className="glass-chip" style={{ padding: "3px 10px", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.7)" }}>
             авто
@@ -501,19 +501,19 @@ function Step2({
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <div className="glass-sm" style={{ flex: 1, padding: "14px 16px", borderRadius: 14, textAlign: "center", fontWeight: 700, color: "#ffffff" }}>
-            ≈ {autoPPD} страниц/день
+            ≈ {autoPPP} стр/часть
           </div>
           <input
             type="number"
-            value={data.pagesPerDay}
-            onChange={(e) => update({ pagesPerDay: Math.max(1, Number(e.target.value)) })}
+            value={data.pagesPerPart}
+            onChange={(e) => update({ pagesPerPart: Math.max(1, Number(e.target.value)) })}
             className="glass-input"
             style={{ width: 96, textAlign: "center", fontWeight: 700 }}
             placeholder="Своё"
           />
         </div>
         <p style={{ fontSize: 12, marginTop: 6, color: "rgba(255,255,255,0.55)" }}>
-          Авто = {data.pagesTotal} ÷ {data.days} = {autoPPD}. Можно задать своё значение справа.
+          Авто = {data.pagesTotal} ÷ {data.totalParts} = {autoPPP}. Можно задать своё значение справа.
         </p>
       </div>
 
@@ -522,9 +522,9 @@ function Step2({
           👀 Предпросмотр
         </p>
         <p style={{ fontSize: 14, color: "rgba(255,255,255,0.85)", margin: 0 }}>
-          Ребёнок читает{" "}
-          <span style={{ fontWeight: 700, color: "#ffffff" }}>{data.pagesPerDay} страниц</span> в день
-          на протяжении <span style={{ fontWeight: 700, color: "#ffffff" }}>{data.days} дней</span>
+          Книга разбита на{" "}
+          <span style={{ fontWeight: 700, color: "#ffffff" }}>{data.totalParts} частей</span>,
+          по <span style={{ fontWeight: 700, color: "#ffffff" }}>{data.pagesPerPart} страниц</span> в каждой
         </p>
       </div>
 
@@ -624,14 +624,14 @@ function ChallengeCard({ data }: { data: FormData }) {
         </p>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
           <span className="glass-chip" style={{ padding: "3px 8px", fontSize: 11, fontWeight: 700, color: "#ffffff" }}>
-            📅 {data.days} дней
+            📚 {data.totalParts} частей
           </span>
           <span style={{ background: "rgba(255,255,255,0.88)", color: "#4776e6", borderRadius: 9999, padding: "3px 8px", fontSize: 12, fontWeight: 800 }}>
             {data.price.toLocaleString("ru-RU")} ₸
           </span>
         </div>
         <div style={{ marginTop: 6, fontSize: 12, color: "rgba(255,255,255,0.6)" }}>
-          Возраст {data.ageMin}–{data.ageMax} лет · {data.pagesPerDay} стр/день
+          Возраст {data.ageMin}–{data.ageMax} лет · {data.pagesPerPart} стр/часть
         </div>
       </div>
     </div>
@@ -689,9 +689,9 @@ function Step4({
           ["Категория", data.category === "reading" ? "📖 Чтение" : data.category],
           ["Книга", `${data.bookTitle}${data.bookAuthor ? ` (${data.bookAuthor})` : ""}`],
           ["Возраст", `${data.ageMin}–${data.ageMax} лет`],
-          ["Продолжительность", `${data.days} дней`],
+          ["Частей в книге", `${data.totalParts}`],
           ["Всего страниц", `${data.pagesTotal}`],
-          ["Страниц в день", `${data.pagesPerDay}`],
+          ["Страниц в части", `${data.pagesPerPart}`],
           ["Цена", `${data.price.toLocaleString("ru-RU")} ₸`],
           ["Ваш заработок (15%)", `${Math.round(data.price * 0.15).toLocaleString("ru-RU")} ₸`],
         ].map(([key, val]) => (
@@ -759,9 +759,9 @@ function ExpertCreateInner() {
         bookTitle: data.bookTitle ?? "",
         bookAuthor: data.bookAuthor ?? "",
         description: data.description ?? "",
-        days: data.days ?? 14,
+        totalParts: data.totalParts ?? 14,
         pagesTotal: data.pagesTotal ?? 140,
-        pagesPerDay: data.pagesPerDay ?? 10,
+        pagesPerPart: data.pagesPerPart ?? 10,
         coinsReward: data.coinsReward ?? 5,
         price: data.price ?? 2500,
       });

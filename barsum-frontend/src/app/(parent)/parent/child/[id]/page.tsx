@@ -54,7 +54,7 @@ function SessionRow({ session }: { session: Session }) {
       <button style={{ width: "100%", padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, textAlign: "left", background: "transparent", border: "none", cursor: "pointer", fontFamily: "inherit" }} onClick={() => setOpen((v) => !v)}>
         <span style={{ fontSize: 18 }}>{cfg.icon}</span>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ margin: 0, fontWeight: 700, fontSize: 14, color: "#ffffff" }}>День {session.day}</p>
+          <p style={{ margin: 0, fontWeight: 700, fontSize: 14, color: "#ffffff" }}>Часть {session.partNumber}</p>
           <p style={{ margin: "2px 0 0", fontSize: 12, color: "rgba(255,255,255,0.55)" }}>{formatDate(session.createdAt)}</p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

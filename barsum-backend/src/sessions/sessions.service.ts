@@ -42,22 +42,32 @@ export class SessionsService {
   async create(enrollmentId: string, childId: string): Promise<Session> {
     const enrollment = await this.enrollmentRepo.findOne({
       where: { id: enrollmentId, childId },
+      relations: ['challenge'],
     });
     if (!enrollment) throw new NotFoundException('Enrollment not found');
     if (enrollment.status !== EnrollmentStatus.ACTIVE) {
       throw new BadRequestException('Enrollment is not active');
     }
 
+    // Return existing in-progress session if any
     const existing = await this.sessionRepo.findOne({
       where: { enrollmentId, status: SessionStatus.PENDING, phase: Not(SessionPhase.DONE) },
     });
     if (existing) return existing;
 
-    const count = await this.sessionRepo.count({ where: { enrollmentId } });
+    // Check we haven't exceeded totalParts
+    const completedCount = await this.sessionRepo.count({
+      where: { enrollmentId, status: SessionStatus.COMPLETED },
+    });
+    const totalParts = enrollment.challenge?.totalParts ?? 0;
+    if (totalParts > 0 && completedCount >= totalParts) {
+      throw new BadRequestException('All parts completed');
+    }
+
     const session = this.sessionRepo.create({
       enrollmentId,
       childId,
-      day: count + 1,
+      partNumber: completedCount + 1,
       phase: SessionPhase.READ,
       status: SessionStatus.PENDING,
     });
@@ -74,6 +84,13 @@ export class SessionsService {
     return this.sessionRepo.find({
       where: { childId },
       order: { createdAt: 'DESC' },
+    });
+  }
+
+  async findByEnrollment(enrollmentId: string, childId: string): Promise<Session[]> {
+    return this.sessionRepo.find({
+      where: { enrollmentId, childId },
+      order: { partNumber: 'ASC' },
     });
   }
 
@@ -148,21 +165,39 @@ export class SessionsService {
         });
         await this.childrenService.incrementStreak(childId);
       }
+    } else {
+      // Empty transcription — send to expert for review
+      const enrollment = await this.enrollmentRepo.findOne({
+        where: { id: session.enrollmentId },
+        relations: ['challenge'],
+      });
+      if (enrollment?.challenge?.authorId) {
+        const existing = await this.reviewQueueRepo.findOne({ where: { sessionId: id } });
+        if (!existing) {
+          await this.reviewQueueRepo.save(
+            this.reviewQueueRepo.create({
+              sessionId: id,
+              expertId: enrollment.challenge.authorId,
+              resolved: false,
+            }),
+          );
+        }
+      }
     }
 
     return this.sessionRepo.save(session);
   }
 
-  async getDayText(id: string, childId: string): Promise<{ text: string | null; day: number }> {
+  async getPartText(id: string, childId: string): Promise<{ text: string | null; partNumber: number }> {
     const session = await this.findById(id);
     if (session.childId !== childId) throw new ForbiddenException('Not your session');
     const enrollment = await this.enrollmentRepo.findOne({
       where: { id: session.enrollmentId },
       relations: ['challenge'],
     });
-    const texts: string[] = enrollment?.challenge?.dailyTexts ?? [];
-    const text = texts[session.day - 1] ?? null;
-    return { text, day: session.day };
+    const texts: string[] = enrollment?.challenge?.partTexts ?? [];
+    const text = texts[session.partNumber - 1] ?? null;
+    return { text, partNumber: session.partNumber };
   }
 
   async analyze(id: string, childId: string, bookTitle?: string): Promise<Session> {
@@ -170,10 +205,12 @@ export class SessionsService {
     if (session.childId !== childId) throw new ForbiddenException('Not your session');
     if (!session.transcription) throw new BadRequestException('No transcription');
 
-    const resolvedTitle = bookTitle ?? (await this.enrollmentRepo.findOne({
+    const enrollment = await this.enrollmentRepo.findOne({
       where: { id: session.enrollmentId },
       relations: ['challenge'],
-    }))?.challenge?.bookTitle ?? '';
+    });
+
+    const resolvedTitle = bookTitle ?? enrollment?.challenge?.bookTitle ?? '';
 
     const result = await this.aiService.analyzeRetelling(session.transcription, resolvedTitle);
     session.aiScore = result.score;
@@ -182,10 +219,6 @@ export class SessionsService {
 
     if (result.score >= 80) {
       session.status = SessionStatus.COMPLETED;
-      const enrollment = await this.enrollmentRepo.findOne({
-        where: { id: session.enrollmentId },
-        relations: ['challenge'],
-      });
       if (enrollment?.challenge) {
         await this.coinsService.transfer({
           fromId: 'system',
@@ -198,19 +231,16 @@ export class SessionsService {
         });
         await this.childrenService.incrementStreak(childId);
       }
-    } else {
-      const enrollment = await this.enrollmentRepo.findOne({ where: { id: session.enrollmentId } });
-      if (enrollment) {
-        const existing = await this.reviewQueueRepo.findOne({ where: { sessionId: id } });
-        if (!existing) {
-          await this.reviewQueueRepo.save(
-            this.reviewQueueRepo.create({
-              sessionId: id,
-              parentId: enrollment.parentId,
-              resolved: false,
-            }),
-          );
-        }
+    } else if (enrollment?.challenge?.authorId) {
+      const existing = await this.reviewQueueRepo.findOne({ where: { sessionId: id } });
+      if (!existing) {
+        await this.reviewQueueRepo.save(
+          this.reviewQueueRepo.create({
+            sessionId: id,
+            expertId: enrollment.challenge.authorId,
+            resolved: false,
+          }),
+        );
       }
     }
 
@@ -242,11 +272,20 @@ export class SessionsService {
     return this.enrollmentRepo.save(enrollment);
   }
 
-  async findEnrollmentsByChild(childId: string): Promise<ChallengeEnrollment[]> {
-    return this.enrollmentRepo.find({
+  async findEnrollmentsByChild(childId: string): Promise<any[]> {
+    const enrollments = await this.enrollmentRepo.find({
       where: { childId, status: EnrollmentStatus.ACTIVE },
       relations: ['challenge'],
     });
+
+    return Promise.all(
+      enrollments.map(async (e) => {
+        const completedParts = await this.sessionRepo.count({
+          where: { enrollmentId: e.id, status: SessionStatus.COMPLETED },
+        });
+        return { ...e, completedParts };
+      }),
+    );
   }
 
   async findEnrollmentsByParent(parentId: string): Promise<ChallengeEnrollment[]> {
@@ -256,16 +295,16 @@ export class SessionsService {
     });
   }
 
-  async findReviewQueue(parentId: string): Promise<ReviewQueue[]> {
+  async findReviewQueue(expertId: string): Promise<ReviewQueue[]> {
     return this.reviewQueueRepo.find({
-      where: { parentId, resolved: false },
-      relations: ['session'],
+      where: { expertId, resolved: false },
+      relations: ['session', 'session.enrollment', 'session.enrollment.challenge', 'session.child'],
     });
   }
 
-  async approveReview(id: string, parentId: string): Promise<ReviewQueue> {
+  async approveReview(id: string, expertId: string): Promise<ReviewQueue> {
     const item = await this.reviewQueueRepo.findOne({
-      where: { id, parentId },
+      where: { id, expertId },
       relations: ['session'],
     });
     if (!item) throw new NotFoundException('Review item not found');
@@ -277,6 +316,9 @@ export class SessionsService {
     });
 
     if (enrollment?.challenge) {
+      item.session.status = SessionStatus.COMPLETED;
+      await this.sessionRepo.save(item.session);
+
       await this.coinsService.transfer({
         fromId: 'system',
         fromType: 'system',
@@ -286,6 +328,7 @@ export class SessionsService {
         type: CoinTransactionType.EARN,
         referenceId: `review-approve-${id}`,
       });
+      await this.childrenService.incrementStreak(item.session.childId);
     }
 
     item.resolved = true;
@@ -293,8 +336,8 @@ export class SessionsService {
     return this.reviewQueueRepo.save(item);
   }
 
-  async rejectReview(id: string, parentId: string): Promise<ReviewQueue> {
-    const item = await this.reviewQueueRepo.findOne({ where: { id, parentId } });
+  async rejectReview(id: string, expertId: string): Promise<ReviewQueue> {
+    const item = await this.reviewQueueRepo.findOne({ where: { id, expertId } });
     if (!item) throw new NotFoundException('Review item not found');
     item.resolved = true;
     item.resolvedAt = new Date();

@@ -46,12 +46,12 @@ export class ChallengesService {
       bookTitle: string;
       bookAuthor: string;
       pagesTotal: number;
-      pagesPerDay: number;
+      pagesPerPart: number;
       description?: string;
       category?: ChallengeCategory;
       ageMin: number;
       ageMax: number;
-      days: number;
+      totalParts: number;
       price: number;
       coinsReward: number;
     },

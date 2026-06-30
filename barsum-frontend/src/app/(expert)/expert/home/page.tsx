@@ -1,15 +1,17 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { BookMarked, LogOut, Plus, TrendingUp, Users2 } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { BookMarked, CheckCircle, LogOut, Plus, TrendingUp, Users2, XCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { challengesApi } from "@/lib/api/challenges";
 import { expertsApi } from "@/lib/api/experts";
+import { sessionsApi } from "@/lib/api/sessions";
 import { useAuthStore } from "@/stores/auth-store";
 
 interface Challenge {
   id: string; title: string; bookTitle: string; bookAuthor: string;
-  days: number; price: number; coinsReward: number;
+  totalParts: number; price: number; coinsReward: number;
   ageMin: number; ageMax: number;
   status: "draft" | "moderation" | "published" | "rejected";
   membersCount: number;
@@ -33,10 +35,31 @@ export default function ExpertHomePage() {
   const user = useAuthStore((s) => s.user);
   const clearAuth = useAuthStore((s) => s.clearAuth);
 
+  const queryClient = useQueryClient();
   const { data: stats } = useQuery({ queryKey: ["expert-stats"], queryFn: expertsApi.stats });
   const { data: challenges = [], isLoading } = useQuery({
     queryKey: ["challenges-list"],
     queryFn: () => challengesApi.list(),
+  });
+  const { data: reviewQueue = [] } = useQuery({
+    queryKey: ["review-queue"],
+    queryFn: sessionsApi.reviewQueue,
+    refetchInterval: 30000,
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: (id: string) => sessionsApi.approveReview(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["review-queue"] });
+      toast.success("Засчитано! Монеты начислены");
+    },
+  });
+  const rejectMutation = useMutation({
+    mutationFn: (id: string) => sessionsApi.rejectReview(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["review-queue"] });
+      toast.success("Отправлено на повтор");
+    },
   });
 
   const publishedChallenges = (challenges as Challenge[]).filter((c) => c.status === "published");
@@ -128,6 +151,68 @@ export default function ExpertHomePage() {
           </button>
         </div>
 
+        {/* Review Queue */}
+        {(reviewQueue as any[]).length > 0 && (
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                На проверке
+              </p>
+              <span style={{ padding: "3px 10px", fontSize: 12, fontWeight: 900, color: "#ffffff", background: "rgba(255,80,80,0.4)", borderRadius: 9999 }}>
+                {(reviewQueue as any[]).length}
+              </span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {(reviewQueue as any[]).map((item: any) => {
+                const s = item.session;
+                const child = s?.child;
+                const ch = s?.enrollment?.challenge;
+                return (
+                  <div key={item.id} className="glass" style={{ padding: 16, borderRadius: 16, border: "1px solid rgba(255,150,100,0.3)" }}>
+                    <div style={{ marginBottom: 10 }}>
+                      <p style={{ margin: 0, fontWeight: 900, fontSize: 14, color: "#ffffff" }}>
+                        {child?.name || "Ребёнок"} · {ch?.bookTitle || "Книга"}
+                      </p>
+                      <p style={{ margin: "3px 0 0", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.55)" }}>
+                        Часть {s?.partNumber} · {new Date(item.createdAt).toLocaleDateString("ru-RU")}
+                      </p>
+                    </div>
+                    {s?.transcription ? (
+                      <div style={{ background: "rgba(255,255,255,0.08)", borderRadius: 10, padding: "8px 10px", marginBottom: 10 }}>
+                        <p style={{ margin: 0, fontSize: 12, color: "rgba(255,255,255,0.75)", lineHeight: 1.5, fontStyle: "italic" }}>
+                          «{s.transcription.slice(0, 200)}{s.transcription.length > 200 ? "..." : ""}»
+                        </p>
+                      </div>
+                    ) : (
+                      <p style={{ margin: "0 0 10px", fontSize: 12, color: "rgba(255,255,255,0.45)", fontStyle: "italic" }}>
+                        Аудио не содержит речи
+                      </p>
+                    )}
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button
+                        onClick={() => approveMutation.mutate(item.id)}
+                        disabled={approveMutation.isPending || rejectMutation.isPending}
+                        style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "none", background: "rgba(0,200,100,0.3)", color: "#aaffcc", fontWeight: 900, fontSize: 13, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+                      >
+                        <CheckCircle size={15} strokeWidth={2.5} />
+                        Засчитать
+                      </button>
+                      <button
+                        onClick={() => rejectMutation.mutate(item.id)}
+                        disabled={approveMutation.isPending || rejectMutation.isPending}
+                        style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "none", background: "rgba(255,80,80,0.25)", color: "#ffaaaa", fontWeight: 900, fontSize: 13, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+                      >
+                        <XCircle size={15} strokeWidth={2.5} />
+                        Повторить
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Published list */}
         <div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
@@ -167,7 +252,7 @@ export default function ExpertHomePage() {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p style={{ margin: 0, fontWeight: 900, fontSize: 14, color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.title}</p>
                         <p style={{ margin: "3px 0 0", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.55)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {c.bookTitle} · {c.days} дней
+                          {c.bookTitle} · {c.totalParts} частей
                         </p>
                       </div>
                       <span style={{ fontSize: 11, padding: "4px 10px", borderRadius: 9999, fontWeight: 800, flexShrink: 0, background: s.bg, color: s.color }}>
