@@ -150,6 +150,7 @@ export default function ChildHomePage() {
   const { data: enrollments = [], isLoading } = useQuery({
     queryKey: ["enrollments"],
     queryFn: sessionsApi.listEnrollments,
+    refetchOnMount: "always",
   });
 
   const { data: balance_data } = useQuery({

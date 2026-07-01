@@ -16,6 +16,7 @@ interface Session {
   transcription?: string;
   aiScore?: number;
   status: "pending" | "completed" | "failed";
+  coinsPerPart: number;
   createdAt: string;
 }
 
@@ -333,8 +334,9 @@ function Confetti() {
 }
 
 // ─── Phase: done ──────────────────────────────────────────────────────────────
-function PhaseDone({ session }: { session: Session }) {
+function PhaseDone({ session, coinsPerPart }: { session: Session; coinsPerPart: number }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const isCompleted = session.status === "completed";
 
   return (
@@ -353,7 +355,7 @@ function PhaseDone({ session }: { session: Session }) {
             <p style={{ fontSize: 48, margin: 0, animation: "streakPulse 0.8s ease 0.5s both" }}>🔥</p>
             <div style={{ animation: "coinPop 0.6s ease 0.3s both" }}>
               <p style={{ fontSize: 24, fontWeight: 900, color: "#ffffff", margin: 0 }}>
-                +500 монет начислено! 🪙
+                {coinsPerPart > 0 ? `+${coinsPerPart} монет начислено! 🪙` : "Часть засчитана! 🎉"}
               </p>
             </div>
             <p style={{ fontSize: 13, color: "rgba(255,255,255,0.65)", margin: 0 }}>
@@ -383,7 +385,11 @@ function PhaseDone({ session }: { session: Session }) {
         </>
       )}
       <button
-        onClick={() => router.push("/child/home")}
+        onClick={() => {
+          queryClient.invalidateQueries({ queryKey: ["enrollments"] });
+          queryClient.invalidateQueries({ queryKey: ["sessions-by-enrollment"] });
+          router.push("/child/home");
+        }}
         className="btn-white"
         style={{ color: "#4776e6", display: "flex", alignItems: "center", gap: 10 }}
       >
@@ -446,7 +452,7 @@ export default function SessionPage() {
         >
           {session.partNumber}
         </div>
-        <div>
+        <div style={{ flex: 1 }}>
           <p style={{ fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em", margin: 0 }}>
             Часть {session.partNumber}
           </p>
@@ -454,6 +460,12 @@ export default function SessionPage() {
             Чтение вслух
           </p>
         </div>
+        {session.coinsPerPart > 0 && (
+          <div className="glass-chip" style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", flexShrink: 0 }}>
+            <span style={{ fontSize: 14 }}>🪙</span>
+            <span style={{ fontWeight: 900, fontSize: 14, color: "#ffd200" }}>+{session.coinsPerPart}</span>
+          </div>
+        )}
       </div>
 
       {/* Phase content */}
@@ -467,7 +479,7 @@ export default function SessionPage() {
       {(session.phase === "transcribing" || session.phase === "analyzing") && (
         <PhaseProcessing />
       )}
-      {session.phase === "done" && <PhaseDone session={session} />}
+      {session.phase === "done" && <PhaseDone session={session} coinsPerPart={session.coinsPerPart ?? 0} />}
     </main>
   );
 }

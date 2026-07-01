@@ -58,6 +58,8 @@ export interface ChallengeEnrollment {
   challengeId: string;
   challenge?: Challenge;
   parentId: string;
+  coinsPerPart: number;
+  completedParts?: number;
   status: "active" | "completed" | "cancelled";
   startedAt?: string;
   completedAt?: string;

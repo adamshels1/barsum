@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Camera, CheckCircle2, ChevronRight, Pencil, Sparkles } from "lucide-react";
-import { useRef, useState, Suspense } from "react";
+import { useRef, useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { coinsApi } from "@/lib/api/coins";
@@ -814,6 +814,11 @@ function ChildShopInner() {
   const searchParams = useSearchParams();
   const initialTab = searchParams.get("tab") === "dream" ? "dream" : "rewards";
   const [activeTab, setActiveTab] = useState<"rewards" | "dream">(initialTab);
+
+  useEffect(() => {
+    const tab = searchParams.get("tab") === "dream" ? "dream" : "rewards";
+    setActiveTab(tab);
+  }, [searchParams]);
   const user = useAuthStore((s) => s.user);
   const childId: string = user?.id ?? "";
 

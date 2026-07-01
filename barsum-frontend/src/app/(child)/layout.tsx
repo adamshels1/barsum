@@ -1,25 +1,22 @@
 "use client";
 
-import { BookOpen, ShoppingBag, Sparkles } from "lucide-react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { BookOpen, ShoppingBag } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
 import { Suspense } from "react";
 import { useAuthStore } from "@/stores/auth-store";
 import { useQuery } from "@tanstack/react-query";
 import { coinsApi } from "@/lib/api/coins";
-import { dreamsApi } from "@/lib/api/dreams";
 
 const BG = "linear-gradient(135deg, #4776e6 0%, #6a3de8 60%, #8e54e9 100%)";
 
 const tabs = [
   { label: "Задания", Icon: BookOpen, href: "/child/home", match: "/child/home" },
   { label: "Магазин", Icon: ShoppingBag, href: "/child/shop", match: "/child/shop" },
-  { label: "Мечта", Icon: Sparkles, href: "/child/shop?tab=dream", match: "" },
 ];
 
 function ChildLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const user = useAuthStore((s) => s.user);
   const isSession = pathname?.includes("/child/session");
 
@@ -29,18 +26,10 @@ function ChildLayoutInner({ children }: { children: React.ReactNode }) {
     enabled: !!user?.id,
   });
 
-  const { data: dream } = useQuery({
-    queryKey: ["dream-my"],
-    queryFn: dreamsApi.my,
-    enabled: !isSession,
-  });
-
   const balance: number = balanceData?.balance ?? 0;
-  const hasDreamBadge = dream?.status === "pending_approval";
 
-  const isDreamTab = pathname?.startsWith("/child/shop") && searchParams?.get("tab") === "dream";
   const activeTab =
-    pathname === "/child/home" ? 0 : isDreamTab ? 2 : pathname?.startsWith("/child/shop") ? 1 : -1;
+    pathname === "/child/home" ? 0 : pathname?.startsWith("/child/shop") ? 1 : -1;
 
   return (
     <div style={{ minHeight: "100dvh", background: BG, position: "relative" }}>
@@ -101,7 +90,6 @@ function ChildLayoutInner({ children }: { children: React.ReactNode }) {
           {tabs.map((tab, i) => {
             const isActive = i === activeTab;
             const { Icon } = tab;
-            const showBadge = i === 2 && hasDreamBadge;
 
             return (
               <button
@@ -112,7 +100,6 @@ function ChildLayoutInner({ children }: { children: React.ReactNode }) {
                   flexDirection: "column",
                   alignItems: "center",
                   gap: 4,
-                  position: "relative",
                   minWidth: 72,
                   background: "transparent",
                   border: "none",
@@ -138,9 +125,6 @@ function ChildLayoutInner({ children }: { children: React.ReactNode }) {
                 <span style={{ fontSize: 11, fontWeight: isActive ? 800 : 600, color: isActive ? "#ffffff" : "rgba(255,255,255,0.5)", transition: "all 0.15s" }}>
                   {tab.label}
                 </span>
-                {showBadge && (
-                  <span style={{ position: "absolute", top: 4, right: 14, width: 8, height: 8, borderRadius: "50%", background: "#ffd200", border: "1.5px solid rgba(0,0,0,0.2)" }} />
-                )}
               </button>
             );
           })}

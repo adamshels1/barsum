@@ -85,7 +85,11 @@ export default function BookPage() {
     <main style={{ minHeight: "100dvh", padding: "52px 20px 40px", maxWidth: 512, margin: "0 auto" }}>
       {/* Back */}
       <button
-        onClick={() => router.push("/child/home")}
+        onClick={() => {
+          queryClient.invalidateQueries({ queryKey: ["enrollments"] });
+          queryClient.invalidateQueries({ queryKey: ["sessions-by-enrollment", enrollmentId] });
+          router.push("/child/home");
+        }}
         style={{ display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.65)", fontSize: 14, fontWeight: 700, fontFamily: "inherit", marginBottom: 20, padding: 0 }}
       >
         <ChevronLeft size={18} strokeWidth={2.5} />

@@ -74,10 +74,11 @@ export class SessionsService {
     return this.sessionRepo.save(session);
   }
 
-  async findById(id: string): Promise<Session> {
+  async findById(id: string): Promise<Session & { coinsPerPart?: number }> {
     const s = await this.sessionRepo.findOne({ where: { id } });
     if (!s) throw new NotFoundException('Session not found');
-    return s;
+    const enrollment = await this.enrollmentRepo.findOne({ where: { id: s.enrollmentId } });
+    return { ...s, coinsPerPart: enrollment?.coinsPerPart ?? 0 };
   }
 
   async findByChild(childId: string): Promise<Session[]> {
@@ -153,13 +154,13 @@ export class SessionsService {
         where: { id: session.enrollmentId },
         relations: ['challenge'],
       });
-      if (enrollment?.challenge) {
+      if (enrollment && enrollment.coinsPerPart > 0) {
         await this.coinsService.transfer({
           fromId: 'system',
           fromType: 'system',
           toId: childId,
           toType: 'child',
-          amount: enrollment.challenge.coinsReward,
+          amount: enrollment.coinsPerPart,
           type: CoinTransactionType.EARN,
           referenceId: `session-earn-${id}`,
         });
@@ -219,13 +220,13 @@ export class SessionsService {
 
     if (result.score >= 80) {
       session.status = SessionStatus.COMPLETED;
-      if (enrollment?.challenge) {
+      if (enrollment && enrollment.coinsPerPart > 0) {
         await this.coinsService.transfer({
           fromId: 'system',
           fromType: 'system',
           toId: childId,
           toType: 'child',
-          amount: enrollment.challenge.coinsReward,
+          amount: enrollment.coinsPerPart,
           type: CoinTransactionType.EARN,
           referenceId: `session-earn-${id}`,
         });
@@ -315,19 +316,21 @@ export class SessionsService {
       relations: ['challenge'],
     });
 
-    if (enrollment?.challenge) {
+    if (enrollment) {
       item.session.status = SessionStatus.COMPLETED;
       await this.sessionRepo.save(item.session);
 
-      await this.coinsService.transfer({
-        fromId: 'system',
-        fromType: 'system',
-        toId: item.session.childId,
-        toType: 'child',
-        amount: enrollment.challenge.coinsReward,
-        type: CoinTransactionType.EARN,
-        referenceId: `review-approve-${id}`,
-      });
+      if (enrollment.coinsPerPart > 0) {
+        await this.coinsService.transfer({
+          fromId: 'system',
+          fromType: 'system',
+          toId: item.session.childId,
+          toType: 'child',
+          amount: enrollment.coinsPerPart,
+          type: CoinTransactionType.EARN,
+          referenceId: `review-approve-${id}`,
+        });
+      }
       await this.childrenService.incrementStreak(item.session.childId);
     }
 

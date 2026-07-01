@@ -10,6 +10,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Payment } from './entities/payment.entity';
 import { ChallengeEnrollment } from '../sessions/entities/enrollment.entity';
+import { Challenge } from '../challenges/entities/challenge.entity';
 import { CoinsService } from '../coins/coins.service';
 import { PaymentStatus, CoinTransactionType, EnrollmentStatus } from '../common/enums';
 
@@ -22,6 +23,8 @@ export class PaymentsService {
     private paymentRepo: Repository<Payment>,
     @InjectRepository(ChallengeEnrollment)
     private enrollmentRepo: Repository<ChallengeEnrollment>,
+    @InjectRepository(Challenge)
+    private challengeRepo: Repository<Challenge>,
     private coinsService: CoinsService,
   ) {}
 
@@ -91,29 +94,22 @@ export class PaymentsService {
     payment.resolvedAt = new Date();
     await this.paymentRepo.save(payment);
 
-    // Зачисляем монеты на баланс ребёнка
-    if (payment.coinsAmount > 0) {
-      await this.coinsService.transfer({
-        fromId: 'system',
-        fromType: 'system',
-        toId: payment.childId,
-        toType: 'child',
-        amount: payment.coinsAmount,
-        type: CoinTransactionType.PURCHASE,
-        referenceId: `payment-coins-${id}`,
-      });
-    }
-
-    // Создаём enrollment ребёнка на челлендж (если ещё нет)
+    // Создаём enrollment и сохраняем coinsPerPart (монеты делятся по частям)
     const existing = await this.enrollmentRepo.findOne({
       where: { childId: payment.childId, challengeId: payment.challengeId },
     });
     if (!existing) {
+      const challenge = await this.challengeRepo.findOne({ where: { id: payment.challengeId } });
+      const totalParts = challenge?.totalParts || 1;
+      const coinsPerPart = payment.coinsAmount > 0
+        ? Math.floor(payment.coinsAmount / totalParts)
+        : 0;
       const enrollment = this.enrollmentRepo.create({
         childId: payment.childId,
         challengeId: payment.challengeId,
         parentId: payment.parentId,
         status: EnrollmentStatus.ACTIVE,
+        coinsPerPart,
         startedAt: new Date(),
       });
       await this.enrollmentRepo.save(enrollment);

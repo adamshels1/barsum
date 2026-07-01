@@ -1,9 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: ["*.ngrok-free.app"],
   experimental: {
     serverActions: {
-      allowedOrigins: ["localhost:3011"],
+      allowedOrigins: ["localhost:3011", "*.ngrok-free.app"],
     },
   },
   async headers() {

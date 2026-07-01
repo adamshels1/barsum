@@ -33,6 +33,9 @@ export class ChallengeEnrollment {
   @Column({ type: 'enum', enum: EnrollmentStatus, default: EnrollmentStatus.ACTIVE })
   status: EnrollmentStatus;
 
+  @Column({ default: 0 })
+  coinsPerPart: number;
+
   @Column({ nullable: true, type: 'timestamp' })
   startedAt: Date;
 
