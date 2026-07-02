@@ -17,6 +17,7 @@ interface Reward {
   cost: number;
   type: string;
   isActive: boolean;
+  photoUrl?: string | null;
 }
 
 interface Dream {
@@ -34,14 +35,6 @@ const TYPE_EMOJI: Record<string, string> = {
   time: "⏰",
   experience: "🎉",
 };
-
-const TYPE_LABEL: Record<string, string> = {
-  snack: "🍕 Вкусняшки",
-  time: "⏰ Время",
-  experience: "🎡 Приключения",
-};
-
-const TYPE_ORDER = ["snack", "time", "experience"];
 
 function ConfirmModal({
   reward,
@@ -82,16 +75,21 @@ function ConfirmModal({
           <div
             className="glass-chip"
             style={{
-              width: 64,
-              height: 64,
+              width: 88,
+              height: 88,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: 32,
+              fontSize: 40,
               margin: "0 auto 16px",
+              overflow: "hidden",
             }}
           >
-            {TYPE_EMOJI[reward.type] ?? "🎁"}
+            {reward.photoUrl ? (
+              <img src={reward.photoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            ) : (
+              TYPE_EMOJI[reward.type] ?? "🎁"
+            )}
           </div>
           <h3 style={{ margin: 0, fontSize: 20, fontWeight: 900, color: "#ffffff" }}>
             Запросить награду?
@@ -204,20 +202,6 @@ function RewardsTab({ childId }: { childId: string }) {
     );
   }
 
-  const grouped = TYPE_ORDER.reduce(
-    (acc, type) => {
-      const items = activeRewards.filter((r) => r.type === type);
-      if (items.length) acc.push({ type, items });
-      return acc;
-    },
-    [] as { type: string; items: Reward[] }[]
-  );
-
-  const ungrouped = activeRewards.filter(
-    (r) => !TYPE_ORDER.includes(r.type)
-  );
-  if (ungrouped.length) grouped.push({ type: "other", items: ungrouped });
-
   return (
     <>
       {/* Balance card */}
@@ -259,13 +243,8 @@ function RewardsTab({ childId }: { childId: string }) {
         </div>
       )}
 
-      {grouped.map(({ type, items }) => (
-        <div key={type} style={{ marginBottom: 24 }}>
-          <h3 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 800, color: "#ffffff" }}>
-            {TYPE_LABEL[type] ?? "🎁 Другое"}
-          </h3>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            {items.map((reward) => {
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        {activeRewards.map((reward) => {
               const canAfford = balance >= reward.cost;
               const diff = reward.cost - balance;
 
@@ -284,16 +263,21 @@ function RewardsTab({ childId }: { childId: string }) {
                   <div
                     className="glass-sm"
                     style={{
-                      height: 112,
+                      aspectRatio: "1",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       fontSize: 42,
                       position: "relative",
                       borderRadius: 0,
+                      overflow: "hidden",
                     }}
                   >
-                    {TYPE_EMOJI[reward.type] ?? "🎁"}
+                    {reward.photoUrl ? (
+                      <img src={reward.photoUrl} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      TYPE_EMOJI[reward.type] ?? "🎁"
+                    )}
                     {!canAfford && (
                       <div
                         style={{
@@ -356,10 +340,8 @@ function RewardsTab({ childId }: { childId: string }) {
                   </div>
                 </div>
               );
-            })}
-          </div>
-        </div>
-      ))}
+        })}
+      </div>
 
       {selectedReward && (
         <ConfirmModal

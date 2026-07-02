@@ -103,6 +103,7 @@ export interface Reward {
   cost: number;
   type: "snack" | "time" | "experience";
   isActive: boolean;
+  photoUrl?: string | null;
   createdAt: string;
 }
 

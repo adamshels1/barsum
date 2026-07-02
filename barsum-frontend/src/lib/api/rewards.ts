@@ -9,6 +9,11 @@ export const rewardsApi = {
     apiClient.patch(`/rewards/${id}`, data).then((r) => r.data),
   deactivate: (id: string) =>
     apiClient.delete(`/rewards/${id}`).then((r) => r.data),
+  uploadPhoto: (id: string, file: File) => {
+    const fd = new FormData();
+    fd.append("photo", file);
+    return apiClient.post(`/rewards/${id}/photo`, fd).then((r) => r.data);
+  },
   request: (id: string) =>
     apiClient.post(`/rewards/${id}/request`).then((r) => r.data),
   listRequests: () => apiClient.get("/reward-requests").then((r) => r.data),

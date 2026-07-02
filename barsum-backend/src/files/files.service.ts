@@ -10,6 +10,7 @@ const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 export const BUCKET_AUDIO = 'barsum-audio';
 export const BUCKET_RECEIPTS = 'barsum-receipts';
 export const BUCKET_AVATARS = 'barsum-avatars';
+export const BUCKET_REWARDS = 'barsum-rewards';
 
 @Injectable()
 export class FilesService implements OnModuleInit {
@@ -31,15 +32,15 @@ export class FilesService implements OnModuleInit {
   }
 
   async ensureBuckets(): Promise<void> {
-    for (const bucket of [BUCKET_AUDIO, BUCKET_RECEIPTS, BUCKET_AVATARS]) {
+    for (const bucket of [BUCKET_AUDIO, BUCKET_RECEIPTS, BUCKET_AVATARS, BUCKET_REWARDS]) {
       const exists = await this.client.bucketExists(bucket);
       if (!exists) {
         await this.client.makeBucket(bucket, 'us-east-1');
         this.logger.log(`Created bucket: ${bucket}`);
       }
     }
-    // Чеки и аватары отображаются напрямую через <img src>, поэтому читаются анонимно.
-    for (const bucket of [BUCKET_RECEIPTS, BUCKET_AVATARS]) {
+    // Чеки, аватары и награды отображаются напрямую через <img src>, поэтому читаются анонимно.
+    for (const bucket of [BUCKET_RECEIPTS, BUCKET_AVATARS, BUCKET_REWARDS]) {
       await this.client.setBucketPolicy(bucket, JSON.stringify({
         Version: '2012-10-17',
         Statement: [
@@ -100,6 +101,11 @@ export class FilesService implements OnModuleInit {
   async uploadAvatar(file: Express.Multer.File, ownerId: string): Promise<string> {
     const filename = `${ownerId}/${Date.now()}-${file.originalname}`;
     return this.uploadFile(file.buffer, filename, BUCKET_AVATARS, file.mimetype);
+  }
+
+  async uploadReward(file: Express.Multer.File, rewardId: string): Promise<string> {
+    const filename = `${rewardId}/${Date.now()}-${file.originalname}`;
+    return this.uploadFile(file.buffer, filename, BUCKET_REWARDS, file.mimetype);
   }
 
   async getBuffer(objectPath: string, bucket: string): Promise<Buffer> {

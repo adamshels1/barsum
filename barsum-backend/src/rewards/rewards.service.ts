@@ -24,7 +24,7 @@ export class RewardsService {
     return this.rewardRepo.find({ where: { parentId, isActive: true } });
   }
 
-  async create(parentId: string, dto: { name: string; cost: number; type: RewardType }): Promise<Reward> {
+  async create(parentId: string, dto: { name: string; cost: number; type: RewardType; photoUrl?: string }): Promise<Reward> {
     const reward = this.rewardRepo.create({ ...dto, parentId, isActive: true });
     return this.rewardRepo.save(reward);
   }

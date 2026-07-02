@@ -1,7 +1,8 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { Camera } from "lucide-react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api/client";
 import { rewardsApi } from "@/lib/api/rewards";
@@ -46,9 +47,25 @@ function CreateRewardModal({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState("");
   const [cost, setCost] = useState("");
   const [type, setType] = useState<"snack" | "time" | "experience">("snack");
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+  };
 
   const mutation = useMutation({
-    mutationFn: () => rewardsApi.create({ name, cost: Number(cost), type }),
+    mutationFn: async () => {
+      const created = await rewardsApi.create({ name, cost: Number(cost), type });
+      if (photoFile) {
+        await rewardsApi.uploadPhoto(created.id, photoFile);
+      }
+      return created;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rewards"] });
       toast.success("Награда создана!");
@@ -68,6 +85,17 @@ function CreateRewardModal({ onClose }: { onClose: () => void }) {
       <div style={{ width: "100%", maxWidth: 400, background: "rgba(20,10,60,0.92)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "28px 28px 0 0", padding: "28px 24px 40px" }}>
         <h3 style={{ margin: "0 0 20px", fontSize: 20, fontWeight: 900, color: "#ffffff" }}>Новая награда</h3>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <input ref={fileInputRef} type="file" accept="image/png,image/jpeg" onChange={handlePhotoChange} style={{ display: "none" }} />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            style={{ alignSelf: "center", width: 72, height: 72, borderRadius: 20, border: "2px dashed rgba(255,255,255,0.35)", background: photoPreview ? `url(${photoPreview}) center/cover` : "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+          >
+            {!photoPreview && <Camera size={20} color="rgba(255,255,255,0.6)" strokeWidth={2} />}
+          </button>
+          <p style={{ margin: "-8px 0 0", fontSize: 12, color: "rgba(255,255,255,0.5)", textAlign: "center" }}>
+            {photoPreview ? "Фото выбрано" : "Картинка награды (необязательно)"}
+          </p>
           <div>
             <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", marginBottom: 6 }}>Название</label>
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Например: Час игры" className="glass-input" />
@@ -122,8 +150,12 @@ function RewardCard({ reward }: { reward: Reward }) {
 
   return (
     <div style={{ ...GLASS, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 }}>
-      <div style={{ width: 48, height: 48, borderRadius: 14, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>
-        {TYPE_LABELS[reward.type]?.emoji ?? "🎁"}
+      <div style={{ width: 72, height: 72, borderRadius: 18, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, flexShrink: 0, overflow: "hidden" }}>
+        {reward.photoUrl ? (
+          <img src={reward.photoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        ) : (
+          TYPE_LABELS[reward.type]?.emoji ?? "🎁"
+        )}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ margin: 0, fontWeight: 800, color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{reward.name}</p>

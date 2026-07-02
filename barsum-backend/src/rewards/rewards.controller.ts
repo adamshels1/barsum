@@ -1,9 +1,11 @@
 import {
-  Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Request,
+  Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Request, UploadedFile, UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RewardsService } from './rewards.service';
+import { FilesService } from '../files/files.service';
 import { RewardType } from '../common/enums';
 
 @ApiTags('rewards')
@@ -11,7 +13,10 @@ import { RewardType } from '../common/enums';
 @UseGuards(JwtAuthGuard)
 @Controller('rewards')
 export class RewardsController {
-  constructor(private readonly rewardsService: RewardsService) {}
+  constructor(
+    private readonly rewardsService: RewardsService,
+    private readonly filesService: FilesService,
+  ) {}
 
   @Get()
   findAll(@Request() req: any) {
@@ -26,8 +31,19 @@ export class RewardsController {
   }
 
   @Post()
-  create(@Request() req: any, @Body() body: { name: string; cost: number; type: RewardType }) {
+  create(@Request() req: any, @Body() body: { name: string; cost: number; type: RewardType; photoUrl?: string }) {
     return this.rewardsService.create(req.user.sub, body);
+  }
+
+  @Post(':id/photo')
+  @UseInterceptors(FileInterceptor('photo'))
+  async uploadPhoto(
+    @Request() req: any,
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const url = await this.filesService.uploadReward(file, id);
+    return this.rewardsService.update(id, req.user.sub, { photoUrl: url });
   }
 
   @Patch(':id')

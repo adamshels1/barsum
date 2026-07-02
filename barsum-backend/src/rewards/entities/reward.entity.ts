@@ -26,6 +26,9 @@ export class Reward {
   @Column({ default: true })
   isActive: boolean;
 
+  @Column({ nullable: true })
+  photoUrl: string | null;
+
   @CreateDateColumn()
   createdAt: Date;
 
