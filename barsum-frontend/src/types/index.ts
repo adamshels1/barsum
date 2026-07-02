@@ -49,6 +49,7 @@ export interface Challenge {
   status: "draft" | "moderation" | "published" | "rejected";
   rejectedReason?: string;
   membersCount: number;
+  coverImage?: string;
   createdAt: string;
 }
 

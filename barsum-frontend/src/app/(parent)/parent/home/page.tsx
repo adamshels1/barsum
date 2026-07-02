@@ -45,14 +45,18 @@ function ChallengeCard({
       className="glass-card"
       style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}
     >
-      <div style={{ height: 120, background: grad, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 12, position: "relative" }}>
-        <p style={{ color: "#ffffff", fontWeight: 900, textAlign: "center", fontSize: 12, lineHeight: 1.3, margin: 0, textShadow: "0 1px 4px rgba(0,0,0,0.25)", WebkitLineClamp: 3, overflow: "hidden", display: "-webkit-box", WebkitBoxOrient: "vertical" }}>
-          {challenge.bookTitle || challenge.title}
-        </p>
-        {challenge.bookAuthor && (
-          <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 10, margin: "4px 0 0", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>
-            {challenge.bookAuthor}
-          </p>
+      <div style={{ ...(challenge.coverImage ? { aspectRatio: "1 / 1" } : { height: 120 }), background: challenge.coverImage ? `url(${challenge.coverImage}) center/cover` : grad, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 12, position: "relative" }}>
+        {!challenge.coverImage && (
+          <>
+            <p style={{ color: "#ffffff", fontWeight: 900, textAlign: "center", fontSize: 12, lineHeight: 1.3, margin: 0, textShadow: "0 1px 4px rgba(0,0,0,0.25)", WebkitLineClamp: 3, overflow: "hidden", display: "-webkit-box", WebkitBoxOrient: "vertical" }}>
+              {challenge.bookTitle || challenge.title}
+            </p>
+            {challenge.bookAuthor && (
+              <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 10, margin: "4px 0 0", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>
+                {challenge.bookAuthor}
+              </p>
+            )}
+          </>
         )}
         <span style={{ position: "absolute", top: 8, left: 8, fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 9999, background: "rgba(0,0,0,0.25)", color: "#ffffff" }}>
           {challenge.totalParts} частей
@@ -189,7 +193,7 @@ function PurchaseModal({
         }}
       >
         {/* Cover */}
-        <div style={{ height: 120, background: grad, position: "relative", borderRadius: "28px 28px 0 0", display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "flex-end", padding: "16px 20px" }}>
+        <div style={{ height: 120, background: challenge.coverImage ? `url(${challenge.coverImage}) center/cover` : grad, position: "relative", borderRadius: "28px 28px 0 0", display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "flex-end", padding: "16px 20px" }}>
           <button
             onClick={onClose}
             style={{ position: "absolute", top: 16, right: 16, width: 32, height: 32, borderRadius: "50%", background: "rgba(0,0,0,0.3)", border: "none", color: "#ffffff", fontSize: 16, fontWeight: 900, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
