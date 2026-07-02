@@ -20,6 +20,11 @@ export class ChallengesController {
     return this.challengesService.findByAuthor(req.user.sub);
   }
 
+  @Get('books/catalog')
+  findBookCatalog() {
+    return this.challengesService.findBookCatalog();
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.challengesService.findById(id);

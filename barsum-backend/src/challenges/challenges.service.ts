@@ -40,6 +40,31 @@ export class ChallengesService {
     return this.challengeRepo.find({ where: { authorId } });
   }
 
+  async findBookCatalog(): Promise<
+    { title: string; author: string; pages: number; ageMin: number; ageMax: number; coverImage: string | null }[]
+  > {
+    const challenges = await this.challengeRepo.find({
+      where: { status: ChallengeStatus.PUBLISHED },
+      select: ['bookTitle', 'bookAuthor', 'pagesTotal', 'ageMin', 'ageMax', 'coverImage'],
+      order: { bookTitle: 'ASC' },
+    });
+    const seen = new Set<string>();
+    const catalog: { title: string; author: string; pages: number; ageMin: number; ageMax: number; coverImage: string | null }[] = [];
+    for (const c of challenges) {
+      if (seen.has(c.bookTitle)) continue;
+      seen.add(c.bookTitle);
+      catalog.push({
+        title: c.bookTitle,
+        author: c.bookAuthor,
+        pages: c.pagesTotal,
+        ageMin: c.ageMin,
+        ageMax: c.ageMax,
+        coverImage: c.coverImage ?? null,
+      });
+    }
+    return catalog;
+  }
+
   async create(
     dto: {
       title: string;

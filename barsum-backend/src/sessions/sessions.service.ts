@@ -98,6 +98,7 @@ export class SessionsService {
   async findByChildForParent(childId: string, _parentId: string): Promise<Session[]> {
     return this.sessionRepo.find({
       where: { childId },
+      relations: ['enrollment', 'enrollment.challenge'],
       order: { createdAt: 'DESC' },
     });
   }

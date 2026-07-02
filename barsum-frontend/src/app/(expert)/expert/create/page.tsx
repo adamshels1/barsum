@@ -15,30 +15,8 @@ interface BookOption {
   pages: number;
   ageMin: number;
   ageMax: number;
+  coverImage?: string | null;
 }
-
-const BOOK_CATALOG: BookOption[] = [
-  { title: "Маленький принц", author: "Антуан де Сент-Экзюпери", pages: 96, ageMin: 7, ageMax: 12 },
-  { title: "Алиса в Стране чудес", author: "Льюис Кэрролл", pages: 176, ageMin: 7, ageMax: 12 },
-  { title: "Приключения Тома Сойера", author: "Марк Твен", pages: 288, ageMin: 10, ageMax: 14 },
-  { title: "Гарри Поттер и философский камень", author: "Дж. К. Роулинг", pages: 432, ageMin: 9, ageMax: 14 },
-  { title: "Волшебник Изумрудного города", author: "Александр Волков", pages: 208, ageMin: 6, ageMax: 10 },
-  { title: "Мумий-тролль и другие", author: "Туве Янссон", pages: 256, ageMin: 6, ageMax: 10 },
-  { title: "Карлсон, который живёт на крыше", author: "Астрид Линдгрен", pages: 192, ageMin: 6, ageMax: 10 },
-  { title: "Пиноккио", author: "Карло Коллоди", pages: 224, ageMin: 6, ageMax: 10 },
-  { title: "20 000 лье под водой", author: "Жюль Верн", pages: 480, ageMin: 10, ageMax: 14 },
-  { title: "Остров сокровищ", author: "Роберт Льюис Стивенсон", pages: 288, ageMin: 10, ageMax: 14 },
-  { title: "Хоббит", author: "Дж. Р. Р. Толкин", pages: 320, ageMin: 10, ageMax: 14 },
-  { title: "Дети капитана Гранта", author: "Жюль Верн", pages: 512, ageMin: 10, ageMax: 14 },
-  { title: "Три мушкетёра", author: "Александр Дюма", pages: 576, ageMin: 12, ageMax: 16 },
-  { title: "Робинзон Крузо", author: "Даниэль Дефо", pages: 320, ageMin: 10, ageMax: 14 },
-  { title: "Приключения Буратино", author: "Алексей Толстой", pages: 192, ageMin: 6, ageMax: 10 },
-  { title: "Медной горы хозяйка", author: "Павел Бажов", pages: 240, ageMin: 8, ageMax: 12 },
-  { title: "Белый пудель", author: "Александр Куприн", pages: 64, ageMin: 8, ageMax: 12 },
-  { title: "Чебурашка", author: "Эдуард Успенский", pages: 128, ageMin: 6, ageMax: 10 },
-  { title: "Денискины рассказы", author: "Виктор Драгунский", pages: 256, ageMin: 7, ageMax: 11 },
-  { title: "Тимур и его команда", author: "Аркадий Гайдар", pages: 128, ageMin: 10, ageMax: 14 },
-];
 
 /* ─── Types ─────────────────────────────────────────── */
 interface FormData {
@@ -227,21 +205,25 @@ function Step1({
   data,
   update,
   onNext,
+  bookCatalog,
+  catalogLoading,
 }: {
   data: FormData;
   update: (d: Partial<FormData>) => void;
   onNext: () => void;
+  bookCatalog: BookOption[];
+  catalogLoading: boolean;
 }) {
   const [search, setSearch] = useState("");
   const [showList, setShowList] = useState(false);
 
-  const filtered = BOOK_CATALOG.filter(
+  const filtered = bookCatalog.filter(
     (b) =>
       b.title.toLowerCase().includes(search.toLowerCase()) ||
       b.author.toLowerCase().includes(search.toLowerCase())
   );
 
-  const selectedBook = BOOK_CATALOG.find((b) => b.title === data.bookTitle);
+  const selectedBook = bookCatalog.find((b) => b.title === data.bookTitle);
 
   const selectBook = (book: BookOption) => {
     update({
@@ -372,7 +354,11 @@ function Step1({
                   border: "1px solid rgba(255,255,255,0.2)",
                 }}
               >
-                {filtered.length === 0 ? (
+                {catalogLoading ? (
+                  <p style={{ padding: "12px 16px", fontSize: 14, color: "rgba(255,255,255,0.6)", margin: 0 }}>
+                    Загрузка книг...
+                  </p>
+                ) : filtered.length === 0 ? (
                   <p style={{ padding: "12px 16px", fontSize: 14, color: "rgba(255,255,255,0.6)", margin: 0 }}>
                     Ничего не найдено
                   </p>
@@ -744,6 +730,11 @@ function ExpertCreateInner() {
   const [form, setForm] = useState<FormData>(DEFAULT);
   const [success, setSuccess] = useState(false);
 
+  const { data: bookCatalog = [], isLoading: catalogLoading } = useQuery<BookOption[]>({
+    queryKey: ["book-catalog"],
+    queryFn: () => challengesApi.bookCatalog(),
+  });
+
   useQuery({
     queryKey: ["challenge-edit", editId],
     queryFn: () => apiClient.get(`/challenges/${editId}`).then((r) => r.data),
@@ -817,7 +808,13 @@ function ExpertCreateInner() {
         {/* Card wrapper */}
         <div className="glass" style={{ padding: 24, borderRadius: 24 }}>
           {step === 0 && (
-            <Step1 data={form} update={update} onNext={() => setStep(1)} />
+            <Step1
+              data={form}
+              update={update}
+              onNext={() => setStep(1)}
+              bookCatalog={bookCatalog}
+              catalogLoading={catalogLoading}
+            />
           )}
           {step === 1 && (
             <Step2
