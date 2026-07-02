@@ -32,7 +32,7 @@ export class ChildrenService {
     return this.childRepo.save(child);
   }
 
-  async update(id: string, parentId: string, dto: { name?: string; age?: number; password?: string }): Promise<Child> {
+  async update(id: string, parentId: string, dto: { name?: string; age?: number; password?: string; photoUrl?: string }): Promise<Child> {
     const child = await this.findById(id);
     if (!child) throw new NotFoundException('Child not found');
     if (child.parentId !== parentId) throw new ForbiddenException('Not your child');

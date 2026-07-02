@@ -15,4 +15,9 @@ export const childrenApi = {
     id: string,
     data: Partial<{ name: string; age: number; password: string }>
   ) => apiClient.patch(`/children/${id}`, data).then((r) => r.data),
+  uploadPhoto: (id: string, file: File) => {
+    const fd = new FormData();
+    fd.append("photo", file);
+    return apiClient.post(`/children/${id}/photo`, fd).then((r) => r.data);
+  },
 };

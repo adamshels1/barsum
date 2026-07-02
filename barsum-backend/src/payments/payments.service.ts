@@ -38,13 +38,40 @@ export class PaymentsService {
     const coinsTg = Math.floor(dto.coinsAmount / 10);
     const total = dto.challengePrice + coinsTg;
 
+    // Оплата подтверждается родителем на слово (QR Kaspi, без загрузки чека) —
+    // сразу помечаем как confirmed и открываем доступ к заданию.
     const payment = this.paymentRepo.create({
       ...dto,
       coinsTg,
       total,
-      status: PaymentStatus.PENDING,
+      status: PaymentStatus.CONFIRMED,
+      resolvedAt: new Date(),
     });
-    return this.paymentRepo.save(payment);
+    const saved = await this.paymentRepo.save(payment);
+    await this.activateEnrollment(saved);
+    return saved;
+  }
+
+  private async activateEnrollment(payment: Payment): Promise<void> {
+    const existing = await this.enrollmentRepo.findOne({
+      where: { childId: payment.childId, challengeId: payment.challengeId },
+    });
+    if (existing) return;
+
+    const challenge = await this.challengeRepo.findOne({ where: { id: payment.challengeId } });
+    const totalParts = challenge?.totalParts || 1;
+    const coinsPerPart = payment.coinsAmount > 0
+      ? Math.floor(payment.coinsAmount / totalParts)
+      : 0;
+    const enrollment = this.enrollmentRepo.create({
+      childId: payment.childId,
+      challengeId: payment.challengeId,
+      parentId: payment.parentId,
+      status: EnrollmentStatus.ACTIVE,
+      coinsPerPart,
+      startedAt: new Date(),
+    });
+    await this.enrollmentRepo.save(enrollment);
   }
 
   async uploadReceipt(id: string, parentId: string, receiptUrl: string): Promise<Payment> {
@@ -63,6 +90,7 @@ export class PaymentsService {
   async findByParent(parentId: string): Promise<Payment[]> {
     return this.paymentRepo.find({
       where: { parentId },
+      relations: ['child', 'challenge'],
       order: { createdAt: 'DESC' },
     });
   }
@@ -93,27 +121,7 @@ export class PaymentsService {
     payment.status = PaymentStatus.CONFIRMED;
     payment.resolvedAt = new Date();
     await this.paymentRepo.save(payment);
-
-    // Создаём enrollment и сохраняем coinsPerPart (монеты делятся по частям)
-    const existing = await this.enrollmentRepo.findOne({
-      where: { childId: payment.childId, challengeId: payment.challengeId },
-    });
-    if (!existing) {
-      const challenge = await this.challengeRepo.findOne({ where: { id: payment.challengeId } });
-      const totalParts = challenge?.totalParts || 1;
-      const coinsPerPart = payment.coinsAmount > 0
-        ? Math.floor(payment.coinsAmount / totalParts)
-        : 0;
-      const enrollment = this.enrollmentRepo.create({
-        childId: payment.childId,
-        challengeId: payment.challengeId,
-        parentId: payment.parentId,
-        status: EnrollmentStatus.ACTIVE,
-        coinsPerPart,
-        startedAt: new Date(),
-      });
-      await this.enrollmentRepo.save(enrollment);
-    }
+    await this.activateEnrollment(payment);
 
     return payment;
   }

@@ -90,6 +90,62 @@ function ChallengeCard({
   );
 }
 
+function KaspiQrStep({
+  total, onBack, onConfirm, isPending,
+}: {
+  total: number;
+  onBack: () => void;
+  onConfirm: () => void;
+  isPending: boolean;
+}) {
+  return (
+    <div style={{ padding: "16px 20px 32px", display: "flex", flexDirection: "column", gap: 16 }}>
+      <button
+        onClick={onBack}
+        style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.65)", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", padding: 0, alignSelf: "flex-start" }}
+      >
+        ← Назад
+      </button>
+
+      <div style={{ textAlign: "center" }}>
+        <p style={{ margin: "0 0 2px", fontSize: 12, color: "rgba(255,255,255,0.55)" }}>К оплате</p>
+        <p style={{ margin: 0, fontWeight: 900, fontSize: 30, color: "#ffffff" }}>{total.toLocaleString()} ₸</p>
+      </div>
+
+      <div style={{ background: "#ffffff", borderRadius: 20, padding: 12, alignSelf: "center" }}>
+        <img
+          src="/payments/kaspi-qr.png"
+          alt="Kaspi QR"
+          style={{ width: 220, height: "auto", display: "block", borderRadius: 12 }}
+        />
+      </div>
+
+      <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.65)", textAlign: "center", lineHeight: 1.5 }}>
+        Откройте приложение Kaspi.kz, отсканируйте QR и оплатите {total.toLocaleString()} ₸. После оплаты нажмите кнопку ниже.
+      </p>
+
+      <button
+        onClick={onConfirm}
+        disabled={isPending}
+        style={{
+          padding: "16px 20px",
+          borderRadius: 16,
+          border: "none",
+          background: "rgba(255,255,255,0.9)",
+          color: "#4776e6",
+          fontWeight: 900,
+          fontSize: 15,
+          cursor: "pointer",
+          fontFamily: "inherit",
+          opacity: isPending ? 0.6 : 1,
+        }}
+      >
+        {isPending ? "Оформление..." : "✅ Я оплатил(а), подтвердить"}
+      </button>
+    </div>
+  );
+}
+
 function PurchaseModal({
   challenge, children, onClose, onSuccess,
 }: {
@@ -100,6 +156,7 @@ function PurchaseModal({
 }) {
   const [childId, setChildId] = useState("");
   const [coinsAmount, setCoinsAmount] = useState(0);
+  const [step, setStep] = useState<"form" | "qr">("form");
 
   const coinsTg = Math.round(coinsAmount / 10);
   const total = challenge.price + coinsTg;
@@ -145,6 +202,14 @@ function PurchaseModal({
           </p>
         </div>
 
+        {step === "qr" ? (
+          <KaspiQrStep
+            total={total}
+            onBack={() => setStep("form")}
+            onConfirm={() => createMutation.mutate()}
+            isPending={createMutation.isPending}
+          />
+        ) : (
         <div style={{ padding: "20px 20px 32px", display: "flex", flexDirection: "column", gap: 16 }}>
           {/* Child selector */}
           <div>
@@ -160,7 +225,7 @@ function PurchaseModal({
                 value={childId}
                 onChange={(e) => setChildId(e.target.value)}
                 className="glass-input"
-                style={{ appearance: "none", cursor: "pointer" }}
+                style={{ appearance: "none", cursor: "pointer", border: !childId ? "1px solid rgba(255,200,0,0.6)" : undefined }}
               >
                 <option value="" style={{ background: "#2a1a60" }}>— выберите ребёнка —</option>
                 {children.map((ch) => (
@@ -210,8 +275,8 @@ function PurchaseModal({
               <p style={{ margin: "2px 0 0", fontWeight: 900, fontSize: 26, color: "#ffffff" }}>{total.toLocaleString()} ₸</p>
             </div>
             <button
-              onClick={() => createMutation.mutate()}
-              disabled={!childId || createMutation.isPending}
+              onClick={() => setStep("qr")}
+              disabled={!childId}
               style={{
                 padding: "16px 20px",
                 borderRadius: 16,
@@ -222,14 +287,20 @@ function PurchaseModal({
                 fontSize: 14,
                 cursor: "pointer",
                 fontFamily: "inherit",
-                opacity: (!childId || createMutation.isPending) ? 0.45 : 1,
+                opacity: !childId ? 0.45 : 1,
                 transition: "opacity 0.15s",
               }}
             >
-              {createMutation.isPending ? "Оформление..." : `Купить 🚀`}
+              Оплатить 🚀
             </button>
           </div>
+          {!childId && children.length > 0 && (
+            <p style={{ margin: "-8px 0 0", fontSize: 12.5, fontWeight: 700, color: "#ffd200", textAlign: "right" }}>
+              ⚠️ Сначала выберите ребёнка, для которого покупаете
+            </p>
+          )}
         </div>
+        )}
       </div>
     </div>
   );
@@ -245,7 +316,7 @@ function SuccessModal({ onClose }: { onClose: () => void }) {
         <div style={{ fontSize: 64, marginBottom: 20 }}>🎉</div>
         <h2 style={{ margin: 0, fontSize: 24, fontWeight: 900, color: "#ffffff" }}>Покупка оформлена!</h2>
         <p style={{ margin: "10px 0 28px", fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.65)", lineHeight: 1.5 }}>
-          Ребёнок получит доступ к заданию после подтверждения оплаты.
+          Ребёнок уже получил доступ к заданию!
         </p>
         <button
           onClick={onClose}

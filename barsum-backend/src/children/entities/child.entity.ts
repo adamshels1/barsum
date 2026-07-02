@@ -28,6 +28,9 @@ export class Child {
   @Column({ default: 0 })
   streak: number;
 
+  @Column({ nullable: true })
+  photoUrl: string | null;
+
   @CreateDateColumn()
   createdAt: Date;
 

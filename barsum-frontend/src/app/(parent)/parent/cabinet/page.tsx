@@ -2,16 +2,34 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, Gift, LogOut } from "lucide-react";
+import { BookOpen, Gift, LogOut, ShoppingBag, Camera } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { childrenApi } from "@/lib/api/children";
 import { coinsApi } from "@/lib/api/coins";
+import { paymentsApi } from "@/lib/api/payments";
 import { useAuthStore } from "@/stores/auth-store";
 import { CoinIcon } from "@/components/CoinIcon";
+import type { Payment } from "@/types";
+
+const PAYMENT_STATUS_LABEL: Record<Payment["status"], string> = {
+  confirmed: "Оплачено",
+  pending: "Ожидает",
+  rejected: "Отклонено",
+};
+
+const PAYMENT_STATUS_COLOR: Record<Payment["status"], string> = {
+  confirmed: "rgba(34,197,94,0.3)",
+  pending: "rgba(255,200,0,0.25)",
+  rejected: "rgba(239,68,68,0.35)",
+};
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("ru-RU", { day: "2-digit", month: "short", year: "numeric" });
+}
 
 const childSchema = z.object({
   name: z.string().min(2, "Минимум 2 символа"),
@@ -37,6 +55,9 @@ export default function ParentCabinetPage() {
   const clearAuth = useAuthStore((s) => s.clearAuth);
   const [showModal, setShowModal] = useState(false);
   const [newCreds, setNewCreds] = useState<{ login: string; password: string; name: string } | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: children = [], isLoading } = useQuery({
     queryKey: ["children"],
@@ -48,16 +69,42 @@ export default function ParentCabinetPage() {
     queryFn: coinsApi.parentBalance,
   });
 
+  const { data: payments = [] } = useQuery<Payment[]>({
+    queryKey: ["payments"],
+    queryFn: paymentsApi.list,
+  });
+
   const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm<ChildForm>({
     resolver: zodResolver(childSchema),
   });
 
+  const resetPhoto = () => {
+    setPhotoFile(null);
+    setPhotoPreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+  };
+
   const createMutation = useMutation({
     mutationFn: childrenApi.create,
-    onSuccess: (_, variables) => {
+    onSuccess: async (created, variables) => {
+      if (photoFile) {
+        try {
+          await childrenApi.uploadPhoto(created.id, photoFile);
+        } catch {
+          toast.error("Не удалось загрузить фото, но профиль создан");
+        }
+      }
       queryClient.invalidateQueries({ queryKey: ["children"] });
       setNewCreds({ login: variables.login, password: variables.password, name: variables.name });
       reset();
+      resetPhoto();
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.message || "Ошибка создания профиля");
@@ -147,9 +194,13 @@ export default function ParentCabinetPage() {
                 onClick={() => router.push(`/parent/child/${child.id}`)}
                 style={{ ...GLASS, width: "100%", padding: "14px 16px", display: "flex", alignItems: "center", gap: 14, textAlign: "left", border: "1px solid rgba(255,255,255,0.2)", cursor: "pointer", fontFamily: "inherit" }}
               >
-                <div style={{ width: 48, height: 48, borderRadius: 16, background: "rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 900, color: "#ffffff", flexShrink: 0 }}>
-                  {child.name[0]}
-                </div>
+                {child.photoUrl ? (
+                  <img src={child.photoUrl} alt={child.name} style={{ width: 48, height: 48, borderRadius: 16, objectFit: "cover", flexShrink: 0 }} />
+                ) : (
+                  <div style={{ width: 48, height: 48, borderRadius: 16, background: "rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 900, color: "#ffffff", flexShrink: 0 }}>
+                    {child.name[0]}
+                  </div>
+                )}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ margin: 0, fontWeight: 800, color: "#ffffff", fontSize: 15 }}>{child.name}</p>
                   <p style={{ margin: "2px 0 0", fontSize: 13, color: "rgba(255,255,255,0.6)" }}>
@@ -161,6 +212,44 @@ export default function ParentCabinetPage() {
             ))}
           </div>
         )}
+
+        {/* Purchases section */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "24px 0 12px" }}>
+          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+            Мои покупки
+          </p>
+        </div>
+
+        {payments.length === 0 ? (
+          <div style={{ ...GLASS, padding: 28, textAlign: "center" }}>
+            <ShoppingBag size={32} color="rgba(255,255,255,0.5)" strokeWidth={1.5} style={{ margin: "0 auto 8px" }} />
+            <p style={{ margin: 0, color: "rgba(255,255,255,0.7)", fontSize: 14 }}>Покупок пока нет</p>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {payments.map((payment) => (
+              <div key={payment.id} style={{ ...GLASS, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, border: "1px solid rgba(255,255,255,0.2)" }}>
+                <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
+                  📚
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ margin: 0, fontWeight: 800, color: "#ffffff", fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {payment.challenge?.bookTitle || payment.challenge?.title || "Задание"}
+                  </p>
+                  <p style={{ margin: "2px 0 0", fontSize: 12.5, color: "rgba(255,255,255,0.6)" }}>
+                    Для {payment.child?.name ?? "ребёнка"} · {formatDate(payment.createdAt)}
+                  </p>
+                </div>
+                <div style={{ textAlign: "right", flexShrink: 0 }}>
+                  <p style={{ margin: 0, fontWeight: 900, color: "#ffffff", fontSize: 15 }}>{payment.total.toLocaleString()} ₸</p>
+                  <span style={{ display: "inline-block", marginTop: 4, fontSize: 10.5, padding: "3px 8px", borderRadius: 9999, fontWeight: 800, background: PAYMENT_STATUS_COLOR[payment.status], color: "#ffffff" }}>
+                    {PAYMENT_STATUS_LABEL[payment.status]}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Add child modal */}
@@ -169,7 +258,7 @@ export default function ParentCabinetPage() {
           className="fixed inset-0 flex items-end justify-center z-50 p-4"
           style={{ background: "rgba(0,0,0,0.5)" }}
           onClick={(e) => {
-            if (e.target === e.currentTarget) { setShowModal(false); setNewCreds(null); }
+            if (e.target === e.currentTarget) { setShowModal(false); setNewCreds(null); resetPhoto(); }
           }}
         >
           <div style={{ width: "100%", maxWidth: 400, background: "rgba(20,10,60,0.92)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "28px 28px 0 0", padding: "28px 24px 40px" }}>
@@ -190,7 +279,7 @@ export default function ParentCabinetPage() {
                   ))}
                 </div>
                 <button
-                  onClick={() => { setShowModal(false); setNewCreds(null); }}
+                  onClick={() => { setShowModal(false); setNewCreds(null); resetPhoto(); }}
                   className="btn-white"
                   style={{ color: "#4776e6" }}
                 >
@@ -201,6 +290,23 @@ export default function ParentCabinetPage() {
               <>
                 <h3 style={{ margin: "0 0 20px", fontSize: 20, fontWeight: 900, color: "#ffffff" }}>Новый ребёнок</h3>
                 <form onSubmit={handleSubmit((d) => createMutation.mutate(d))} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg"
+                    onChange={handlePhotoChange}
+                    style={{ display: "none" }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    style={{ alignSelf: "center", width: 76, height: 76, borderRadius: "50%", border: "2px dashed rgba(255,255,255,0.35)", background: photoPreview ? `url(${photoPreview}) center/cover` : "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", marginBottom: 4 }}
+                  >
+                    {!photoPreview && <Camera size={22} color="rgba(255,255,255,0.6)" strokeWidth={2} />}
+                  </button>
+                  <p style={{ margin: "-8px 0 4px", fontSize: 12, color: "rgba(255,255,255,0.5)", textAlign: "center" }}>
+                    {photoPreview ? "Фото выбрано" : "Фото ребёнка (необязательно)"}
+                  </p>
                   {[
                     { name: "name", placeholder: "Имя", type: "text" },
                     { name: "age", placeholder: "Возраст", type: "number" },

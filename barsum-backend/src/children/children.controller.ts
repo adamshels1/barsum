@@ -1,14 +1,19 @@
-import { Controller, Get, Post, Patch, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, UseGuards, Request, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ChildrenService } from './children.service';
+import { FilesService } from '../files/files.service';
 
 @ApiTags('children')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('children')
 export class ChildrenController {
-  constructor(private readonly childrenService: ChildrenService) {}
+  constructor(
+    private readonly childrenService: ChildrenService,
+    private readonly filesService: FilesService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Создать ребёнка' })
@@ -44,6 +49,20 @@ export class ChildrenController {
   @ApiOperation({ summary: 'Обновить ребёнка' })
   async update(@Request() req: any, @Param('id') id: string, @Body() body: { name?: string; age?: number; password?: string }) {
     const child = await this.childrenService.update(id, req.user.sub, body);
+    const { password, ...result } = child as any;
+    return result;
+  }
+
+  @Post(':id/photo')
+  @ApiOperation({ summary: 'Загрузить фото ребёнка' })
+  @UseInterceptors(FileInterceptor('photo'))
+  async uploadPhoto(
+    @Request() req: any,
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const url = await this.filesService.uploadAvatar(file, id);
+    const child = await this.childrenService.update(id, req.user.sub, { photoUrl: url });
     const { password, ...result } = child as any;
     return result;
   }

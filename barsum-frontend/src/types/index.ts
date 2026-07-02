@@ -15,6 +15,7 @@ export interface Child {
   age: number;
   parentId: string;
   streak: number;
+  photoUrl?: string | null;
   createdAt: string;
 }
 

@@ -1,8 +1,9 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Camera } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { childrenApi } from "@/lib/api/children";
 import { coinsApi } from "@/lib/api/coins";
@@ -77,6 +78,91 @@ function SessionRow({ session }: { session: Session }) {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function EditProfileSection({ child }: { child: Child }) {
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState(child.name);
+  const [age, setAge] = useState(String(child.age));
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+  };
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      await childrenApi.update(child.id, { name: name.trim(), age: Number(age) });
+      if (photoFile) await childrenApi.uploadPhoto(child.id, photoFile);
+    },
+    onSuccess: () => {
+      toast.success("Профиль обновлён!");
+      queryClient.invalidateQueries({ queryKey: ["child", child.id] });
+      queryClient.invalidateQueries({ queryKey: ["children"] });
+      setOpen(false);
+      setPhotoFile(null);
+      setPhotoPreview(null);
+    },
+    onError: () => toast.error("Ошибка сохранения"),
+  });
+
+  const valid = name.trim().length >= 2 && Number(age) >= 4 && Number(age) <= 16;
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        style={{ width: "100%", ...GLASS, padding: "13px 16px", border: "1px solid rgba(255,255,255,0.2)", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 14, color: "rgba(255,255,255,0.7)" }}
+      >
+        ✏️ Редактировать профиль
+      </button>
+    );
+  }
+
+  return (
+    <div style={{ ...GLASS, padding: "16px 16px" }}>
+      <p style={{ margin: "0 0 12px", fontWeight: 800, fontSize: 14, color: "#ffffff" }}>Редактировать профиль</p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <input ref={fileInputRef} type="file" accept="image/png,image/jpeg" onChange={handlePhotoChange} style={{ display: "none" }} />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          style={{
+            alignSelf: "center",
+            width: 72,
+            height: 72,
+            borderRadius: "50%",
+            border: "2px dashed rgba(255,255,255,0.35)",
+            background: photoPreview
+              ? `url(${photoPreview}) center/cover`
+              : child.photoUrl
+              ? `url(${child.photoUrl}) center/cover`
+              : "rgba(255,255,255,0.1)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+          }}
+        >
+          {!photoPreview && !child.photoUrl && <Camera size={20} color="rgba(255,255,255,0.6)" strokeWidth={2} />}
+        </button>
+        <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Имя" className="glass-input" />
+        <input type="number" min={4} max={16} value={age} onChange={(e) => setAge(e.target.value)} placeholder="Возраст" className="glass-input" />
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={() => { setOpen(false); setName(child.name); setAge(String(child.age)); setPhotoFile(null); setPhotoPreview(null); }} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13, background: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.7)" }}>Отмена</button>
+          <button onClick={() => mutation.mutate()} disabled={!valid || mutation.isPending} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 800, fontSize: 13, background: "rgba(255,255,255,0.9)", color: "#4776e6", opacity: !valid ? 0.5 : 1 }}>
+            {mutation.isPending ? "Сохранение..." : "Сохранить"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -277,9 +363,13 @@ export default function ParentChildProgressPage() {
       ) : (
         <>
           <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
-            <div style={{ width: 64, height: 64, borderRadius: 20, background: "rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 900, color: "#ffffff", flexShrink: 0 }}>
-              {child.name[0]}
-            </div>
+            {child.photoUrl ? (
+              <img src={child.photoUrl} alt={child.name} style={{ width: 64, height: 64, borderRadius: 20, objectFit: "cover", flexShrink: 0 }} />
+            ) : (
+              <div style={{ width: 64, height: 64, borderRadius: 20, background: "rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 900, color: "#ffffff", flexShrink: 0 }}>
+                {child.name[0]}
+              </div>
+            )}
             <div>
               <h1 style={{ margin: "0 0 4px", fontSize: 24, fontWeight: 900, color: "#ffffff" }}>{child.name}</h1>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -293,6 +383,10 @@ export default function ParentChildProgressPage() {
           </div>
 
           <DreamApprovalSection />
+
+          <div style={{ marginBottom: 12 }}>
+            <EditProfileSection child={child} />
+          </div>
 
           <div style={{ marginBottom: 20 }}>
             <ChangePasswordSection childId={childId} parentId={child.parentId} />
