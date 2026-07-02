@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import { useAuthStore } from "@/stores/auth-store";
 import { useQuery } from "@tanstack/react-query";
 import { coinsApi } from "@/lib/api/coins";
+import { CoinIcon } from "@/components/CoinIcon";
 
 const BG = "linear-gradient(135deg, #4776e6 0%, #6a3de8 60%, #8e54e9 100%)";
 
@@ -59,7 +60,7 @@ function ChildLayoutInner({ children }: { children: React.ReactNode }) {
             {user?.name?.split(" ")[0] || "Читатель"} 👋
           </p>
           <div className="glass-chip" style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px" }}>
-            <span style={{ fontSize: 14, lineHeight: 1 }}>🪙</span>
+            <CoinIcon size={16} />
             <span style={{ fontWeight: 900, fontSize: 14, color: "#ffffff" }}>{balance.toLocaleString()}</span>
           </div>
         </div>

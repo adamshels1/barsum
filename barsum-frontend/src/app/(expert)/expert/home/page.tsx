@@ -8,6 +8,7 @@ import { challengesApi } from "@/lib/api/challenges";
 import { expertsApi } from "@/lib/api/experts";
 import { sessionsApi } from "@/lib/api/sessions";
 import { useAuthStore } from "@/stores/auth-store";
+import { CoinIcon } from "@/components/CoinIcon";
 
 interface Challenge {
   id: string; title: string; bookTitle: string; bookAuthor: string;
@@ -263,7 +264,7 @@ export default function ExpertHomePage() {
                       <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.55)" }}>
                         <Users2 size={12} /> {c.membersCount}
                       </span>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.55)" }}>🪙 {c.coinsReward}</span>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.55)" }}><CoinIcon size={12} /> {c.coinsReward}</span>
                       <span style={{ fontSize: 14, fontWeight: 900, color: "#4776e6", background: "rgba(255,255,255,0.85)", borderRadius: 9999, padding: "3px 10px", marginLeft: "auto" }}>
                         {c.price.toLocaleString("ru-RU")} ₸
                       </span>

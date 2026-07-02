@@ -9,6 +9,7 @@ import { coinsApi } from "@/lib/api/coins";
 import { dreamsApi } from "@/lib/api/dreams";
 import { sessionsApi } from "@/lib/api/sessions";
 import type { Child, ChildStats, Session } from "@/types";
+import { CoinIcon } from "@/components/CoinIcon";
 
 const REJECT_REASONS = [
   "Слишком дорого",
@@ -35,7 +36,7 @@ const GLASS: React.CSSProperties = {
   borderRadius: 18,
 };
 
-function StatCard({ emoji, value, label, highlight }: { emoji: string; value: string | number; label: string; highlight?: boolean }) {
+function StatCard({ emoji, value, label, highlight }: { emoji: React.ReactNode; value: string | number; label: string; highlight?: boolean }) {
   return (
     <div style={{ ...GLASS, padding: "14px 12px", textAlign: "center", background: highlight ? "rgba(255,255,255,0.25)" : GLASS.background }}>
       <p style={{ fontSize: 24, margin: "0 0 4px" }}>{emoji}</p>
@@ -285,7 +286,7 @@ export default function ParentChildProgressPage() {
                 <span style={{ fontSize: 13, color: "rgba(255,255,255,0.65)" }}>{child.age} лет</span>
                 <span style={{ fontSize: 13, fontWeight: 700, color: "#ffffff" }}>🔥 {child.streak} дней</span>
                 {balance != null && (
-                  <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.85)" }}>🪙 {balance.balance ?? 0}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.85)" }}><CoinIcon size={13} /> {balance.balance ?? 0}</span>
                 )}
               </div>
             </div>
@@ -301,7 +302,7 @@ export default function ParentChildProgressPage() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 24 }}>
               <StatCard emoji="🔥" value={stats.streak} label="Дней подряд" highlight />
               <StatCard emoji="📚" value={stats.totalSessions} label="Сессий" />
-              <StatCard emoji="🪙" value={stats.totalCoinsEarned} label="Монет заработано" />
+              <StatCard emoji={<CoinIcon size={22} />} value={stats.totalCoinsEarned} label="Монет заработано" />
               <StatCard emoji="📖" value={stats.activeEnrollments} label="Активных курсов" />
             </div>
           )}

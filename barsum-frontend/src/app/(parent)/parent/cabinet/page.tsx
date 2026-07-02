@@ -11,6 +11,7 @@ import { z } from "zod";
 import { childrenApi } from "@/lib/api/children";
 import { coinsApi } from "@/lib/api/coins";
 import { useAuthStore } from "@/stores/auth-store";
+import { CoinIcon } from "@/components/CoinIcon";
 
 const childSchema = z.object({
   name: z.string().min(2, "Минимум 2 символа"),
@@ -97,7 +98,7 @@ export default function ParentCabinetPage() {
         {/* Balance card */}
         <div style={{ ...GLASS, padding: "20px 20px", marginBottom: 16, background: "rgba(255,255,255,0.2)" }}>
           <p style={{ margin: "0 0 4px", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)" }}>Баланс монет</p>
-          <p style={{ margin: 0, fontSize: 32, fontWeight: 900, color: "#ffffff" }}>{balance?.balance ?? "—"} 🪙</p>
+          <p style={{ margin: 0, fontSize: 32, fontWeight: 900, color: "#ffffff" }}>{balance?.balance ?? "—"} <CoinIcon size={26} /></p>
           <p style={{ margin: "4px 0 0", fontSize: 12, color: "rgba(255,255,255,0.55)" }}>1 ₸ = 10 монет</p>
         </div>
 

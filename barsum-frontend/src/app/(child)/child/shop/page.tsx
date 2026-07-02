@@ -9,6 +9,7 @@ import { coinsApi } from "@/lib/api/coins";
 import { dreamsApi } from "@/lib/api/dreams";
 import { rewardsApi } from "@/lib/api/rewards";
 import { useAuthStore } from "@/stores/auth-store";
+import { CoinIcon } from "@/components/CoinIcon";
 
 interface Reward {
   id: string;
@@ -98,7 +99,7 @@ function ConfirmModal({
           <p style={{ margin: "8px 0 0", fontSize: 14, color: "rgba(255,255,255,0.65)" }}>
             «{reward.name}» за{" "}
             <span style={{ fontWeight: 800, color: "#ffffff" }}>
-              {reward.cost} 🪙
+              {reward.cost} <CoinIcon size={13} />
             </span>
           </p>
         </div>
@@ -119,7 +120,7 @@ function ConfirmModal({
             <span style={{ color: "rgba(255,255,255,0.65)" }}>{balanceBefore.toLocaleString()}</span>
             {" → "}
             <strong style={{ color: "#ffffff" }}>{balanceAfter.toLocaleString()}</strong>
-            {" 🪙"}
+            {" "}<CoinIcon size={13} />
           </span>
         </div>
 
@@ -235,7 +236,7 @@ function RewardsTab({ childId }: { childId: string }) {
             Мой баланс
           </p>
           <p style={{ margin: "4px 0 0", fontSize: 24, fontWeight: 900, color: "#ffffff" }}>
-            {balance.toLocaleString()} 🪙
+            {balance.toLocaleString()} <CoinIcon size={20} />
           </p>
         </div>
       </div>
@@ -326,7 +327,7 @@ function RewardsTab({ childId }: { childId: string }) {
                     </p>
                     <div style={{ marginTop: 8, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 4 }}>
                       <span style={{ fontSize: 13, fontWeight: 700, color: "#ffffff" }}>
-                        🪙 {reward.cost.toLocaleString()}
+                        <CoinIcon size={13} /> {reward.cost.toLocaleString()}
                       </span>
                       {canAfford ? (
                         <button
@@ -348,7 +349,7 @@ function RewardsTab({ childId }: { childId: string }) {
                         </button>
                       ) : (
                         <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,160,160,0.9)", textAlign: "right" }}>
-                          ещё {diff} 🪙
+                          ещё {diff} <CoinIcon size={11} />
                         </span>
                       )}
                     </div>
@@ -708,7 +709,7 @@ function DreamTab({ childId }: { childId: string }) {
 
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, marginBottom: 8 }}>
-              <span style={{ fontWeight: 700, color: "#ffffff" }}>🪙 {dream.savedCoins.toLocaleString()}</span>
+              <span style={{ fontWeight: 700, color: "#ffffff" }}><CoinIcon size={13} /> {dream.savedCoins.toLocaleString()}</span>
               <span style={{ color: "rgba(255,255,255,0.65)" }}>из {dream.targetCoins.toLocaleString()}</span>
             </div>
             <div
@@ -755,7 +756,7 @@ function DreamTab({ childId }: { childId: string }) {
             Отправить монеты в мечту
           </p>
           <p style={{ margin: "0 0 12px", fontSize: 12, color: "rgba(255,255,255,0.65)" }}>
-            Доступно: 🪙 {balance.toLocaleString()}
+            Доступно: <CoinIcon size={12} /> {balance.toLocaleString()}
           </p>
           <div style={{ display: "flex", gap: 8 }}>
             <input

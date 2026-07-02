@@ -5,6 +5,7 @@ import { ChevronLeft, CreditCard } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { adminApi } from "@/lib/api/admin";
+import { CoinIcon } from "@/components/CoinIcon";
 
 type PaymentStatus = "pending" | "confirmed" | "rejected";
 
@@ -189,7 +190,7 @@ export default function AdminPaymentsPage() {
                   </div>
                   <div>
                     <p style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.55)" }}>Монеты</p>
-                    <p style={{ margin: 0, fontSize: 18, fontWeight: 900, color: "rgba(255,255,255,0.85)" }}>{payment.coinsAmount} 🪙</p>
+                    <p style={{ margin: 0, fontSize: 18, fontWeight: 900, color: "rgba(255,255,255,0.85)" }}>{payment.coinsAmount} <CoinIcon size={16} /></p>
                   </div>
                 </div>
 

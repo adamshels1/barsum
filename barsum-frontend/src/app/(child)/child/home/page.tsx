@@ -9,6 +9,7 @@ import { coinsApi } from "@/lib/api/coins";
 import { dreamsApi } from "@/lib/api/dreams";
 import { sessionsApi } from "@/lib/api/sessions";
 import { useAuthStore } from "@/stores/auth-store";
+import { CoinIcon } from "@/components/CoinIcon";
 
 const CARD_COLORS = [
   "linear-gradient(135deg, #667eea, #764ba2)",
@@ -24,7 +25,7 @@ function HeroCard({ name, balance, streak }: { name: string; balance: number; st
       <div>
         <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.6)" }}>Привет, {name}! 👋</p>
         <p style={{ margin: "6px 0 0", fontSize: 32, fontWeight: 900, color: "#ffffff", lineHeight: 1 }}>
-          🪙 {balance.toLocaleString("ru-RU")}
+          <CoinIcon size={30} /> {balance.toLocaleString("ru-RU")}
         </p>
         <p style={{ margin: "4px 0 0", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.5)" }}>монет на счету</p>
       </div>
@@ -99,7 +100,7 @@ function DreamCard({ dream, currentBalance, onSend, isSending }: {
           <div style={{ height: "100%", width: `${progress}%`, background: "rgba(255,255,255,0.9)", borderRadius: 9999, transition: "width 0.7s ease" }} />
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.6)", marginBottom: 12 }}>
-          <span>🪙 {dream.savedCoins.toLocaleString()} накоплено</span>
+          <span><CoinIcon size={13} /> {dream.savedCoins.toLocaleString()} накоплено</span>
           <span>цель: {dream.targetCoins.toLocaleString()}</span>
         </div>
         {currentBalance > 0 && (
@@ -278,7 +279,7 @@ export default function ChildHomePage() {
                     <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.55)" }}>
                       {completedParts}/{totalParts} частей
                     </span>
-                    <span style={{ fontSize: 11, fontWeight: 900, color: "#ffd200" }}>🪙 +{(ch?.coinsReward ?? 0).toLocaleString()}</span>
+                    <span style={{ fontSize: 11, fontWeight: 900, color: "#ffd200" }}><CoinIcon size={12} /> +{(ch?.coinsReward ?? 0).toLocaleString()}</span>
                   </div>
                 </div>
               </button>

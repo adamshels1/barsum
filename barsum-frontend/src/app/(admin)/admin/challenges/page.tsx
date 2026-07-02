@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { adminApi } from "@/lib/api/admin";
 import { apiClient } from "@/lib/api/client";
+import { CoinIcon } from "@/components/CoinIcon";
 
 type ChallengeFilter = "moderation" | "published" | "rejected";
 
@@ -186,7 +187,7 @@ export default function AdminChallengesPage() {
                   </div>
                   <div>
                     <p style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.55)" }}>Награда</p>
-                    <p style={{ margin: 0, fontSize: 15, fontWeight: 900, color: "rgba(255,255,255,0.85)" }}>{challenge.coinsReward} 🪙</p>
+                    <p style={{ margin: 0, fontSize: 15, fontWeight: 900, color: "rgba(255,255,255,0.85)" }}>{challenge.coinsReward} <CoinIcon size={13} /></p>
                   </div>
                 </div>
 

@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Home, Mic, MicOff, Send, RotateCcw, Bot } from "lucide-react";
 import { useRef, useState } from "react";
 import { sessionsApi } from "@/lib/api/sessions";
+import { CoinIcon } from "@/components/CoinIcon";
 
 interface Session {
   id: string;
@@ -355,7 +356,7 @@ function PhaseDone({ session, coinsPerPart }: { session: Session; coinsPerPart: 
             <p style={{ fontSize: 48, margin: 0, animation: "streakPulse 0.8s ease 0.5s both" }}>🔥</p>
             <div style={{ animation: "coinPop 0.6s ease 0.3s both" }}>
               <p style={{ fontSize: 24, fontWeight: 900, color: "#ffffff", margin: 0 }}>
-                {coinsPerPart > 0 ? `+${coinsPerPart} монет начислено! 🪙` : "Часть засчитана! 🎉"}
+                {coinsPerPart > 0 ? <>+{coinsPerPart} монет начислено! <CoinIcon size={20} /></> : "Часть засчитана! 🎉"}
               </p>
             </div>
             <p style={{ fontSize: 13, color: "rgba(255,255,255,0.65)", margin: 0 }}>
@@ -462,7 +463,7 @@ export default function SessionPage() {
         </div>
         {session.coinsPerPart > 0 && (
           <div className="glass-chip" style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", flexShrink: 0 }}>
-            <span style={{ fontSize: 14 }}>🪙</span>
+            <CoinIcon size={16} />
             <span style={{ fontWeight: 900, fontSize: 14, color: "#ffd200" }}>+{session.coinsPerPart}</span>
           </div>
         )}

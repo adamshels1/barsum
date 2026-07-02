@@ -8,6 +8,7 @@ import { challengesApi } from "@/lib/api/challenges";
 import { childrenApi } from "@/lib/api/children";
 import { paymentsApi } from "@/lib/api/payments";
 import type { Challenge, Child, Payment } from "@/types/index";
+import { CoinIcon } from "@/components/CoinIcon";
 
 const COIN_MAX = 50_000;
 const COIN_STEP = 1_000;
@@ -183,7 +184,7 @@ function PurchaseModal({
           {/* Coins slider */}
           <div className="glass-sm" style={{ padding: 16 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
-              <p style={{ margin: 0, fontWeight: 800, fontSize: 14, color: "#ffffff" }}>Монеты для ребёнка 🪙</p>
+              <p style={{ margin: 0, fontWeight: 800, fontSize: 14, color: "#ffffff" }}>Монеты для ребёнка <CoinIcon size={13} /></p>
               <p style={{ margin: 0, fontWeight: 900, fontSize: 18, color: "#ffd200" }}>{coinsAmount.toLocaleString()}</p>
             </div>
             <p style={{ margin: "0 0 12px", fontSize: 12, color: "rgba(255,255,255,0.55)" }}>+ {coinsTg.toLocaleString()} ₸</p>

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { apiClient } from "@/lib/api/client";
 import { rewardsApi } from "@/lib/api/rewards";
 import type { Reward, RewardRequest } from "@/types";
+import { CoinIcon } from "@/components/CoinIcon";
 
 interface ReviewQueueItem {
   id: string;
@@ -127,7 +128,7 @@ function RewardCard({ reward }: { reward: Reward }) {
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ margin: 0, fontWeight: 800, color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{reward.name}</p>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.85)" }}>🪙 {reward.cost}</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.85)" }}><CoinIcon size={13} /> {reward.cost}</span>
           <TypeBadge type={reward.type} />
         </div>
       </div>
@@ -168,7 +169,7 @@ function RequestCard({ request }: { request: RewardRequest }) {
           <p style={{ margin: "2px 0 0", fontSize: 13, color: "rgba(255,255,255,0.65)" }}>
             хочет: <span style={{ fontWeight: 700 }}>{rewardName}</span>
           </p>
-          <p style={{ margin: "2px 0 0", fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.85)" }}>🪙 {request.coinsAmount}</p>
+          <p style={{ margin: "2px 0 0", fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.85)" }}><CoinIcon size={13} /> {request.coinsAmount}</p>
         </div>
         <span style={{ fontSize: 11, padding: "4px 10px", borderRadius: 9999, fontWeight: 800, background: "rgba(255,255,255,0.2)", color: "#ffffff" }}>ожидает</span>
       </div>
