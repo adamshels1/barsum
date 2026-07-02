@@ -2,6 +2,7 @@
 
 import { BookOpen, Star, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { MascotWave } from "@/components/MascotWave";
 
 const ROLES = [
   {
@@ -51,14 +52,7 @@ export default function LandingPage() {
 
       {/* Logo */}
       <div style={{ textAlign: "center", marginBottom: 52, position: "relative", zIndex: 1 }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/mascot.png"
-          alt="Barsum"
-          width={200}
-          height={200}
-          style={{ objectFit: "contain", mixBlendMode: "screen", display: "block", margin: "0 auto" }}
-        />
+        <MascotWave size={200} />
         <h1 style={{ fontSize: 40, fontWeight: 900, color: "#ffffff", lineHeight: 1, letterSpacing: "0.04em", margin: 0 }}>
           BARSUM
         </h1>

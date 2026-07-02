@@ -1,13 +1,13 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { apiClient } from "@/lib/api/client";
+import { MascotWave } from "@/components/MascotWave";
 import { useAuthStore } from "@/stores/auth-store";
 
 const loginSchema = z.object({
@@ -72,9 +72,7 @@ export default function ParentAuthPage() {
       <div style={{ position: "fixed", bottom: "-10%", left: "-10%", width: 220, height: 220, borderRadius: "50%", background: "rgba(0,0,0,0.15)", filter: "blur(60px)", pointerEvents: "none" }} />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", paddingTop: 60, paddingBottom: 32, position: "relative", zIndex: 1 }}>
-        <div style={{ width: 72, height: 72, borderRadius: 24, background: "rgba(255,255,255,0.2)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.35)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
-          <Users size={32} color="#ffffff" strokeWidth={2} />
-        </div>
+        <MascotWave size={140} animate={false} />
         <h1 style={{ fontSize: 32, fontWeight: 900, color: "#ffffff", margin: 0 }}>Родитель</h1>
         <p style={{ color: "rgba(255,255,255,0.68)", fontSize: 15, fontWeight: 600, marginTop: 6 }}>
           Мотивируй своего ребёнка

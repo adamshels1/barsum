@@ -1,13 +1,13 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Star } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { apiClient } from "@/lib/api/client";
+import { MascotWave } from "@/components/MascotWave";
 import { useAuthStore } from "@/stores/auth-store";
 
 const loginSchema = z.object({
@@ -70,9 +70,7 @@ export default function ExpertAuthPage() {
       <div style={{ position: "fixed", bottom: "-10%", left: "-10%", width: 200, height: 200, borderRadius: "50%", background: "rgba(0,0,0,0.1)", filter: "blur(50px)", pointerEvents: "none" }} />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", paddingTop: 60, paddingBottom: 32, position: "relative", zIndex: 1 }}>
-        <div style={{ width: 72, height: 72, borderRadius: 24, background: "rgba(255,255,255,0.25)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.4)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
-          <Star size={32} color="#ffffff" strokeWidth={2} fill="rgba(255,255,255,0.3)" />
-        </div>
+        <MascotWave size={140} animate={false} />
         <h1 style={{ fontSize: 32, fontWeight: 900, color: "#ffffff", margin: 0 }}>Эксперт</h1>
         <p style={{ color: "rgba(255,255,255,0.72)", fontSize: 15, fontWeight: 600, marginTop: 6 }}>
           Создавайте задания для детей
