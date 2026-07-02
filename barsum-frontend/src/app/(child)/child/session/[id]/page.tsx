@@ -2,7 +2,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
-import { Home, Mic, MicOff, Send, RotateCcw, Bot } from "lucide-react";
+import { ChevronLeft, Home, Mic, MicOff, Send, RotateCcw, Bot } from "lucide-react";
 import { useRef, useState } from "react";
 import { sessionsApi } from "@/lib/api/sessions";
 import { CoinIcon } from "@/components/CoinIcon";
@@ -404,6 +404,7 @@ function PhaseDone({ session, coinsPerPart }: { session: Session; coinsPerPart: 
 // ─── Main page ─────────────────────────────────────────────────────────────────
 export default function SessionPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const queryClient = useQueryClient();
 
   const isPolling = (data: Session | undefined) =>
@@ -435,6 +436,17 @@ export default function SessionPage() {
 
   return (
     <main style={{ minHeight: "100dvh", padding: "52px 20px 32px", maxWidth: 512, margin: "0 auto" }}>
+      {/* Back */}
+      {(session.phase === "read" || session.phase === "recording") && (
+        <button
+          onClick={() => router.push(`/child/book/${session.enrollmentId}`)}
+          style={{ display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.65)", fontSize: 14, fontWeight: 700, fontFamily: "inherit", marginBottom: 20, padding: 0 }}
+        >
+          <ChevronLeft size={18} strokeWidth={2.5} />
+          Назад
+        </button>
+      )}
+
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
         <div

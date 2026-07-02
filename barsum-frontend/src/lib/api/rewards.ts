@@ -17,6 +17,7 @@ export const rewardsApi = {
   request: (id: string) =>
     apiClient.post(`/rewards/${id}/request`).then((r) => r.data),
   listRequests: () => apiClient.get("/reward-requests").then((r) => r.data),
+  listMyRequests: () => apiClient.get("/reward-requests/my").then((r) => r.data),
   deliver: (requestId: string) =>
     apiClient.post(`/reward-requests/${requestId}/deliver`).then((r) => r.data),
   reject: (requestId: string) =>

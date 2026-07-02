@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { SessionsService } from './sessions.service';
@@ -18,5 +18,15 @@ export class EnrollmentsController {
   @Get('parent')
   listForParent(@Request() req: any) {
     return this.sessionsService.findEnrollmentsByParent(req.user.sub);
+  }
+
+  @Get('students')
+  listStudents(@Request() req: any) {
+    return this.sessionsService.findStudentsByExpert(req.user.sub);
+  }
+
+  @Get('students/:childId')
+  getStudent(@Request() req: any, @Param('childId') childId: string) {
+    return this.sessionsService.findStudentDetail(req.user.sub, childId);
   }
 }

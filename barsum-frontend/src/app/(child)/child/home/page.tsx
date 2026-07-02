@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, LogOut, Sparkles } from "lucide-react";
+import { BookOpen, History, LogOut, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -19,7 +19,7 @@ const CARD_COLORS = [
   "linear-gradient(135deg, #0f9b8e, #38ef7d)",
 ];
 
-function HeroCard({ name, balance, streak }: { name: string; balance: number; streak: number }) {
+function HeroCard({ name, balance, streak, onHistory }: { name: string; balance: number; streak: number; onHistory: () => void }) {
   return (
     <div className="glass" style={{ padding: "18px 20px", marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
       <div>
@@ -28,6 +28,13 @@ function HeroCard({ name, balance, streak }: { name: string; balance: number; st
           <CoinIcon size={30} /> {balance.toLocaleString("ru-RU")}
         </p>
         <p style={{ margin: "4px 0 0", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.5)" }}>монет на счету</p>
+        <button
+          onClick={onHistory}
+          style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 8, background: "transparent", border: "none", cursor: "pointer", padding: 0, fontFamily: "inherit", color: "rgba(255,255,255,0.6)", fontSize: 11, fontWeight: 700 }}
+        >
+          <History size={13} strokeWidth={2.5} />
+          История покупок
+        </button>
       </div>
       {streak > 0 && (
         <div className="glass-chip" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "10px 14px" }}>
@@ -180,7 +187,7 @@ export default function ChildHomePage() {
 
   return (
     <main style={{ padding: "20px 20px 8px", maxWidth: 480, margin: "0 auto" }}>
-      <HeroCard name={user?.name || "Читатель"} balance={currentBalance} streak={streak} />
+      <HeroCard name={user?.name || "Читатель"} balance={currentBalance} streak={streak} onHistory={() => router.push("/child/purchases")} />
 
       {dream ? (
         <DreamCard dream={dream} currentBalance={currentBalance} onSend={(amt) => sendMutation.mutate(amt)} isSending={sendMutation.isPending} />
@@ -203,7 +210,7 @@ export default function ChildHomePage() {
         </button>
       )}
 
-      <p style={{ fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>Мои книги</p>
+      <p style={{ fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>Мои задания</p>
 
       {isLoading ? (
         <div style={{ display: "flex", gap: 12, overflowX: "auto" }}>

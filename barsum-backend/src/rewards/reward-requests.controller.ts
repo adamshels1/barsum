@@ -15,6 +15,11 @@ export class RewardRequestsController {
     return this.rewardsService.findRequests(req.user.sub);
   }
 
+  @Get('my')
+  findMy(@Request() req: any) {
+    return this.rewardsService.findRequestsByChild(req.user.sub);
+  }
+
   @Post(':id/deliver')
   deliver(@Request() req: any, @Param('id') id: string) {
     return this.rewardsService.deliver(id, req.user.sub);

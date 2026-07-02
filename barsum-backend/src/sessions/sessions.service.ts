@@ -6,7 +6,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Not, Repository } from 'typeorm';
+import { In, Not, Repository } from 'typeorm';
 import { Session } from './entities/session.entity';
 import { ChallengeEnrollment } from './entities/enrollment.entity';
 import { ReviewQueue } from './entities/review-queue.entity';
@@ -296,6 +296,118 @@ export class SessionsService {
       where: { parentId },
       relations: ['challenge', 'child'],
     });
+  }
+
+  async findStudentsByExpert(expertUserId: string): Promise<any[]> {
+    const enrollments = await this.enrollmentRepo
+      .createQueryBuilder('e')
+      .innerJoinAndSelect('e.challenge', 'challenge')
+      .innerJoinAndSelect('e.child', 'child')
+      .where('challenge.authorId = :expertUserId', { expertUserId })
+      .andWhere('e.status = :status', { status: EnrollmentStatus.ACTIVE })
+      .getMany();
+
+    if (enrollments.length === 0) return [];
+
+    const enrollmentIds = enrollments.map((e) => e.id);
+
+    const completedCounts = await this.sessionRepo
+      .createQueryBuilder('s')
+      .select('s.enrollmentId', 'enrollmentId')
+      .addSelect('COUNT(*)', 'count')
+      .where('s.enrollmentId IN (:...ids)', { ids: enrollmentIds })
+      .andWhere('s.status = :status', { status: SessionStatus.COMPLETED })
+      .groupBy('s.enrollmentId')
+      .getRawMany();
+    const completedMap = new Map(completedCounts.map((r) => [r.enrollmentId, Number(r.count)]));
+
+    const lastActivity = await this.sessionRepo
+      .createQueryBuilder('s')
+      .select('s.childId', 'childId')
+      .addSelect('MAX(s.createdAt)', 'lastAt')
+      .where('s.enrollmentId IN (:...ids)', { ids: enrollmentIds })
+      .groupBy('s.childId')
+      .getRawMany();
+    const lastActivityMap = new Map(lastActivity.map((r) => [r.childId, r.lastAt]));
+
+    const byChild = new Map<string, any>();
+    for (const e of enrollments) {
+      const completed = completedMap.get(e.id) ?? 0;
+      if (!byChild.has(e.childId)) {
+        byChild.set(e.childId, {
+          childId: e.childId,
+          name: e.child.name,
+          age: e.child.age,
+          photoUrl: e.child.photoUrl,
+          streak: e.child.streak,
+          booksCount: 0,
+          completedParts: 0,
+          totalParts: 0,
+          lastActivityAt: lastActivityMap.get(e.childId) ?? null,
+        });
+      }
+      const entry = byChild.get(e.childId);
+      entry.booksCount += 1;
+      entry.completedParts += completed;
+      entry.totalParts += e.challenge.totalParts;
+    }
+
+    return Array.from(byChild.values()).sort((a, b) => {
+      if (!a.lastActivityAt) return 1;
+      if (!b.lastActivityAt) return -1;
+      return new Date(b.lastActivityAt).getTime() - new Date(a.lastActivityAt).getTime();
+    });
+  }
+
+  async findStudentDetail(expertUserId: string, childId: string): Promise<any> {
+    const enrollments = await this.enrollmentRepo
+      .createQueryBuilder('e')
+      .innerJoinAndSelect('e.challenge', 'challenge')
+      .innerJoinAndSelect('e.child', 'child')
+      .where('challenge.authorId = :expertUserId', { expertUserId })
+      .andWhere('e.childId = :childId', { childId })
+      .getMany();
+
+    if (enrollments.length === 0) throw new NotFoundException('Student not found');
+
+    const enrollmentIds = enrollments.map((e) => e.id);
+    const sessions = await this.sessionRepo.find({
+      where: { enrollmentId: In(enrollmentIds) },
+      order: { createdAt: 'DESC' },
+    });
+
+    const sessionsByEnrollment = new Map<string, Session[]>();
+    for (const s of sessions) {
+      if (!sessionsByEnrollment.has(s.enrollmentId)) sessionsByEnrollment.set(s.enrollmentId, []);
+      sessionsByEnrollment.get(s.enrollmentId)!.push(s);
+    }
+
+    const child = enrollments[0].child;
+    const books = enrollments.map((e) => {
+      const enrollmentSessions = sessionsByEnrollment.get(e.id) ?? [];
+      return {
+        enrollmentId: e.id,
+        challengeId: e.challengeId,
+        title: e.challenge.title,
+        bookTitle: e.challenge.bookTitle,
+        bookAuthor: e.challenge.bookAuthor,
+        coverImage: e.challenge.coverImage,
+        totalParts: e.challenge.totalParts,
+        completedParts: enrollmentSessions.filter((s) => s.status === SessionStatus.COMPLETED).length,
+        sessions: enrollmentSessions.map((s) => ({
+          id: s.id,
+          partNumber: s.partNumber,
+          status: s.status,
+          aiScore: s.aiScore,
+          createdAt: s.createdAt,
+        })),
+      };
+    });
+
+    return {
+      child: { id: child.id, name: child.name, age: child.age, photoUrl: child.photoUrl, streak: child.streak },
+      books,
+    };
   }
 
   async findReviewQueue(expertId: string): Promise<ReviewQueue[]> {

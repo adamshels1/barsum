@@ -10,6 +10,9 @@ export const sessionsApi = {
   listEnrollments: () => apiClient.get("/enrollments").then((r) => r.data),
   listParentEnrollments: () =>
     apiClient.get("/enrollments/parent").then((r) => r.data),
+  listStudents: () => apiClient.get("/enrollments/students").then((r) => r.data),
+  getStudent: (childId: string) =>
+    apiClient.get(`/enrollments/students/${childId}`).then((r) => r.data),
   get: (id: string) => apiClient.get(`/sessions/${id}`).then((r) => r.data),
   getPartText: (id: string) =>
     apiClient.get(`/sessions/${id}/text`).then((r) => r.data) as Promise<{ text: string | null; imageUrl: string | null; partNumber: number }>,

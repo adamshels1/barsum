@@ -95,14 +95,28 @@ export default function ExpertHomePage() {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 16 }}>
           {stats_config.map(({ key, label, Icon, isCurrency }) => {
             const val = (stats as any)?.[key];
+            const clickable = key === "students";
+            const Tag = clickable ? "button" : "div";
             return (
-              <div key={key} className="glass" style={{ padding: "14px 10px", textAlign: "center", borderRadius: 16 }}>
+              <Tag
+                key={key}
+                className="glass"
+                onClick={clickable ? () => router.push("/expert/students") : undefined}
+                style={{
+                  padding: "14px 10px",
+                  textAlign: "center",
+                  borderRadius: 16,
+                  border: "none",
+                  fontFamily: "inherit",
+                  cursor: clickable ? "pointer" : "default",
+                }}
+              >
                 <Icon size={18} color="rgba(255,255,255,0.8)" style={{ display: "block", margin: "0 auto 6px" }} />
                 <p style={{ margin: 0, fontSize: 20, fontWeight: 900, color: "#ffffff" }}>
                   {val != null ? (isCurrency ? val.toLocaleString("ru-RU") : val) : "—"}
                 </p>
                 <p style={{ margin: "2px 0 0", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.55)" }}>{label}</p>
-              </div>
+              </Tag>
             );
           })}
         </div>

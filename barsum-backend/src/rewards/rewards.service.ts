@@ -118,4 +118,12 @@ export class RewardsService {
       relations: ['reward', 'child'],
     });
   }
+
+  async findRequestsByChild(childId: string): Promise<RewardRequest[]> {
+    return this.requestRepo.find({
+      where: { childId },
+      order: { createdAt: 'DESC' },
+      relations: ['reward'],
+    });
+  }
 }
