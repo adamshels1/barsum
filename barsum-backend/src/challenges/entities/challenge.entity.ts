@@ -28,6 +28,12 @@ export class Challenge {
   @Column({ nullable: true, type: 'json' })
   partTexts: string[];
 
+  @Column({ nullable: true, type: 'json' })
+  partImages: string[];
+
+  @Column({ nullable: true })
+  coverImage: string;
+
   @Column()
   authorId: string;
 

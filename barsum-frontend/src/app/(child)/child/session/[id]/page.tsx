@@ -414,7 +414,7 @@ export default function SessionPage() {
     refetchInterval: (query) => (isPolling(query.state.data) ? 3000 : false),
   });
 
-  const { data: partText } = useQuery<{ text: string | null; partNumber: number }>({
+  const { data: partText } = useQuery<{ text: string | null; imageUrl: string | null; partNumber: number }>({
     queryKey: ["session-text", id],
     queryFn: () => sessionsApi.getPartText(id),
     enabled: !!session && (session.phase === "read" || session.phase === "recording"),

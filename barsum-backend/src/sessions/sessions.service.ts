@@ -189,7 +189,7 @@ export class SessionsService {
     return this.sessionRepo.save(session);
   }
 
-  async getPartText(id: string, childId: string): Promise<{ text: string | null; partNumber: number }> {
+  async getPartText(id: string, childId: string): Promise<{ text: string | null; imageUrl: string | null; partNumber: number }> {
     const session = await this.findById(id);
     if (session.childId !== childId) throw new ForbiddenException('Not your session');
     const enrollment = await this.enrollmentRepo.findOne({
@@ -197,8 +197,10 @@ export class SessionsService {
       relations: ['challenge'],
     });
     const texts: string[] = enrollment?.challenge?.partTexts ?? [];
+    const images: string[] = enrollment?.challenge?.partImages ?? [];
     const text = texts[session.partNumber - 1] ?? null;
-    return { text, partNumber: session.partNumber };
+    const imageUrl = images[session.partNumber - 1] ?? null;
+    return { text, imageUrl, partNumber: session.partNumber };
   }
 
   async analyze(id: string, childId: string, bookTitle?: string): Promise<Session> {

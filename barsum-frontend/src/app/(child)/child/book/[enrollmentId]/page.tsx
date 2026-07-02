@@ -20,6 +20,7 @@ interface Enrollment {
     title: string;
     bookTitle: string;
     bookAuthor: string;
+    coverImage?: string;
     totalParts: number;
     pagesPerPart: number;
     coinsReward: number;
@@ -98,15 +99,27 @@ export default function BookPage() {
 
       {/* Book header */}
       <div className="glass" style={{ padding: 20, borderRadius: 20, marginBottom: 20 }}>
-        <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.55)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
-          📖 Книга
-        </p>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: "#ffffff", lineHeight: 1.2 }}>
-          {ch?.bookTitle || ch?.title || "Загрузка..."}
-        </h1>
-        {ch?.bookAuthor && (
-          <p style={{ margin: "4px 0 0", fontSize: 13, color: "rgba(255,255,255,0.55)", fontWeight: 600 }}>{ch.bookAuthor}</p>
-        )}
+        <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+          {ch?.coverImage && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={ch.coverImage}
+              alt={ch.bookTitle}
+              style={{ width: 64, height: 64, borderRadius: 14, objectFit: "cover", flexShrink: 0 }}
+            />
+          )}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.55)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
+              📖 Книга
+            </p>
+            <h1 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: "#ffffff", lineHeight: 1.2 }}>
+              {ch?.bookTitle || ch?.title || "Загрузка..."}
+            </h1>
+            {ch?.bookAuthor && (
+              <p style={{ margin: "4px 0 0", fontSize: 13, color: "rgba(255,255,255,0.55)", fontWeight: 600 }}>{ch.bookAuthor}</p>
+            )}
+          </div>
+        </div>
 
         {/* Progress bar */}
         <div style={{ marginTop: 16 }}>

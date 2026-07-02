@@ -247,12 +247,26 @@ export default function ChildHomePage() {
                   transition: "transform 0.15s",
                 }}
               >
-                <div style={{ height: 96, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 12, background: cardGrad }}>
-                  <p style={{ color: "#ffffff", fontWeight: 900, textAlign: "center", lineHeight: 1.3, fontSize: 12, margin: 0, textShadow: "0 1px 4px rgba(0,0,0,0.3)", WebkitLineClamp: 3, overflow: "hidden", display: "-webkit-box", WebkitBoxOrient: "vertical" }}>
-                    {ch?.bookTitle || ch?.title || "Задание"}
-                  </p>
-                  {ch?.bookAuthor && (
-                    <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 10, margin: "4px 0 0", textAlign: "center" }}>{ch.bookAuthor}</p>
+                <div
+                  style={{
+                    ...(ch?.coverImage ? { aspectRatio: "1 / 1" } : { height: 96 }),
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "flex-end",
+                    padding: 12,
+                    background: ch?.coverImage ? `url(${ch.coverImage}) center/cover` : cardGrad,
+                  }}
+                >
+                  {!ch?.coverImage && (
+                    <>
+                      <p style={{ color: "#ffffff", fontWeight: 900, textAlign: "center", lineHeight: 1.3, fontSize: 12, margin: 0, textShadow: "0 1px 4px rgba(0,0,0,0.6)", WebkitLineClamp: 3, overflow: "hidden", display: "-webkit-box", WebkitBoxOrient: "vertical" }}>
+                        {ch?.bookTitle || ch?.title || "Задание"}
+                      </p>
+                      {ch?.bookAuthor && (
+                        <p style={{ color: "rgba(255,255,255,0.85)", fontSize: 10, margin: "4px 0 0", textAlign: "center", textShadow: "0 1px 4px rgba(0,0,0,0.6)" }}>{ch.bookAuthor}</p>
+                      )}
+                    </>
                   )}
                 </div>
                 <div style={{ padding: 12 }}>
