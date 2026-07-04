@@ -112,6 +112,69 @@ describe('SessionsService', () => {
     expect(mockCoins.transfer).toHaveBeenCalled();
   });
 
+  it('analyze → reading path: слабое чтение уходит эксперту с AI-черновиком', async () => {
+    const ref = 'серый утёнок гулял по птичьему двору вместе с мамой уткой';
+    const session = {
+      id: 's1', childId: 'c1', enrollmentId: 'e1', partNumber: 1, status: SessionStatus.PENDING,
+      transcription: 'кот бежал', audioDurationSec: 5, phase: SessionPhase.ANALYZING,
+    };
+    mockSessionRepo.findOne.mockResolvedValue({ ...session });
+    mockSessionRepo.save.mockImplementation(async (s: any) => s);
+    mockEnrollmentRepo.findOne.mockResolvedValue({
+      id: 'e1', coinsPerPart: 500, challenge: { partTexts: [ref], authorId: 'expert1' },
+    });
+    mockReviewRepo.findOne.mockResolvedValue(null);
+    mockReviewRepo.create.mockReturnValue({ sessionId: 's1', expertId: 'expert1' });
+    mockReviewRepo.save.mockResolvedValue({ id: 'rq1' });
+
+    const result = await service.analyze('s1', 'c1');
+    expect(mockReviewRepo.save).toHaveBeenCalled();
+    expect(mockCoins.transfer).not.toHaveBeenCalled();
+    expect(result.reviewReason).toBe('low_score');
+    expect(result.expertReportDraft).toMatch(/точность/i);
+    expect(result.status).toBe(SessionStatus.PENDING);
+  });
+
+  it('approveReview → сохраняет отчёт эксперта и зачитывает', async () => {
+    const sess: any = { id: 's1', childId: 'c1', enrollmentId: 'e1', expertReportDraft: 'черновик' };
+    mockReviewRepo.findOne.mockResolvedValue({ id: 'rq1', expertId: 'expert1', session: sess });
+    mockReviewRepo.save.mockImplementation(async (x: any) => x);
+    mockSessionRepo.save.mockImplementation(async (s: any) => s);
+    mockEnrollmentRepo.findOne.mockResolvedValue({ id: 'e1', coinsPerPart: 500, challenge: {} });
+
+    await service.approveReview('rq1', 'expert1', 'Читает уверенно, засчитано.');
+    expect(sess.status).toBe(SessionStatus.COMPLETED);
+    expect(sess.expertReport).toBe('Читает уверенно, засчитано.');
+    expect(mockCoins.transfer).toHaveBeenCalled();
+  });
+
+  it('handleProcessingError → сбой AI отправляет запись эксперту (ai_error), не на перезапись', async () => {
+    const sess: any = { id: 's1', enrollmentId: 'e1', phase: SessionPhase.TRANSCRIBING };
+    mockSessionRepo.findOne.mockResolvedValue(sess);
+    mockSessionRepo.save.mockImplementation(async (s: any) => s);
+    mockEnrollmentRepo.findOne.mockResolvedValue({ id: 'e1', challenge: { authorId: 'expert1' } });
+    mockReviewRepo.findOne.mockResolvedValue(null);
+    mockReviewRepo.create.mockReturnValue({ sessionId: 's1', expertId: 'expert1' });
+    mockReviewRepo.save.mockResolvedValue({ id: 'rq1' });
+
+    await (service as any).handleProcessingError('s1');
+    expect(sess.reviewReason).toBe('ai_error');
+    expect(sess.phase).toBe(SessionPhase.DONE); // не READ — ребёнка не гоняем на перезапись
+    expect(sess.expertReportDraft).toMatch(/не удалось обработать/i);
+    expect(mockReviewRepo.save).toHaveBeenCalled();
+  });
+
+  it('rejectReview → сохраняет отчёт эксперта и помечает провал', async () => {
+    const sess: any = { id: 's1', childId: 'c1', enrollmentId: 'e1', expertReportDraft: 'черновик' };
+    mockReviewRepo.findOne.mockResolvedValue({ id: 'rq1', expertId: 'expert1', session: sess });
+    mockReviewRepo.save.mockImplementation(async (x: any) => x);
+    mockSessionRepo.save.mockImplementation(async (s: any) => s);
+
+    await service.rejectReview('rq1', 'expert1', 'Читал неразборчиво.');
+    expect(sess.status).toBe(SessionStatus.FAILED);
+    expect(sess.expertReport).toBe('Читал неразборчиво.');
+  });
+
   it('analyze → adds to review queue when score < 8', async () => {
     const session = {
       id: 's1', childId: 'c1', enrollmentId: 'e1',

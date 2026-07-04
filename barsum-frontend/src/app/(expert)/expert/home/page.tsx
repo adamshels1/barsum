@@ -9,6 +9,9 @@ import { expertsApi } from "@/lib/api/experts";
 import { sessionsApi } from "@/lib/api/sessions";
 import { useAuthStore } from "@/stores/auth-store";
 import { CoinIcon } from "@/components/CoinIcon";
+import { useState } from "react";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3012";
 
 interface Challenge {
   id: string; title: string; bookTitle: string; bookAuthor: string;
@@ -31,6 +34,77 @@ const stats_config = [
   { key: "revenueTg",  label: "₸ всего",  Icon: TrendingUp, isCurrency: true },
 ];
 
+const REASON_LABEL: Record<string, string> = {
+  low_score: "Слабое чтение — нужно решение",
+  no_speech: "Речь не распозналась",
+  ai_error: "AI не смог обработать",
+};
+
+function ReviewCard({ item, busy, onApprove, onReject }: {
+  item: any;
+  busy: boolean;
+  onApprove: (report: string) => void;
+  onReject: (report: string) => void;
+}) {
+  const s = item.session;
+  const child = s?.child;
+  const ch = s?.enrollment?.challenge;
+  // Поле предзаполнено AI-черновиком — эксперту остаётся поправить и подтвердить.
+  const [report, setReport] = useState<string>(s?.expertReportDraft ?? "");
+
+  return (
+    <div className="glass" style={{ padding: 16, borderRadius: 16, border: "1px solid rgba(255,150,100,0.3)" }}>
+      <div style={{ marginBottom: 10 }}>
+        <p style={{ margin: 0, fontWeight: 900, fontSize: 14, color: "#ffffff" }}>
+          {child?.name || "Ребёнок"} · {ch?.bookTitle || "Книга"}
+        </p>
+        <p style={{ margin: "3px 0 0", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.55)" }}>
+          Часть {s?.partNumber} · {new Date(item.createdAt).toLocaleDateString("ru-RU")}
+          {s?.reviewReason ? ` · ${REASON_LABEL[s.reviewReason] ?? ""}` : ""}
+        </p>
+      </div>
+
+      {/* Аудио — эксперт слушает сам */}
+      {s?.id && (
+        <div style={{ marginBottom: 10 }}>
+          <p style={{ margin: "0 0 5px", fontSize: 10.5, fontWeight: 800, color: "rgba(255,255,255,0.45)", textTransform: "uppercase" }}>Запись чтения</p>
+          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+          <audio controls src={`${API_BASE}/sessions/${s.id}/audio`} style={{ width: "100%", height: 34 }} />
+        </div>
+      )}
+
+      {/* Краткий отчёт для родителя (предзаполнен AI) */}
+      <p style={{ margin: "0 0 5px", fontSize: 10.5, fontWeight: 800, color: "rgba(255,255,255,0.45)", textTransform: "uppercase" }}>Отчёт родителю</p>
+      <textarea
+        value={report}
+        onChange={(e) => setReport(e.target.value)}
+        rows={3}
+        placeholder="Короткий отчёт для родителя..."
+        style={{ width: "100%", resize: "vertical", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.18)", borderRadius: 10, padding: "8px 10px", color: "#ffffff", fontSize: 12.5, fontFamily: "inherit", lineHeight: 1.5, marginBottom: 10, boxSizing: "border-box" }}
+      />
+
+      <div style={{ display: "flex", gap: 8 }}>
+        <button
+          onClick={() => onApprove(report)}
+          disabled={busy}
+          style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "none", background: "rgba(0,200,100,0.3)", color: "#aaffcc", fontWeight: 900, fontSize: 13, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+        >
+          <CheckCircle size={15} strokeWidth={2.5} />
+          Засчитать
+        </button>
+        <button
+          onClick={() => onReject(report)}
+          disabled={busy}
+          style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "none", background: "rgba(255,80,80,0.25)", color: "#ffaaaa", fontWeight: 900, fontSize: 13, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+        >
+          <XCircle size={15} strokeWidth={2.5} />
+          Не засчитать
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function ExpertHomePage() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
@@ -49,17 +123,17 @@ export default function ExpertHomePage() {
   });
 
   const approveMutation = useMutation({
-    mutationFn: (id: string) => sessionsApi.approveReview(id),
+    mutationFn: ({ id, report }: { id: string; report: string }) => sessionsApi.approveReview(id, report),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["review-queue"] });
       toast.success("Засчитано! Монеты начислены");
     },
   });
   const rejectMutation = useMutation({
-    mutationFn: (id: string) => sessionsApi.rejectReview(id),
+    mutationFn: ({ id, report }: { id: string; report: string }) => sessionsApi.rejectReview(id, report),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["review-queue"] });
-      toast.success("Отправлено на повтор");
+      toast.success("Не засчитано");
     },
   });
 
@@ -178,52 +252,15 @@ export default function ExpertHomePage() {
               </span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {(reviewQueue as any[]).map((item: any) => {
-                const s = item.session;
-                const child = s?.child;
-                const ch = s?.enrollment?.challenge;
-                return (
-                  <div key={item.id} className="glass" style={{ padding: 16, borderRadius: 16, border: "1px solid rgba(255,150,100,0.3)" }}>
-                    <div style={{ marginBottom: 10 }}>
-                      <p style={{ margin: 0, fontWeight: 900, fontSize: 14, color: "#ffffff" }}>
-                        {child?.name || "Ребёнок"} · {ch?.bookTitle || "Книга"}
-                      </p>
-                      <p style={{ margin: "3px 0 0", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.55)" }}>
-                        Часть {s?.partNumber} · {new Date(item.createdAt).toLocaleDateString("ru-RU")}
-                      </p>
-                    </div>
-                    {s?.transcription ? (
-                      <div style={{ background: "rgba(255,255,255,0.08)", borderRadius: 10, padding: "8px 10px", marginBottom: 10 }}>
-                        <p style={{ margin: 0, fontSize: 12, color: "rgba(255,255,255,0.75)", lineHeight: 1.5, fontStyle: "italic" }}>
-                          «{s.transcription.slice(0, 200)}{s.transcription.length > 200 ? "..." : ""}»
-                        </p>
-                      </div>
-                    ) : (
-                      <p style={{ margin: "0 0 10px", fontSize: 12, color: "rgba(255,255,255,0.45)", fontStyle: "italic" }}>
-                        Аудио не содержит речи
-                      </p>
-                    )}
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button
-                        onClick={() => approveMutation.mutate(item.id)}
-                        disabled={approveMutation.isPending || rejectMutation.isPending}
-                        style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "none", background: "rgba(0,200,100,0.3)", color: "#aaffcc", fontWeight: 900, fontSize: 13, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
-                      >
-                        <CheckCircle size={15} strokeWidth={2.5} />
-                        Засчитать
-                      </button>
-                      <button
-                        onClick={() => rejectMutation.mutate(item.id)}
-                        disabled={approveMutation.isPending || rejectMutation.isPending}
-                        style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "none", background: "rgba(255,80,80,0.25)", color: "#ffaaaa", fontWeight: 900, fontSize: 13, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
-                      >
-                        <XCircle size={15} strokeWidth={2.5} />
-                        Повторить
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+              {(reviewQueue as any[]).map((item: any) => (
+                <ReviewCard
+                  key={item.id}
+                  item={item}
+                  busy={approveMutation.isPending || rejectMutation.isPending}
+                  onApprove={(report) => approveMutation.mutate({ id: item.id, report })}
+                  onReject={(report) => rejectMutation.mutate({ id: item.id, report })}
+                />
+              ))}
             </div>
           </div>
         )}

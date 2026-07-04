@@ -86,6 +86,9 @@ export interface Session {
   readingSpeedWpm?: number | null;
   errorWords?: string[] | null;
   audioDurationSec?: number | null;
+  reviewReason?: string | null;
+  expertReportDraft?: string | null;
+  expertReport?: string | null;
   status: "pending" | "completed" | "failed";
   createdAt: string;
 }

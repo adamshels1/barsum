@@ -61,6 +61,18 @@ export class Session {
   @Column({ nullable: true, type: 'text' })
   aiFeedback: string;
 
+  // Причина, по которой сессия ушла эксперту: 'low_score' | 'no_speech' | 'ai_error'
+  @Column({ nullable: true, type: 'varchar' })
+  reviewReason: string;
+
+  // AI-черновик отчёта — предзаполняет поле эксперта, чтобы не писал с нуля
+  @Column({ nullable: true, type: 'text' })
+  expertReportDraft: string;
+
+  // Финальный отчёт эксперта — его видит родитель, когда AI не справился
+  @Column({ nullable: true, type: 'text' })
+  expertReport: string;
+
   @Column({ nullable: true, type: 'text' })
   lastError: string;
 

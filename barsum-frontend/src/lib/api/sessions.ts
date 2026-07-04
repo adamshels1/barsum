@@ -37,8 +37,8 @@ export const sessionsApi = {
 
   // Review queue (for expert)
   reviewQueue: () => apiClient.get("/review-queue").then((r) => r.data),
-  approveReview: (id: string) =>
-    apiClient.post(`/review-queue/${id}/approve`).then((r) => r.data),
-  rejectReview: (id: string) =>
-    apiClient.post(`/review-queue/${id}/reject`).then((r) => r.data),
+  approveReview: (id: string, report?: string) =>
+    apiClient.post(`/review-queue/${id}/approve`, { report }).then((r) => r.data),
+  rejectReview: (id: string, report?: string) =>
+    apiClient.post(`/review-queue/${id}/reject`, { report }).then((r) => r.data),
 };

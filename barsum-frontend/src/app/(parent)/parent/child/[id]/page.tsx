@@ -112,6 +112,11 @@ function ReadingReport({ session }: { session: Session }) {
       {session.aiFeedback && (
         <p style={{ margin: "8px 0 0", fontSize: 12.5, color: "rgba(255,255,255,0.6)", fontStyle: "italic" }}>{session.aiFeedback}</p>
       )}
+      {session.expertReport && (
+        <p style={{ margin: "6px 0 0", fontSize: 12.5, color: "rgba(255,255,255,0.75)" }}>
+          <span style={{ fontWeight: 800 }}>Эксперт:</span> {session.expertReport}
+        </p>
+      )}
     </div>
   );
 }
@@ -149,6 +154,13 @@ function SessionRow({ session, defaultOpen }: { session: Session; defaultOpen?: 
           )}
           {session.readingAccuracy != null ? (
             <ReadingReport session={session} />
+          ) : session.expertReport ? (
+            <div>
+              <p style={{ margin: "10px 0 4px", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.5)", textTransform: "uppercase" }}>Отчёт эксперта</p>
+              <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.85)", lineHeight: 1.5, background: "rgba(255,255,255,0.08)", borderRadius: 10, padding: "8px 10px" }}>
+                {session.expertReport}
+              </p>
+            </div>
           ) : session.aiFeedback ? (
             <div>
               <p style={{ margin: "10px 0 4px", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.5)", textTransform: "uppercase" }}>AI-отчёт</p>
@@ -156,9 +168,11 @@ function SessionRow({ session, defaultOpen }: { session: Session; defaultOpen?: 
                 {session.aiFeedback}
               </p>
             </div>
-          ) : session.status === "pending" || session.phase === "transcribing" || session.phase === "analyzing" ? (
-            <p style={{ margin: "8px 0 0", fontSize: 13, color: "rgba(255,255,255,0.5)" }}>Отчёт готовится...</p>
-          ) : null}
+          ) : (
+            <p style={{ margin: "8px 0 0", fontSize: 13, color: "rgba(255,255,255,0.5)" }}>
+              {session.status === "pending" ? "Аудио записано — ждёт проверки эксперта" : "Отчёт готовится..."}
+            </p>
+          )}
         </div>
       )}
     </div>

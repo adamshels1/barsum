@@ -136,8 +136,8 @@ export class SessionsService {
     setImmediate(() => {
       this.transcribe(id, childId).catch((err) => {
         this.logger.error(`Auto-transcribe failed for session ${id}: ${err?.message}`);
-        this.markProcessingFailed(id).catch((e) =>
-          this.logger.error(`Failed to mark session ${id} as failed: ${e?.message}`),
+        this.handleProcessingError(id).catch((e) =>
+          this.logger.error(`Failed to route session ${id} to expert: ${e?.message}`),
         );
       });
     });
@@ -145,14 +145,45 @@ export class SessionsService {
     return saved;
   }
 
-  // Пересказ не удалось обработать (упавший AI-запрос и т.п.) — возвращаем ребёнку
-  // возможность перезаписать, а не оставляем экран крутиться в "AI проверяет..." навсегда.
-  private async markProcessingFailed(id: string): Promise<void> {
+  // AI не смог обработать запись (сбой транскрибации/анализа) — не теряем хорошую запись
+  // и не гоняем ребёнка на перезапись, а отдаём эксперту (он послушает аудио и решит).
+  private async handleProcessingError(id: string): Promise<void> {
     const session = await this.sessionRepo.findOne({ where: { id } });
     if (!session) return;
-    session.phase = SessionPhase.READ;
-    session.lastError = 'Не получилось обработать запись. Попробуй записать ещё раз.';
+    const enrollment = await this.enrollmentRepo.findOne({
+      where: { id: session.enrollmentId },
+      relations: ['challenge'],
+    });
+    await this.routeToExpert(
+      session,
+      enrollment,
+      'ai_error',
+      'Не удалось обработать запись автоматически. Послушайте аудио и оцените чтение.',
+    );
+  }
+
+  // Отправка сессии на ручную проверку эксперту: черновик отчёта уже готов (AI/шаблон),
+  // эксперту остаётся послушать и подтвердить. Родителю проверка НИКОГДА не уходит.
+  private async routeToExpert(
+    session: Session,
+    enrollment: ChallengeEnrollment | null,
+    reason: string,
+    draft: string,
+  ): Promise<void> {
+    session.reviewReason = reason;
+    session.expertReportDraft = draft;
+    session.phase = SessionPhase.DONE;
+    session.lastError = null;
     await this.sessionRepo.save(session);
+
+    const authorId = enrollment?.challenge?.authorId;
+    if (!authorId) return; // нет эксперта у челленджа — оставляем в pending
+    const existing = await this.reviewQueueRepo.findOne({ where: { sessionId: session.id } });
+    if (!existing) {
+      await this.reviewQueueRepo.save(
+        this.reviewQueueRepo.create({ sessionId: session.id, expertId: authorId, resolved: false }),
+      );
+    }
   }
 
   async transcribe(id: string, childId: string): Promise<Session> {
@@ -173,25 +204,17 @@ export class SessionsService {
     const hasText = result.text && result.text.trim().length > 0;
 
     if (!hasText) {
-      // Пустая транскрибация — отправляем эксперту на ручную проверку
-      session.phase = SessionPhase.DONE;
-      await this.sessionRepo.save(session);
+      // Речь не распозналась — отдаём эксперту (послушает аудио сам)
       const enrollment = await this.enrollmentRepo.findOne({
         where: { id: session.enrollmentId },
         relations: ['challenge'],
       });
-      if (enrollment?.challenge?.authorId) {
-        const existing = await this.reviewQueueRepo.findOne({ where: { sessionId: id } });
-        if (!existing) {
-          await this.reviewQueueRepo.save(
-            this.reviewQueueRepo.create({
-              sessionId: id,
-              expertId: enrollment.challenge.authorId,
-              resolved: false,
-            }),
-          );
-        }
-      }
+      await this.routeToExpert(
+        session,
+        enrollment,
+        'no_speech',
+        'Речь в записи не распозналась автоматически. Послушайте аудио и оцените чтение.',
+      );
       return session;
     }
 
@@ -226,6 +249,7 @@ export class SessionsService {
 
     const referenceText = enrollment?.challenge?.partTexts?.[session.partNumber - 1] ?? '';
     let score: number;
+    let expertDraft: string;
 
     if (referenceText.trim()) {
       // Оценка чтения вслух: объективные метрики через сравнение с эталоном.
@@ -237,6 +261,9 @@ export class SessionsService {
       session.aiScore = a.score;
       session.aiFeedback = readingAdvice(a);
       score = a.score;
+      const errPart = a.errorWords.length ? ` Споткнулся: ${a.errorWords.map((w) => `«${w}»`).join(', ')}.` : '';
+      const speedPart = a.speedWpm != null ? `, скорость ${a.speedWpm} сл/мин` : '';
+      expertDraft = `Чтение распознано, но слабое: точность ${a.accuracy}%, полнота ${a.completeness}%${speedPart}.${errPart} Послушайте запись и решите, засчитать ли.`;
     } else {
       // У челленджа нет эталонного текста части (только сканы) — падаем на AI-оценку пересказа.
       const resolvedTitle = bookTitle ?? enrollment?.challenge?.bookTitle ?? '';
@@ -245,11 +272,12 @@ export class SessionsService {
       session.aiFeedback = result.feedback;
       session.aiQuestions = result.questions;
       score = result.score >= 10 ? result.score / 10 : result.score; // нормализуем к 0–10 на всякий
+      expertDraft = result.feedback || 'Послушайте запись и оцените чтение.';
     }
 
-    session.phase = SessionPhase.DONE;
-
     if (score >= AUTO_CREDIT_SCORE) {
+      // AI справился и чтение хорошее — авто-зачёт, без людей.
+      session.phase = SessionPhase.DONE;
       session.status = SessionStatus.COMPLETED;
       if (enrollment && enrollment.coinsPerPart > 0) {
         await this.coinsService.transfer({
@@ -263,20 +291,12 @@ export class SessionsService {
         });
         await this.childrenService.incrementStreak(childId);
       }
-    } else if (enrollment?.challenge?.authorId) {
-      const existing = await this.reviewQueueRepo.findOne({ where: { sessionId: id } });
-      if (!existing) {
-        await this.reviewQueueRepo.save(
-          this.reviewQueueRepo.create({
-            sessionId: id,
-            expertId: enrollment.challenge.authorId,
-            resolved: false,
-          }),
-        );
-      }
+      return this.sessionRepo.save(session);
     }
 
-    return this.sessionRepo.save(session);
+    // Слабое чтение — решение принимает эксперт (не родитель), с готовым AI-черновиком.
+    await this.routeToExpert(session, enrollment, 'low_score', expertDraft);
+    return session;
   }
 
   async answer(id: string, childId: string, answers: Record<string, string>): Promise<Session> {
@@ -446,7 +466,7 @@ export class SessionsService {
     });
   }
 
-  async approveReview(id: string, expertId: string): Promise<ReviewQueue> {
+  async approveReview(id: string, expertId: string, report?: string): Promise<ReviewQueue> {
     const item = await this.reviewQueueRepo.findOne({
       where: { id, expertId },
       relations: ['session'],
@@ -461,6 +481,8 @@ export class SessionsService {
 
     if (enrollment) {
       item.session.status = SessionStatus.COMPLETED;
+      // Отчёт эксперта (или его AI-черновик) — его увидит родитель.
+      item.session.expertReport = (report ?? item.session.expertReportDraft ?? '').trim() || null;
       await this.sessionRepo.save(item.session);
 
       if (enrollment.coinsPerPart > 0) {
@@ -482,9 +504,14 @@ export class SessionsService {
     return this.reviewQueueRepo.save(item);
   }
 
-  async rejectReview(id: string, expertId: string): Promise<ReviewQueue> {
-    const item = await this.reviewQueueRepo.findOne({ where: { id, expertId } });
+  async rejectReview(id: string, expertId: string, report?: string): Promise<ReviewQueue> {
+    const item = await this.reviewQueueRepo.findOne({ where: { id, expertId }, relations: ['session'] });
     if (!item) throw new NotFoundException('Review item not found');
+    if (item.session) {
+      item.session.status = SessionStatus.FAILED;
+      item.session.expertReport = (report ?? item.session.expertReportDraft ?? '').trim() || null;
+      await this.sessionRepo.save(item.session);
+    }
     item.resolved = true;
     item.resolvedAt = new Date();
     return this.reviewQueueRepo.save(item);
