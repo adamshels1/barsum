@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SessionsController } from './sessions.controller';
+import { PublicSessionsController } from './public-sessions.controller';
 import { EnrollmentsController } from './enrollments.controller';
 import { ReviewQueueController } from './review-queue.controller';
 import { SessionsService } from './sessions.service';
@@ -20,7 +21,7 @@ import { FilesModule } from '../files/files.module';
     AiModule,
     FilesModule,
   ],
-  controllers: [SessionsController, EnrollmentsController, ReviewQueueController],
+  controllers: [SessionsController, PublicSessionsController, EnrollmentsController, ReviewQueueController],
   providers: [SessionsService],
   exports: [SessionsService],
 })

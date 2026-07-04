@@ -84,7 +84,7 @@ function BookCard({ book }: { book: StudentBook }) {
                     <p style={{ margin: "2px 0 0", fontSize: 11, color: "rgba(255,255,255,0.55)" }}>{formatDate(s.createdAt)}</p>
                   </div>
                   {s.aiScore != null && (
-                    <span style={{ fontSize: 12, fontWeight: 800, color: "#ffd200" }}>{Math.round(Number(s.aiScore))}%</span>
+                    <span style={{ fontSize: 12, fontWeight: 800, color: "#ffd200" }}>AI: {Number(s.aiScore)}/10</span>
                   )}
                   <span style={{ fontSize: 10.5, padding: "3px 8px", borderRadius: 9999, fontWeight: 800, background: cfg.bg, color: cfg.color, flexShrink: 0 }}>{cfg.label}</span>
                 </div>

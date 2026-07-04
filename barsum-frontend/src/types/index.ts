@@ -78,6 +78,7 @@ export interface Session {
   audioUrl?: string;
   transcription?: string;
   aiScore?: number;
+  aiFeedback?: string;
   aiQuestions?: string[];
   aiAnswers?: Record<string, string>;
   status: "pending" | "completed" | "failed";

@@ -19,6 +19,8 @@ interface Session {
   status: "pending" | "completed" | "failed";
   coinsPerPart: number;
   createdAt: string;
+  lastError?: string | null;
+  aiFeedback?: string | null;
 }
 
 function PulsingDots() {
@@ -115,48 +117,42 @@ function PhaseRead({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      {/* Text block */}
-      <div className="glass" style={{ padding: 20, borderRadius: 20 }}>
-        <p style={{ fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12, margin: "0 0 12px" }}>
-          Часть {session.partNumber}
-        </p>
-        {dayText ? (
-          <p style={{ fontSize: 16, lineHeight: 1.7, color: "rgba(255,255,255,0.9)", fontFamily: "Georgia, serif", margin: 0 }}>
-            {dayText}
-          </p>
-        ) : (
-          <p style={{ fontSize: 14, fontStyle: "italic", color: "rgba(255,255,255,0.55)", margin: 0 }}>
-            Читай вслух эту часть книги
-          </p>
-        )}
-      </div>
-
-      {/* Recording controls */}
+      {/* Recording controls — наверху экрана, чтобы не листать до кнопки */}
       {stage === "before" && (
-        <button
-          onClick={startRecording}
-          style={{
-            width: "100%",
-            padding: "18px 0",
-            borderRadius: 9999,
-            background: "rgba(255,255,255,0.9)",
-            color: "#4776e6",
-            fontWeight: 900,
-            fontSize: 16,
-            border: "none",
-            cursor: "pointer",
-            fontFamily: "inherit",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 10,
-            textTransform: "uppercase",
-            letterSpacing: "0.06em",
-          }}
-        >
-          <Mic size={20} strokeWidth={2.5} />
-          Начать читать вслух
-        </button>
+        <>
+          {session.lastError && (
+            <div
+              className="glass"
+              style={{ padding: 14, borderRadius: 16, background: "rgba(255,120,60,0.18)", border: "1px solid rgba(255,150,80,0.35)" }}
+            >
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "#ffe0c2" }}>{session.lastError}</p>
+            </div>
+          )}
+          <button
+            onClick={startRecording}
+            style={{
+              width: "100%",
+              padding: "18px 0",
+              borderRadius: 9999,
+              background: "rgba(255,255,255,0.9)",
+              color: "#4776e6",
+              fontWeight: 900,
+              fontSize: 16,
+              border: "none",
+              cursor: "pointer",
+              fontFamily: "inherit",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 10,
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+            }}
+          >
+            <Mic size={20} strokeWidth={2.5} />
+            Начать читать вслух
+          </button>
+        </>
       )}
 
       {stage === "recording" && (
@@ -269,6 +265,22 @@ function PhaseRead({
           {error}
         </p>
       )}
+
+      {/* Text block */}
+      <div className="glass" style={{ padding: 20, borderRadius: 20 }}>
+        <p style={{ fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12, margin: "0 0 12px" }}>
+          Часть {session.partNumber}
+        </p>
+        {dayText ? (
+          <p style={{ fontSize: 16, lineHeight: 1.7, color: "rgba(255,255,255,0.9)", fontFamily: "Georgia, serif", margin: 0 }}>
+            {dayText}
+          </p>
+        ) : (
+          <p style={{ fontSize: 14, fontStyle: "italic", color: "rgba(255,255,255,0.55)", margin: 0 }}>
+            Читай вслух эту часть книги
+          </p>
+        )}
+      </div>
     </div>
   );
 }

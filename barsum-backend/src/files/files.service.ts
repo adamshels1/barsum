@@ -12,6 +12,37 @@ export const BUCKET_RECEIPTS = 'barsum-receipts';
 export const BUCKET_AVATARS = 'barsum-avatars';
 export const BUCKET_REWARDS = 'barsum-rewards';
 
+export const KNOWN_BUCKETS = [BUCKET_AUDIO, BUCKET_RECEIPTS, BUCKET_AVATARS, BUCKET_REWARDS];
+
+const AUDIO_MIME_BY_EXT: Record<string, string> = {
+  webm: 'audio/webm', mp4: 'audio/mp4', wav: 'audio/wav', mp3: 'audio/mpeg', ogg: 'audio/ogg', m4a: 'audio/mp4',
+};
+
+export function audioMimeFromUrl(url: string): string {
+  const ext = url.split('?')[0].split('.').pop()?.toLowerCase();
+  return AUDIO_MIME_BY_EXT[ext ?? ''] ?? 'audio/webm';
+}
+
+/**
+ * Разбирает сохранённую в БД ссылку на файл MinIO в { bucket, key } независимо от того,
+ * как она сформирована: http://ip:9100/<bucket>/<key>, https://host/prefix/<bucket>/<key> и т.д.
+ * Ищем известное имя бакета в сегментах пути — это устойчиво к смене хоста/префикса.
+ */
+export function parseStoredFileUrl(url: string): { bucket: string; key: string } | null {
+  if (!url) return null;
+  try {
+    const path = new URL(url).pathname.replace(/^\/+/, '');
+    const segments = path.split('/');
+    const idx = segments.findIndex((s) => KNOWN_BUCKETS.includes(s));
+    if (idx === -1) return null;
+    const key = segments.slice(idx + 1).join('/');
+    if (!key) return null;
+    return { bucket: segments[idx], key: decodeURIComponent(key) };
+  } catch {
+    return null;
+  }
+}
+
 @Injectable()
 export class FilesService implements OnModuleInit {
   private readonly client: Minio.Client;
@@ -39,8 +70,9 @@ export class FilesService implements OnModuleInit {
         this.logger.log(`Created bucket: ${bucket}`);
       }
     }
-    // Чеки, аватары и награды отображаются напрямую через <img src>, поэтому читаются анонимно.
-    for (const bucket of [BUCKET_RECEIPTS, BUCKET_AVATARS, BUCKET_REWARDS]) {
+    // Чеки, аватары, награды и аудиозаписи чтения отдаются напрямую через <img>/<audio> src,
+    // поэтому читаются анонимно.
+    for (const bucket of [BUCKET_RECEIPTS, BUCKET_AVATARS, BUCKET_REWARDS, BUCKET_AUDIO]) {
       await this.client.setBucketPolicy(bucket, JSON.stringify({
         Version: '2012-10-17',
         Statement: [
@@ -77,7 +109,17 @@ export class FilesService implements OnModuleInit {
     await this.client.putObject(bucket, filename, buffer, buffer.length, {
       'Content-Type': mimetype,
     });
-    return `http://${this.config.get('MINIO_ENDPOINT', 'localhost')}:${this.config.get('MINIO_PORT', '9100')}/${bucket}/${filename}`;
+    const publicUrl = this.config.get('MINIO_PUBLIC_URL');
+    if (publicUrl) {
+      return `${publicUrl.replace(/\/$/, '')}/${bucket}/${filename}`;
+    }
+    const useSSL = this.config.get('MINIO_USE_SSL') === 'true';
+    const scheme = useSSL ? 'https' : 'http';
+    const endpoint = this.config.get('MINIO_ENDPOINT', 'localhost');
+    const port = this.config.get('MINIO_PORT', '9100');
+    const isDefaultPort = (useSSL && port === '443') || (!useSSL && port === '80');
+    const host = isDefaultPort ? endpoint : `${endpoint}:${port}`;
+    return `${scheme}://${host}/${bucket}/${filename}`;
   }
 
   async deleteFile(filename: string, bucket: string): Promise<void> {

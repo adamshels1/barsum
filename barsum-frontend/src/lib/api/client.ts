@@ -2,7 +2,9 @@ import axios from "axios";
 
 export const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3012",
-  headers: { "Content-Type": "application/json" },
+  // ngrok-skip-browser-warning отключает межстраничный интерстишл ngrok,
+  // который иначе перехватывает XHR-запросы из настоящего браузера и ломает CORS.
+  headers: { "Content-Type": "application/json", "ngrok-skip-browser-warning": "true" },
 });
 
 apiClient.interceptors.request.use((config) => {

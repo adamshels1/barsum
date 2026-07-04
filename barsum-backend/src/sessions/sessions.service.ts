@@ -13,14 +13,8 @@ import { ReviewQueue } from './entities/review-queue.entity';
 import { CoinsService } from '../coins/coins.service';
 import { ChildrenService } from '../children/children.service';
 import { AiService } from '../ai/ai.service';
-import { FilesService, BUCKET_AUDIO } from '../files/files.service';
+import { FilesService, BUCKET_AUDIO, parseStoredFileUrl, audioMimeFromUrl } from '../files/files.service';
 import { SessionPhase, SessionStatus, EnrollmentStatus, CoinTransactionType } from '../common/enums';
-
-function mimeFromUrl(url: string): string {
-  const ext = url.split('?')[0].split('.').pop()?.toLowerCase();
-  const map: Record<string, string> = { webm: 'audio/webm', mp4: 'audio/mp4', wav: 'audio/wav', mp3: 'audio/mpeg', ogg: 'audio/ogg' };
-  return map[ext ?? ''] ?? 'audio/webm';
-}
 
 @Injectable()
 export class SessionsService {
@@ -81,6 +75,17 @@ export class SessionsService {
     return { ...s, coinsPerPart: enrollment?.coinsPerPart ?? 0 };
   }
 
+  // Отдаём аудиозапись сессии через backend (тот же https-origin, что и API),
+  // чтобы не упираться в mixed-content блокировку прямых http-ссылок MinIO на проде.
+  async getAudio(id: string): Promise<{ buffer: Buffer; contentType: string }> {
+    const s = await this.sessionRepo.findOne({ where: { id } });
+    if (!s?.audioUrl) throw new NotFoundException('Audio not found');
+    const parsed = parseStoredFileUrl(s.audioUrl);
+    if (!parsed) throw new NotFoundException('Audio not found');
+    const buffer = await this.filesService.getBuffer(parsed.key, parsed.bucket);
+    return { buffer, contentType: audioMimeFromUrl(s.audioUrl) };
+  }
+
   async findByChild(childId: string): Promise<Session[]> {
     return this.sessionRepo.find({
       where: { childId },
@@ -120,15 +125,29 @@ export class SessionsService {
     const audioUrl = await this.filesService.uploadAudio(file, id);
     session.audioUrl = audioUrl;
     session.phase = SessionPhase.TRANSCRIBING;
+    session.lastError = null;
     const saved = await this.sessionRepo.save(session);
 
     setImmediate(() => {
       this.transcribe(id, childId).catch((err) => {
         this.logger.error(`Auto-transcribe failed for session ${id}: ${err?.message}`);
+        this.markProcessingFailed(id).catch((e) =>
+          this.logger.error(`Failed to mark session ${id} as failed: ${e?.message}`),
+        );
       });
     });
 
     return saved;
+  }
+
+  // Пересказ не удалось обработать (упавший AI-запрос и т.п.) — возвращаем ребёнку
+  // возможность перезаписать, а не оставляем экран крутиться в "AI проверяет..." навсегда.
+  private async markProcessingFailed(id: string): Promise<void> {
+    const session = await this.sessionRepo.findOne({ where: { id } });
+    if (!session) return;
+    session.phase = SessionPhase.READ;
+    session.lastError = 'Не получилось обработать запись. Попробуй записать ещё раз.';
+    await this.sessionRepo.save(session);
   }
 
   async transcribe(id: string, childId: string): Promise<Session> {
@@ -136,39 +155,22 @@ export class SessionsService {
     if (session.childId !== childId) throw new ForbiddenException('Not your session');
     if (!session.audioUrl) throw new BadRequestException('No audio uploaded');
 
-    const urlPath = new URL(session.audioUrl).pathname.slice(1);
-    const slashIdx = urlPath.indexOf('/');
-    const bucket = slashIdx === -1 ? BUCKET_AUDIO : urlPath.slice(0, slashIdx);
-    const objectPath = slashIdx === -1 ? urlPath : urlPath.slice(slashIdx + 1);
-    const mimeType = mimeFromUrl(session.audioUrl);
+    const parsed = parseStoredFileUrl(session.audioUrl);
+    const bucket = parsed?.bucket ?? BUCKET_AUDIO;
+    const objectPath = parsed?.key ?? new URL(session.audioUrl).pathname.replace(/^\/+/, '');
+    const mimeType = audioMimeFromUrl(session.audioUrl);
 
     const audioBuffer = await this.filesService.getBuffer(objectPath, bucket);
     const result = await this.aiService.transcribeAudio(audioBuffer, objectPath, mimeType);
     session.transcription = result.text;
+    session.lastError = null;
 
     const hasText = result.text && result.text.trim().length > 0;
-    session.phase = SessionPhase.DONE;
 
-    if (hasText) {
-      session.status = SessionStatus.COMPLETED;
-      const enrollment = await this.enrollmentRepo.findOne({
-        where: { id: session.enrollmentId },
-        relations: ['challenge'],
-      });
-      if (enrollment && enrollment.coinsPerPart > 0) {
-        await this.coinsService.transfer({
-          fromId: 'system',
-          fromType: 'system',
-          toId: childId,
-          toType: 'child',
-          amount: enrollment.coinsPerPart,
-          type: CoinTransactionType.EARN,
-          referenceId: `session-earn-${id}`,
-        });
-        await this.childrenService.incrementStreak(childId);
-      }
-    } else {
-      // Empty transcription — send to expert for review
+    if (!hasText) {
+      // Пустая транскрибация — отправляем эксперту на ручную проверку
+      session.phase = SessionPhase.DONE;
+      await this.sessionRepo.save(session);
       const enrollment = await this.enrollmentRepo.findOne({
         where: { id: session.enrollmentId },
         relations: ['challenge'],
@@ -185,9 +187,12 @@ export class SessionsService {
           );
         }
       }
+      return session;
     }
 
-    return this.sessionRepo.save(session);
+    session.phase = SessionPhase.ANALYZING;
+    await this.sessionRepo.save(session);
+    return this.analyze(id, childId);
   }
 
   async getPartText(id: string, childId: string): Promise<{ text: string | null; imageUrl: string | null; partNumber: number }> {
@@ -218,10 +223,11 @@ export class SessionsService {
 
     const result = await this.aiService.analyzeRetelling(session.transcription, resolvedTitle);
     session.aiScore = result.score;
+    session.aiFeedback = result.feedback;
     session.aiQuestions = result.questions;
     session.phase = SessionPhase.DONE;
 
-    if (result.score >= 80) {
+    if (result.score >= 8) {
       session.status = SessionStatus.COMPLETED;
       if (enrollment && enrollment.coinsPerPart > 0) {
         await this.coinsService.transfer({

@@ -103,8 +103,8 @@ ${chapterContext ? `Контекст главы: ${chapterContext}` : ''}
 Пересказ ребёнка:
 "${text}"
 
-Оцени пересказ по шкале 0-100. Задай 3 вопроса по тексту.
-Ответь СТРОГО в JSON: {"score": number, "feedback": "string", "questions": ["q1","q2","q3"]}`;
+Оцени пересказ по шкале от 0 до 10 (10 — отличный пересказ, полностью передающий суть). Задай 3 вопроса по тексту.
+Ответь СТРОГО в JSON: {"score": number от 0 до 10, "feedback": "string", "questions": ["q1","q2","q3"]}`;
 
     const content = await this.generateText(prompt);
     return JSON.parse(content);

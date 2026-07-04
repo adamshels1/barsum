@@ -10,6 +10,11 @@ async function bootstrap() {
     origin: (origin, callback) => {
       const allowed = [
         'http://localhost:3011',
+        'http://185.113.132.6:3011',
+        'http://barsum.app',
+        'https://barsum.app',
+        'http://www.barsum.app',
+        'https://www.barsum.app',
         process.env.FRONTEND_URL,
       ].filter(Boolean);
       if (!origin || allowed.some(o => origin === o) || origin.endsWith('.ngrok-free.app') || origin.endsWith('.ngrok.io')) {

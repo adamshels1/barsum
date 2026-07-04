@@ -12,6 +12,8 @@ import { sessionsApi } from "@/lib/api/sessions";
 import type { Child, ChildStats, Session } from "@/types";
 import { CoinIcon } from "@/components/CoinIcon";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3012";
+
 const REJECT_REASONS = [
   "Слишком дорого",
   "Подумай ещё раз",
@@ -47,8 +49,8 @@ function StatCard({ emoji, value, label, highlight }: { emoji: React.ReactNode; 
   );
 }
 
-function SessionRow({ session }: { session: Session }) {
-  const [open, setOpen] = useState(false);
+function SessionRow({ session, defaultOpen }: { session: Session; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(!!defaultOpen);
   const cfg = STATUS_CONFIG[session.status] ?? STATUS_CONFIG.pending;
 
   return (
@@ -68,16 +70,26 @@ function SessionRow({ session }: { session: Session }) {
       </button>
       {open && (
         <div style={{ padding: "0 16px 14px", borderTop: "1px solid rgba(255,255,255,0.12)" }}>
-          {session.transcription ? (
-            <div>
-              <p style={{ margin: "10px 0 4px", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.5)", textTransform: "uppercase" }}>Расшифровка</p>
-              <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.85)", lineHeight: 1.5, background: "rgba(255,255,255,0.08)", borderRadius: 10, padding: "8px 10px" }}>
-                {session.transcription}
-              </p>
+          {session.audioUrl ? (
+            <div style={{ margin: "10px 0" }}>
+              <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.5)", textTransform: "uppercase" }}>Запись чтения</p>
+              {/* Через backend-прокси (https), а не прямую http-ссылку MinIO — иначе mixed-content на проде */}
+              {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+              <audio controls src={`${API_BASE}/sessions/${session.id}/audio`} style={{ width: "100%", height: 36 }} />
             </div>
           ) : (
-            <p style={{ margin: "10px 0 0", fontSize: 13, color: "rgba(255,255,255,0.5)" }}>Расшифровка недоступна</p>
+            <p style={{ margin: "10px 0 0", fontSize: 13, color: "rgba(255,255,255,0.5)" }}>Запись недоступна</p>
           )}
+          {session.aiFeedback ? (
+            <div>
+              <p style={{ margin: "10px 0 4px", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.5)", textTransform: "uppercase" }}>AI-отчёт</p>
+              <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.85)", lineHeight: 1.5, background: "rgba(255,255,255,0.08)", borderRadius: 10, padding: "8px 10px" }}>
+                {session.aiFeedback}
+              </p>
+            </div>
+          ) : session.status === "pending" ? (
+            <p style={{ margin: "8px 0 0", fontSize: 13, color: "rgba(255,255,255,0.5)" }}>Отчёт готовится...</p>
+          ) : null}
         </div>
       )}
     </div>
@@ -415,7 +427,9 @@ export default function ParentChildProgressPage() {
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {sortedSessions.map((session) => <SessionRow key={session.id} session={session} />)}
+                {sortedSessions.map((session, idx) => (
+                  <SessionRow key={session.id} session={session} defaultOpen={idx === 0} />
+                ))}
               </div>
             )}
           </div>

@@ -43,6 +43,12 @@ export class Session {
   @Column({ nullable: true, type: 'jsonb' })
   aiAnswers: object;
 
+  @Column({ nullable: true, type: 'text' })
+  aiFeedback: string;
+
+  @Column({ nullable: true, type: 'text' })
+  lastError: string;
+
   @Column({ type: 'enum', enum: SessionStatus, default: SessionStatus.PENDING })
   status: SessionStatus;
 
