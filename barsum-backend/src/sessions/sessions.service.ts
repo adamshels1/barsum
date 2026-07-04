@@ -15,6 +15,10 @@ import { ChildrenService } from '../children/children.service';
 import { AiService } from '../ai/ai.service';
 import { FilesService, BUCKET_AUDIO, parseStoredFileUrl, audioMimeFromUrl } from '../files/files.service';
 import { SessionPhase, SessionStatus, EnrollmentStatus, CoinTransactionType } from '../common/enums';
+import { assessReading, readingAdvice } from './reading-assessment';
+
+// Порог автозачёта (0–10). Ниже — уходит эксперту на ручную проверку.
+const AUTO_CREDIT_SCORE = 7;
 
 @Injectable()
 export class SessionsService {
@@ -118,12 +122,13 @@ export class SessionsService {
     return this.sessionRepo.save(session);
   }
 
-  async uploadAudio(id: string, childId: string, file: Express.Multer.File): Promise<Session> {
+  async uploadAudio(id: string, childId: string, file: Express.Multer.File, durationSec?: number): Promise<Session> {
     const session = await this.findById(id);
     if (session.childId !== childId) throw new ForbiddenException('Not your session');
 
     const audioUrl = await this.filesService.uploadAudio(file, id);
     session.audioUrl = audioUrl;
+    if (durationSec && durationSec > 0) session.audioDurationSec = durationSec;
     session.phase = SessionPhase.TRANSCRIBING;
     session.lastError = null;
     const saved = await this.sessionRepo.save(session);
@@ -219,15 +224,32 @@ export class SessionsService {
       relations: ['challenge'],
     });
 
-    const resolvedTitle = bookTitle ?? enrollment?.challenge?.bookTitle ?? '';
+    const referenceText = enrollment?.challenge?.partTexts?.[session.partNumber - 1] ?? '';
+    let score: number;
 
-    const result = await this.aiService.analyzeRetelling(session.transcription, resolvedTitle);
-    session.aiScore = result.score;
-    session.aiFeedback = result.feedback;
-    session.aiQuestions = result.questions;
+    if (referenceText.trim()) {
+      // Оценка чтения вслух: объективные метрики через сравнение с эталоном.
+      const a = assessReading(referenceText, session.transcription, session.audioDurationSec);
+      session.readingAccuracy = a.accuracy;
+      session.readingCompleteness = a.completeness;
+      session.readingSpeedWpm = a.speedWpm ?? null;
+      session.errorWords = a.errorWords;
+      session.aiScore = a.score;
+      session.aiFeedback = readingAdvice(a);
+      score = a.score;
+    } else {
+      // У челленджа нет эталонного текста части (только сканы) — падаем на AI-оценку пересказа.
+      const resolvedTitle = bookTitle ?? enrollment?.challenge?.bookTitle ?? '';
+      const result = await this.aiService.analyzeRetelling(session.transcription, resolvedTitle);
+      session.aiScore = result.score;
+      session.aiFeedback = result.feedback;
+      session.aiQuestions = result.questions;
+      score = result.score >= 10 ? result.score / 10 : result.score; // нормализуем к 0–10 на всякий
+    }
+
     session.phase = SessionPhase.DONE;
 
-    if (result.score >= 8) {
+    if (score >= AUTO_CREDIT_SCORE) {
       session.status = SessionStatus.COMPLETED;
       if (enrollment && enrollment.coinsPerPart > 0) {
         await this.coinsService.transfer({

@@ -89,6 +89,29 @@ describe('SessionsService', () => {
     expect(result.status).toBe(SessionStatus.COMPLETED);
   });
 
+  it('analyze → reading path: считает метрики по эталону и зачитывает при хорошем чтении', async () => {
+    const ref = 'Некрасивый серый утёнок не отставал от других уток на птичьем дворе';
+    const session = {
+      id: 's1', childId: 'c1', enrollmentId: 'e1', partNumber: 1,
+      transcription: ref, audioDurationSec: 6, phase: SessionPhase.ANALYZING,
+    };
+    mockSessionRepo.findOne.mockResolvedValue({ ...session });
+    mockSessionRepo.save.mockImplementation(async (s: any) => s);
+    mockEnrollmentRepo.findOne.mockResolvedValue({
+      id: 'e1', parentId: 'p1', coinsPerPart: 500, challenge: { coinsReward: 500, partTexts: [ref] },
+    });
+    mockReviewRepo.findOne.mockResolvedValue(null);
+
+    const result = await service.analyze('s1', 'c1');
+    expect(mockAi.analyzeRetelling).not.toHaveBeenCalled(); // считаем алгоритмом, не AI
+    expect(result.readingAccuracy).toBe(100);
+    expect(result.readingCompleteness).toBe(100);
+    expect(result.readingSpeedWpm).toBeGreaterThan(0);
+    expect(result.aiScore).toBe(10);
+    expect(result.status).toBe(SessionStatus.COMPLETED);
+    expect(mockCoins.transfer).toHaveBeenCalled();
+  });
+
   it('analyze → adds to review queue when score < 8', async () => {
     const session = {
       id: 's1', childId: 'c1', enrollmentId: 'e1',

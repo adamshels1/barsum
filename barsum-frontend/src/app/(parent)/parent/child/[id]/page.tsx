@@ -49,6 +49,73 @@ function StatCard({ emoji, value, label, highlight }: { emoji: React.ReactNode; 
   );
 }
 
+type Light = "green" | "yellow" | "red" | "gray";
+const LIGHT_COLOR: Record<Light, string> = {
+  green: "#4ade80",
+  yellow: "#facc15",
+  red: "#f87171",
+  gray: "rgba(255,255,255,0.35)",
+};
+const LIGHT_DOT: Record<Light, string> = { green: "🟢", yellow: "🟡", red: "🔴", gray: "⚪️" };
+
+function lightFor(value: number | null | undefined, green: number, yellow: number): Light {
+  if (value == null) return "gray";
+  if (value >= green) return "green";
+  if (value >= yellow) return "yellow";
+  return "red";
+}
+
+function MetricBar({ label, light, fillPct, valueText }: { label: string; light: Light; fillPct: number; valueText: string }) {
+  const color = LIGHT_COLOR[light];
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "8px 0" }}>
+      <span style={{ width: 74, flexShrink: 0, fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)" }}>{label}</span>
+      <div style={{ flex: 1, height: 8, borderRadius: 9999, background: "rgba(255,255,255,0.12)", overflow: "hidden" }}>
+        <div style={{ height: "100%", width: `${Math.max(0, Math.min(100, fillPct))}%`, background: color, borderRadius: 9999, transition: "width 0.5s ease" }} />
+      </div>
+      <span style={{ width: 58, flexShrink: 0, textAlign: "right", fontSize: 12, fontWeight: 800, color: "#ffffff" }}>{valueText}</span>
+      <span style={{ fontSize: 11 }}>{LIGHT_DOT[light]}</span>
+    </div>
+  );
+}
+
+function ReadingReport({ session }: { session: Session }) {
+  const score = session.aiScore != null ? Math.round(Number(session.aiScore)) : null;
+  const acc = session.readingAccuracy;
+  const comp = session.readingCompleteness;
+  const wpm = session.readingSpeedWpm;
+  const errors = session.errorWords ?? [];
+
+  const overallLight = lightFor(score, 8, 5);
+  const overallLabel = score == null ? "—" : score >= 8 ? "Отлично" : score >= 5 ? "Хорошо" : "Стоит повторить";
+
+  return (
+    <div style={{ margin: "10px 0 0" }}>
+      <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.5)", textTransform: "uppercase" }}>Оценка чтения</p>
+      {/* Итоговый светофор */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+        <span style={{ fontSize: 16 }}>{LIGHT_DOT[overallLight]}</span>
+        <span style={{ fontSize: 15, fontWeight: 900, color: "#ffffff" }}>{overallLabel}</span>
+        {score != null && (
+          <span style={{ marginLeft: "auto", fontSize: 15, fontWeight: 900, color: LIGHT_COLOR[overallLight] }}>{score} / 10</span>
+        )}
+      </div>
+      {/* Полоски-индикаторы */}
+      <MetricBar label="Точность" light={lightFor(acc, 85, 70)} fillPct={acc ?? 0} valueText={acc != null ? `${acc}%` : "—"} />
+      <MetricBar label="Скорость" light={lightFor(wpm, 90, 60)} fillPct={wpm != null ? (wpm / 150) * 100 : 0} valueText={wpm != null ? `${wpm}/мин` : "—"} />
+      <MetricBar label="Полнота" light={lightFor(comp, 75, 40)} fillPct={comp ?? 0} valueText={comp != null ? `${comp}%` : "—"} />
+      {errors.length > 0 && (
+        <p style={{ margin: "8px 0 0", fontSize: 12.5, color: "rgba(255,255,255,0.75)" }}>
+          🔴 Споткнулся: {errors.map((w) => `«${w}»`).join(", ")}
+        </p>
+      )}
+      {session.aiFeedback && (
+        <p style={{ margin: "8px 0 0", fontSize: 12.5, color: "rgba(255,255,255,0.6)", fontStyle: "italic" }}>{session.aiFeedback}</p>
+      )}
+    </div>
+  );
+}
+
 function SessionRow({ session, defaultOpen }: { session: Session; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(!!defaultOpen);
   const cfg = STATUS_CONFIG[session.status] ?? STATUS_CONFIG.pending;
@@ -80,14 +147,16 @@ function SessionRow({ session, defaultOpen }: { session: Session; defaultOpen?: 
           ) : (
             <p style={{ margin: "10px 0 0", fontSize: 13, color: "rgba(255,255,255,0.5)" }}>Запись недоступна</p>
           )}
-          {session.aiFeedback ? (
+          {session.readingAccuracy != null ? (
+            <ReadingReport session={session} />
+          ) : session.aiFeedback ? (
             <div>
               <p style={{ margin: "10px 0 4px", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.5)", textTransform: "uppercase" }}>AI-отчёт</p>
               <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.85)", lineHeight: 1.5, background: "rgba(255,255,255,0.08)", borderRadius: 10, padding: "8px 10px" }}>
                 {session.aiFeedback}
               </p>
             </div>
-          ) : session.status === "pending" ? (
+          ) : session.status === "pending" || session.phase === "transcribing" || session.phase === "analyzing" ? (
             <p style={{ margin: "8px 0 0", fontSize: 13, color: "rgba(255,255,255,0.5)" }}>Отчёт готовится...</p>
           ) : null}
         </div>

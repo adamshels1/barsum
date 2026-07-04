@@ -18,9 +18,10 @@ export const sessionsApi = {
     apiClient.get(`/sessions/${id}/text`).then((r) => r.data) as Promise<{ text: string | null; imageUrl: string | null; partNumber: number }>,
   startRecording: (id: string) =>
     apiClient.post(`/sessions/${id}/start-recording`).then((r) => r.data),
-  uploadAudio: (id: string, file: File) => {
+  uploadAudio: (id: string, file: File, durationSec?: number) => {
     const form = new FormData();
     form.append("audio", file);
+    if (durationSec && durationSec > 0) form.append("durationSec", String(durationSec));
     return apiClient
       .post(`/sessions/${id}/upload-audio`, form, {
         headers: { "Content-Type": "multipart/form-data" },

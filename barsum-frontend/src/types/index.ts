@@ -81,6 +81,11 @@ export interface Session {
   aiFeedback?: string;
   aiQuestions?: string[];
   aiAnswers?: Record<string, string>;
+  readingAccuracy?: number | null;
+  readingCompleteness?: number | null;
+  readingSpeedWpm?: number | null;
+  errorWords?: string[] | null;
+  audioDurationSec?: number | null;
   status: "pending" | "completed" | "failed";
   createdAt: string;
 }

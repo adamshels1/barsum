@@ -55,8 +55,10 @@ export class SessionsController {
     @Request() req: any,
     @Param('id') id: string,
     @UploadedFile() file: Express.Multer.File,
+    @Body('durationSec') durationSec?: string,
   ) {
-    return this.sessionsService.uploadAudio(id, req.user.sub, file);
+    const dur = durationSec ? parseInt(durationSec, 10) : undefined;
+    return this.sessionsService.uploadAudio(id, req.user.sub, file, Number.isFinite(dur as number) ? dur : undefined);
   }
 
   @Post(':id/transcribe')

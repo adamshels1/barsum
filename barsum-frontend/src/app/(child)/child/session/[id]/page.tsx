@@ -106,7 +106,7 @@ function PhaseRead({
     setError(null);
     try {
       const file = new File([audioBlob], "recording.webm", { type: "audio/webm" });
-      await sessionsApi.uploadAudio(session.id, file);
+      await sessionsApi.uploadAudio(session.id, file, recordingTime);
       onUploaded();
     } catch {
       setError("Ошибка загрузки. Попробуй ещё раз.");

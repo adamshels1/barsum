@@ -43,6 +43,21 @@ export class Session {
   @Column({ nullable: true, type: 'jsonb' })
   aiAnswers: object;
 
+  @Column({ nullable: true, type: 'int' })
+  readingAccuracy: number;
+
+  @Column({ nullable: true, type: 'int' })
+  readingCompleteness: number;
+
+  @Column({ nullable: true, type: 'int' })
+  readingSpeedWpm: number;
+
+  @Column({ nullable: true, type: 'jsonb' })
+  errorWords: string[];
+
+  @Column({ nullable: true, type: 'int' })
+  audioDurationSec: number;
+
   @Column({ nullable: true, type: 'text' })
   aiFeedback: string;
 
