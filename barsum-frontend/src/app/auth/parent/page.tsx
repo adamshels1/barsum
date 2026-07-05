@@ -50,7 +50,9 @@ export default function ParentAuthPage() {
         });
         const { access_token, user } = res.data;
         setAuth(access_token, "parent", user);
-        router.push("/parent/home");
+        // После регистрации сразу ведём на добавление ребёнка — без него
+        // родитель не сможет купить книгу.
+        router.push("/parent/onboarding");
       } else {
         const res = await apiClient.post("/auth/login", {
           identifier: data.identifier,
