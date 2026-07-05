@@ -2,7 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { challengesApi } from "@/lib/api/challenges";
 import { childrenApi } from "@/lib/api/children";
@@ -152,6 +153,16 @@ function KaspiQrStep({
   );
 }
 
+// Рендерит содержимое поверх всего в document.body, минуя stacking-context
+// родителя (обёртка контента в layout имеет zIndex:1, из-за чего модалка иначе
+// оказывается под нижним меню).
+function Portal({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
+  return createPortal(children, document.body);
+}
+
 function PurchaseModal({
   challenge, children, onClose, onSuccess,
 }: {
@@ -177,8 +188,9 @@ function PurchaseModal({
   const grad = CARD_GRADS[colorIdx];
 
   return (
+    <Portal>
     <div
-      style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center", padding: "0 0", background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }}
+      style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "flex-end", justifyContent: "center", padding: "0 0", background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
@@ -216,7 +228,7 @@ function PurchaseModal({
             isPending={createMutation.isPending}
           />
         ) : (
-        <div style={{ padding: "20px 20px 32px", display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={{ padding: "20px 20px max(32px, env(safe-area-inset-bottom))", display: "flex", flexDirection: "column", gap: 16 }}>
           {/* Child selector */}
           <div>
             <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.65)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
@@ -309,12 +321,14 @@ function PurchaseModal({
         )}
       </div>
     </div>
+    </Portal>
   );
 }
 
 function SuccessModal({ onClose }: { onClose: () => void }) {
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: 24, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}>
+    <Portal>
+    <div style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 24, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}>
       <div
         className="glass"
         style={{ width: "100%", maxWidth: 340, padding: 40, textAlign: "center" }}
@@ -332,6 +346,7 @@ function SuccessModal({ onClose }: { onClose: () => void }) {
         </button>
       </div>
     </div>
+    </Portal>
   );
 }
 
