@@ -45,13 +45,13 @@ export default function ParentOnboardingPage() {
 
   const copyAll = () => {
     if (!created) return;
-    const text = `Логин: ${created.login}\nПароль: ${created.password}`;
+    const text = `Логин: ${created.login}\nПароль: ${created.password}\nСайт: https://barsum.app`;
     navigator.clipboard.writeText(text).then(() => toast.success("Логин и пароль скопированы"));
   };
 
   const shareAll = () => {
     if (!created) return;
-    const text = `Barsum — данные для входа ребёнка «${created.name}»\nЛогин: ${created.login}\nПароль: ${created.password}`;
+    const text = `Barsum — данные для входа ребёнка «${created.name}»\nЛогин: ${created.login}\nПароль: ${created.password}\nСайт: https://barsum.app`;
     if (typeof navigator !== "undefined" && navigator.share) {
       navigator.share({ title: "Barsum — вход для ребёнка", text });
     } else {
