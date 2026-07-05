@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { BookOpen, CreditCard, LogOut, Search, Users, Users2 } from "lucide-react";
+import { BookOpen, CreditCard, LogOut, Search, Trophy, Users, Users2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { adminApi } from "@/lib/api/admin";
 import { useAuthStore } from "@/stores/auth-store";
@@ -61,6 +61,7 @@ export default function AdminDashboardPage() {
   ];
 
   const navCards = [
+    { label: "Рейтинг читателей", Icon: Trophy, href: "/admin/readers", badge: undefined },
     { label: "Платежи", Icon: CreditCard, href: "/admin/payments", badge: stats?.pendingPayments },
     { label: "Эксперты", Icon: Search, href: "/admin/experts", badge: stats?.pendingExperts },
     { label: "Задания", Icon: BookOpen, href: "/admin/challenges", badge: stats?.pendingChallenges },

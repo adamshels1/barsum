@@ -8,8 +8,9 @@ import { toast } from "sonner";
 import { childrenApi } from "@/lib/api/children";
 import { coinsApi } from "@/lib/api/coins";
 import { dreamsApi } from "@/lib/api/dreams";
+import { rewardsApi } from "@/lib/api/rewards";
 import { sessionsApi } from "@/lib/api/sessions";
-import type { Child, ChildStats, Session } from "@/types";
+import type { Child, ChildStats, RewardRequest, Session } from "@/types";
 import { CoinIcon } from "@/components/CoinIcon";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3012";
@@ -399,6 +400,70 @@ function DreamApprovalSection() {
   );
 }
 
+const SPEND_STATUS: Record<RewardRequest["status"], { label: string; bg: string }> = {
+  pending: { label: "Запрошено", bg: "rgba(255,200,0,0.28)" },
+  delivered: { label: "Получено", bg: "rgba(34,197,94,0.32)" },
+  rejected: { label: "Отклонено", bg: "rgba(239,68,68,0.32)" },
+};
+
+/** История расходов монет ребёнка: на что потрачено, сколько, дата, статус (задача 12). */
+function SpendingHistory({ childId }: { childId: string }) {
+  const { data: allRequests = [], isLoading } = useQuery<RewardRequest[]>({
+    queryKey: ["reward-requests"],
+    queryFn: rewardsApi.listRequests,
+  });
+  const requests = allRequests
+    .filter((r) => r.childId === childId)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  const totalSpent = requests
+    .filter((r) => r.status !== "rejected")
+    .reduce((sum, r) => sum + r.coinsAmount, 0);
+
+  return (
+    <div style={{ marginBottom: 24 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+        <h2 style={{ margin: 0, fontSize: 15, fontWeight: 900, color: "#ffffff" }}>История расходов</h2>
+        {requests.length > 0 && (
+          <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)" }}>
+            Списано: <CoinIcon size={12} /> {totalSpent}
+          </span>
+        )}
+      </div>
+      {isLoading ? (
+        <p style={{ fontSize: 13, color: "rgba(255,255,255,0.6)" }}>Загрузка...</p>
+      ) : requests.length === 0 ? (
+        <div style={{ background: "rgba(255,255,255,0.1)", borderRadius: 18, padding: "24px 16px", textAlign: "center" }}>
+          <p style={{ fontSize: 28, margin: "0 0 8px" }}>🪙</p>
+          <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.65)" }}>Ребёнок ещё не тратил монеты на награды</p>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {requests.map((req) => {
+            const cfg = SPEND_STATUS[req.status];
+            const rewardName = req.reward?.name ?? "Награда";
+            return (
+              <div key={req.id} style={{ ...GLASS, padding: "13px 16px", display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0, overflow: "hidden" }}>
+                  {req.reward?.photoUrl ? <img src={req.reward.photoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "🎁"}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ margin: 0, fontWeight: 800, color: "#ffffff", fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{rewardName}</p>
+                  <p style={{ margin: "2px 0 0", fontSize: 12.5, color: "rgba(255,255,255,0.6)" }}>{formatDate(req.createdAt)}</p>
+                </div>
+                <div style={{ textAlign: "right", flexShrink: 0 }}>
+                  <p style={{ margin: 0, fontWeight: 900, color: "#ffffff", fontSize: 15 }}>−{req.coinsAmount} <CoinIcon size={13} /></p>
+                  <span style={{ display: "inline-block", marginTop: 4, fontSize: 10.5, padding: "3px 8px", borderRadius: 9999, fontWeight: 800, background: cfg.bg, color: "#ffffff" }}>{cfg.label}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ParentChildProgressPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
@@ -497,6 +562,8 @@ export default function ParentChildProgressPage() {
               <StatCard emoji="📖" value={stats.activeEnrollments} label="Активных курсов" />
             </div>
           )}
+
+          <SpendingHistory childId={childId} />
 
           <div>
             <h2 style={{ margin: "0 0 12px", fontSize: 15, fontWeight: 900, color: "#ffffff" }}>История сессий</h2>

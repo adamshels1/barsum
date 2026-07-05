@@ -2,6 +2,8 @@ import { apiClient } from "../client";
 
 export const adminApi = {
   stats: () => apiClient.get("/admin/stats").then((r) => r.data),
+  readersRating: () =>
+    apiClient.get("/admin/readers-rating").then((r) => r.data),
   payments: (status?: string) =>
     apiClient
       .get("/admin/payments", { params: { status } })

@@ -39,6 +39,12 @@ export class AdminController {
     return this.adminService.getStats();
   }
 
+  @Get('readers-rating')
+  getReadersRating(@Request() req: any) {
+    this.guard(req);
+    return this.adminService.getReadersRating();
+  }
+
   @Get('payments')
   getPayments(@Request() req: any, @Query('status') status?: string) {
     this.guard(req);

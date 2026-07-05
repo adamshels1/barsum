@@ -8,6 +8,7 @@ import { apiClient } from "@/lib/api/client";
 import { rewardsApi } from "@/lib/api/rewards";
 import type { Reward, RewardRequest } from "@/types";
 import { CoinIcon } from "@/components/CoinIcon";
+import { RewardRequestCard } from "@/components/RewardRequestCard";
 
 interface ReviewQueueItem {
   id: string;
@@ -175,56 +176,6 @@ function RewardCard({ reward }: { reward: Reward }) {
   );
 }
 
-function RequestCard({ request }: { request: RewardRequest }) {
-  const queryClient = useQueryClient();
-
-  const deliverMutation = useMutation({
-    mutationFn: () => rewardsApi.deliver(request.id),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["reward-requests"] }); toast.success("Выдано!"); },
-    onError: (err: any) => toast.error(err?.response?.data?.message || "Ошибка"),
-  });
-
-  const rejectMutation = useMutation({
-    mutationFn: () => rewardsApi.reject(request.id),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["reward-requests"] }); toast.success("Отклонено"); },
-    onError: (err: any) => toast.error(err?.response?.data?.message || "Ошибка"),
-  });
-
-  const childName = (request as any).child?.name ?? `Ребёнок ${request.childId.slice(-4)}`;
-  const rewardName = (request as any).reward?.name ?? `Награда ${request.rewardId.slice(-4)}`;
-
-  return (
-    <div style={{ ...GLASS, padding: "14px 16px" }}>
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8, marginBottom: 12 }}>
-        <div>
-          <p style={{ margin: 0, fontWeight: 800, color: "#ffffff" }}>{childName}</p>
-          <p style={{ margin: "2px 0 0", fontSize: 13, color: "rgba(255,255,255,0.65)" }}>
-            хочет: <span style={{ fontWeight: 700 }}>{rewardName}</span>
-          </p>
-          <p style={{ margin: "2px 0 0", fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.85)" }}><CoinIcon size={13} /> {request.coinsAmount}</p>
-        </div>
-        <span style={{ fontSize: 11, padding: "4px 10px", borderRadius: 9999, fontWeight: 800, background: "rgba(255,255,255,0.2)", color: "#ffffff" }}>ожидает</span>
-      </div>
-      <div style={{ display: "flex", gap: 8 }}>
-        <button
-          onClick={() => deliverMutation.mutate()}
-          disabled={deliverMutation.isPending || rejectMutation.isPending}
-          style={{ flex: 1, padding: "11px 0", borderRadius: 12, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13, background: "rgba(34,197,94,0.7)", color: "#ffffff" }}
-        >
-          {deliverMutation.isPending ? "..." : "✅ Выдал"}
-        </button>
-        <button
-          onClick={() => rejectMutation.mutate()}
-          disabled={deliverMutation.isPending || rejectMutation.isPending}
-          style={{ flex: 1, padding: "11px 0", borderRadius: 12, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13, background: "rgba(239,68,68,0.4)", color: "#ffffff" }}
-        >
-          {rejectMutation.isPending ? "..." : "❌ Отклонить"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
 function ReviewCard({ item }: { item: ReviewQueueItem }) {
   const queryClient = useQueryClient();
   const [expanded, setExpanded] = useState(false);
@@ -325,6 +276,8 @@ export default function ParentRewardsPage() {
   const { data: allRequests = [], isLoading: loadingRequests } = useQuery<RewardRequest[]>({
     queryKey: ["reward-requests"],
     queryFn: rewardsApi.listRequests,
+    refetchInterval: 15000,
+    refetchOnWindowFocus: true,
   });
   const pendingRequests = allRequests.filter((r) => r.status === "pending");
 
@@ -342,6 +295,19 @@ export default function ParentRewardsPage() {
         <h1 style={{ margin: "0 0 4px", fontSize: 28, fontWeight: 900, color: "#ffffff" }}>Награды 🎁</h1>
         <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.65)" }}>Управляйте наградами и запросами детей</p>
       </div>
+
+      {/* Запросы детей — самый приоритетный блок, вверху экрана (задача 10) */}
+      <Section title={`🔔 Запросы от детей${pendingRequests.length > 0 ? ` (${pendingRequests.length})` : ""}`}>
+        {loadingRequests ? (
+          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.6)" }}>Загрузка...</p>
+        ) : pendingRequests.length === 0 ? (
+          <EmptyState emoji="📭" text="Новых запросов нет" />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {pendingRequests.map((req) => <RewardRequestCard key={req.id} request={req} highlight />)}
+          </div>
+        )}
+      </Section>
 
       <Section
         title="Мои награды"
@@ -361,18 +327,6 @@ export default function ParentRewardsPage() {
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {activeRewards.map((reward) => <RewardCard key={reward.id} reward={reward} />)}
-          </div>
-        )}
-      </Section>
-
-      <Section title={`Запросы от детей${pendingRequests.length > 0 ? ` (${pendingRequests.length})` : ""}`}>
-        {loadingRequests ? (
-          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.6)" }}>Загрузка...</p>
-        ) : pendingRequests.length === 0 ? (
-          <EmptyState emoji="📭" text="Новых запросов нет" />
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {pendingRequests.map((req) => <RequestCard key={req.id} request={req} />)}
           </div>
         )}
       </Section>

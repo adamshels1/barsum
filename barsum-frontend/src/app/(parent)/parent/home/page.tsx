@@ -7,8 +7,10 @@ import { toast } from "sonner";
 import { challengesApi } from "@/lib/api/challenges";
 import { childrenApi } from "@/lib/api/children";
 import { paymentsApi } from "@/lib/api/payments";
-import type { Challenge, Child, Payment } from "@/types/index";
+import { rewardsApi } from "@/lib/api/rewards";
+import type { Challenge, Child, Payment, RewardRequest } from "@/types/index";
 import { CoinIcon } from "@/components/CoinIcon";
+import { RewardRequestCard } from "@/components/RewardRequestCard";
 
 const COIN_MAX = 50_000;
 const COIN_STEP = 1_000;
@@ -351,6 +353,14 @@ export default function ParentHomePage() {
     queryFn: childrenApi.list,
   });
 
+  const { data: requests = [] } = useQuery<RewardRequest[]>({
+    queryKey: ["reward-requests"],
+    queryFn: rewardsApi.listRequests,
+    refetchInterval: 15000,
+    refetchOnWindowFocus: true,
+  });
+  const pendingRequests = requests.filter((r) => r.status === "pending");
+
   const ageConfig = AGE_FILTERS.find((f) => f.value === ageFilter);
   const filteredChallenges = (challenges as any[]).filter((c) => {
     if (c.status !== "published") return false;
@@ -412,6 +422,21 @@ export default function ParentHomePage() {
           })}
         </div>
       </div>
+
+      {/* Запросы детей — самый важный сценарий, вынесен на самый верх (задачи 9, 10) */}
+      {pendingRequests.length > 0 && (
+        <div style={{ padding: "16px 20px 0" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 900, color: "#ffffff" }}>🔔 Запросы детей</h2>
+            <span style={{ fontSize: 12, fontWeight: 900, padding: "2px 9px", borderRadius: 9999, background: "#ef4444", color: "#ffffff" }}>{pendingRequests.length}</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {pendingRequests.map((req) => (
+              <RewardRequestCard key={req.id} request={req} highlight />
+            ))}
+          </div>
+        </div>
+      )}
 
       <div style={{ padding: "16px 20px 0" }}>
         {loadingChallenges ? (
