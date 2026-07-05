@@ -78,23 +78,47 @@ function PhaseRead({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const mimeRef = useRef<string>("audio/webm");
 
+  // Выбираем кодек, который реально поддерживает браузер. Chrome — webm/opus,
+  // Safari webm НЕ поддерживает и без этого обрывает запись досрочно → mp4.
+  const pickMimeType = () => {
+    const candidates = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/mpeg"];
+    if (typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported) {
+      for (const c of candidates) if (MediaRecorder.isTypeSupported(c)) return c;
+    }
+    return "";
+  };
+
+  const extForMime = (mime: string) => {
+    if (mime.includes("mp4") || mime.includes("mpeg") || mime.includes("m4a")) return "mp4";
+    if (mime.includes("ogg")) return "ogg";
+    return "webm";
+  };
 
   const startRecording = async () => {
     try {
       setError(null);
       setRecordingTime(0);
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mr = new MediaRecorder(stream);
+      const preferred = pickMimeType();
+      const mr = preferred ? new MediaRecorder(stream, { mimeType: preferred }) : new MediaRecorder(stream);
+      // фактический тип, как его выставил рекордер (Safari может подставить свой)
+      mimeRef.current = (mr.mimeType || preferred || "audio/webm").split(";")[0];
       chunksRef.current = [];
       mr.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      mr.onerror = () => { setError("Сбой записи. Попробуй ещё раз."); stopRecording(); };
       mr.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        const blob = new Blob(chunksRef.current, { type: mimeRef.current });
         setAudioBlob(blob);
         setStage("recorded");
         stream.getTracks().forEach((t) => t.stop());
       };
-      mr.start();
+      // если ОС/браузер оборвёт микрофонный трек сам — корректно завершаем запись
+      stream.getAudioTracks().forEach((t) => {
+        t.onended = () => { if (mr.state === "recording") stopRecording(); };
+      });
+      mr.start(1000); // timeslice: сбрасывать данные каждую секунду — критично для Safari
       mediaRecorderRef.current = mr;
       setStage("recording");
       timerRef.current = setInterval(() => {
@@ -124,7 +148,8 @@ function PhaseRead({
     setUploading(true);
     setError(null);
     try {
-      const file = new File([audioBlob], "recording.webm", { type: "audio/webm" });
+      const type = mimeRef.current || "audio/webm";
+      const file = new File([audioBlob], `recording.${extForMime(type)}`, { type });
       await sessionsApi.uploadAudio(session.id, file, recordingTime);
       onUploaded();
     } catch {
