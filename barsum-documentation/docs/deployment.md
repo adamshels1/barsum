@@ -19,6 +19,16 @@
 - `https://barsum.app/api/*` → backend (127.0.0.1:3010), префикс `/api` обрезается
 - `https://api.barsum.app/*` → backend напрямую (легаси, оставлен для совместимости; фронтенд сейчас ходит через `barsum.app/api`, а не через этот поддомен — так надёжнее, не зависит от отдельной DNS-записи)
 
+**Лимит размера загрузки** (`/etc/nginx/conf.d/upload_size.conf`, НЕ в git):
+```nginx
+client_max_body_size 25m;
+```
+Отдельный сниптет в `conf.d` (подключается в http-контексте `nginx.conf`, действует на все server-блоки). Без него у nginx дефолт **1 МБ**, и загрузка аудио чтения длиннее ~45–60 сек падает с **HTTP 413 (Payload Too Large)** ещё до бэкенда. При переустановке сервера этот файл нужно создать заново:
+```bash
+echo "client_max_body_size 25m;" > /etc/nginx/conf.d/upload_size.conf
+nginx -t && systemctl restart nginx
+```
+
 SSL — бесплатный сертификат Let's Encrypt (через `certbot`), автопродление настроено через системный таймер certbot.
 
 ## Сервер
@@ -126,3 +136,4 @@ ssh root@185.113.132.6 "docker exec -i barsum-postgres psql -U postgres -d barsu
 3. **Меняли `.env`/`.env.local`, но не помогло** → не забыли пересобрать (`npm run build`) и перезапустить (`pm2 restart`)?
 4. **Правили nginx-конфиг, не применяется** → использовать `systemctl restart nginx`, а не `reload`.
 5. **Картинки/аудио не грузятся** → проверить, что порт 9100 (MinIO) открыт в `ufw status` и контейнер `barsum-minio` запущен (`docker ps`).
+6. **Запись чтения не отправляется (длинная запись)** → в DevTools → Network загрузка `upload-audio` отдаёт **413**? Значит слетел `client_max_body_size` (см. раздел про nginx выше) — пересоздать `/etc/nginx/conf.d/upload_size.conf` и `systemctl restart nginx`.
