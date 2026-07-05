@@ -41,6 +41,25 @@ function PulsingDots() {
   );
 }
 
+// Разбивает текст части на читаемые абзацы (как в книге):
+// уважает переносы строк из данных и выносит каждую реплику диалога («— …»)
+// на отдельную строку, чтобы не было сплошной «стены текста».
+function toReadingParagraphs(raw: string): { text: string; isDialogue: boolean }[] {
+  let t = raw.replace(/\r\n/g, "\n").trim();
+  // Новую реплику диалога («— Реплика») выносим на отдельную строку, но только
+  // если после тире идёт заглавная буква (начало реплики). Строчная буква после
+  // тире — это ремарка автора («— спросила она»), её оставляем на той же строке.
+  t = t.replace(/([.!?…»"])\s+(—|–|-)\s+([А-ЯЁA-Z«])/g, "$1\n$2 $3");
+  const lines = t
+    .split(/\n+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return lines.map((text) => ({
+    text,
+    isDialogue: /^(—|–|-)\s/.test(text),
+  }));
+}
+
 // ─── Phase: read + record together ────────────────────────────────────────────
 function PhaseRead({
   session,
@@ -272,9 +291,24 @@ function PhaseRead({
           Часть {session.partNumber}
         </p>
         {dayText ? (
-          <p style={{ fontSize: 16, lineHeight: 1.7, color: "rgba(255,255,255,0.9)", fontFamily: "Georgia, serif", margin: 0 }}>
-            {dayText}
-          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {toReadingParagraphs(dayText).map((p, i) => (
+              <p
+                key={i}
+                style={{
+                  fontSize: 16,
+                  lineHeight: 1.7,
+                  color: "rgba(255,255,255,0.9)",
+                  fontFamily: "Georgia, serif",
+                  fontStyle: p.isDialogue ? "italic" : "normal",
+                  paddingLeft: p.isDialogue ? 12 : 0,
+                  margin: 0,
+                }}
+              >
+                {p.text}
+              </p>
+            ))}
+          </div>
         ) : (
           <p style={{ fontSize: 14, fontStyle: "italic", color: "rgba(255,255,255,0.55)", margin: 0 }}>
             Читай вслух эту часть книги
