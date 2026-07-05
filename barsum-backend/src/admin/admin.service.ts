@@ -19,6 +19,9 @@ export interface ReaderRatingRow {
   booksCount: number;
   avgScore: number | null;
   avgAccuracy: number | null;
+  totalWordsRead: number;
+  totalReadingSec: number;
+  readingMinutes: number;
   totalCoinsEarned: number;
   lastActivityAt: string | null;
 }
@@ -83,6 +86,8 @@ export class AdminService {
          COALESCE(s.books_count, 0) AS "booksCount",
          s.avg_score AS "avgScore",
          s.avg_accuracy AS "avgAccuracy",
+         COALESCE(s.words_read, 0) AS "totalWordsRead",
+         COALESCE(s.reading_sec, 0) AS "totalReadingSec",
          s.last_activity AS "lastActivityAt",
          COALESCE(co.earned, 0) AS "totalCoinsEarned"
        FROM children c
@@ -95,6 +100,14 @@ export class AdminService {
            COUNT(DISTINCT e."challengeId") AS books_count,
            AVG(ss."aiScore") FILTER (WHERE ss."aiScore" IS NOT NULL) AS avg_score,
            AVG(ss."readingAccuracy") FILTER (WHERE ss."readingAccuracy" IS NOT NULL) AS avg_accuracy,
+           SUM(
+             CASE
+               WHEN ss.transcription IS NOT NULL AND trim(ss.transcription) <> ''
+               THEN array_length(regexp_split_to_array(trim(ss.transcription), E'\\s+'), 1)
+               ELSE 0
+             END
+           ) AS words_read,
+           SUM(COALESCE(ss."audioDurationSec", 0)) AS reading_sec,
            MAX(ss."createdAt") AS last_activity
          FROM sessions ss
          LEFT JOIN challenge_enrollments e ON e.id = ss."enrollmentId"
@@ -106,10 +119,12 @@ export class AdminService {
          WHERE "toType" = 'child' AND status = 'confirmed' AND type = 'earn'
          GROUP BY "toId"
        ) co ON co.child_id = c.id::text
-       ORDER BY "completedParts" DESC, "avgScore" DESC NULLS LAST, "totalCoinsEarned" DESC`,
+       ORDER BY "totalWordsRead" DESC, "completedParts" DESC, "avgScore" DESC NULLS LAST, "totalCoinsEarned" DESC`,
     );
 
-    return rows.map((r: any) => ({
+    return rows.map((r: any) => {
+      const totalReadingSec = Number(r.totalReadingSec ?? 0);
+      return {
       childId: r.childId,
       name: r.name,
       age: Number(r.age),
@@ -121,10 +136,14 @@ export class AdminService {
       booksCount: Number(r.booksCount ?? 0),
       avgScore: r.avgScore != null ? Math.round(Number(r.avgScore) * 10) / 10 : null,
       avgAccuracy: r.avgAccuracy != null ? Math.round(Number(r.avgAccuracy)) : null,
+      totalWordsRead: Number(r.totalWordsRead ?? 0),
+      totalReadingSec,
+      readingMinutes: Math.round(totalReadingSec / 60),
       totalCoinsEarned: Number(r.totalCoinsEarned ?? 0),
       lastActivityAt: r.lastActivityAt
         ? new Date(r.lastActivityAt).toISOString()
         : null,
-    }));
+      };
+    });
   }
 }

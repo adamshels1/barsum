@@ -18,6 +18,9 @@ interface ReaderRow {
   booksCount: number;
   avgScore: number | null;
   avgAccuracy: number | null;
+  totalWordsRead: number;
+  totalReadingSec: number;
+  readingMinutes: number;
   totalCoinsEarned: number;
   lastActivityAt: string | null;
 }
@@ -30,16 +33,48 @@ const GLASS: React.CSSProperties = {
   borderRadius: 18,
 };
 
-type SortKey = "completedParts" | "avgScore" | "streak" | "totalCoinsEarned";
+type SortKey =
+  | "totalWordsRead"
+  | "readingMinutes"
+  | "completedParts"
+  | "booksCount"
+  | "avgScore"
+  | "streak"
+  | "totalCoinsEarned";
 
 const SORTS: { key: SortKey; label: string }[] = [
-  { key: "completedParts", label: "По частям" },
+  { key: "totalWordsRead", label: "По словам" },
+  { key: "readingMinutes", label: "По минутам" },
+  { key: "completedParts", label: "По заданиям" },
+  { key: "booksCount", label: "По книгам" },
   { key: "avgScore", label: "По баллу" },
   { key: "streak", label: "По серии" },
   { key: "totalCoinsEarned", label: "По монетам" },
 ];
 
+type AgeGroup = { key: string; label: string; min: number; max: number };
+
+const AGE_GROUPS: AgeGroup[] = [
+  { key: "all", label: "Все возрасты", min: 0, max: 200 },
+  { key: "6-8", label: "6–8 лет", min: 6, max: 8 },
+  { key: "9-11", label: "9–11 лет", min: 9, max: 11 },
+  { key: "12-14", label: "12–14 лет", min: 12, max: 14 },
+];
+
 const MEDALS = ["🥇", "🥈", "🥉"];
+
+function formatDuration(sec: number): string {
+  if (!sec) return "0м";
+  const h = Math.floor(sec / 3600);
+  const m = Math.round((sec % 3600) / 60);
+  if (h > 0) return `${h}ч ${m}м`;
+  return `${m}м`;
+}
+
+function formatWords(n: number): string {
+  if (n >= 1000) return `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k`;
+  return `${n}`;
+}
 
 function scoreColor(score: number | null): string {
   if (score == null) return "rgba(255,255,255,0.4)";
@@ -89,8 +124,12 @@ function ReaderCard({ row, rank }: { row: ReaderRow; rank: number }) {
         </div>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6, borderTop: "1px solid rgba(255,255,255,0.12)", paddingTop: 12 }}>
-        <Metric label="Части" value={row.completedParts} />
+        <Metric label="Слова" value={formatWords(row.totalWordsRead)} />
+        <Metric label="Время" value={formatDuration(row.totalReadingSec)} />
         <Metric label="Книги" value={row.booksCount} />
+        <Metric label="Задания" value={row.completedParts} />
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10 }}>
         <Metric label="Балл" value={row.avgScore != null ? `${row.avgScore}` : "—"} color={scoreColor(row.avgScore)} />
         <Metric label="Точн." value={row.avgAccuracy != null ? `${row.avgAccuracy}%` : "—"} />
         <Metric label="Серия" value={`🔥${row.streak}`} />
@@ -102,8 +141,9 @@ function ReaderCard({ row, rank }: { row: ReaderRow; rank: number }) {
 
 export default function AdminReadersPage() {
   const router = useRouter();
-  const [sortKey, setSortKey] = useState<SortKey>("completedParts");
+  const [sortKey, setSortKey] = useState<SortKey>("totalWordsRead");
   const [search, setSearch] = useState("");
+  const [ageGroup, setAgeGroup] = useState<string>("all");
 
   const { data: readers = [], isLoading } = useQuery<ReaderRow[]>({
     queryKey: ["admin-readers-rating"],
@@ -111,15 +151,20 @@ export default function AdminReadersPage() {
   });
 
   const rows = useMemo(() => {
-    const filtered = search.trim()
-      ? readers.filter((r) => r.name.toLowerCase().includes(search.trim().toLowerCase()))
-      : readers;
+    const group = AGE_GROUPS.find((g) => g.key === ageGroup) ?? AGE_GROUPS[0];
+    const q = search.trim().toLowerCase();
+    const filtered = readers.filter(
+      (r) =>
+        r.age >= group.min &&
+        r.age <= group.max &&
+        (!q || r.name.toLowerCase().includes(q)),
+    );
     return [...filtered].sort((a, b) => {
       const av = a[sortKey] ?? -1;
       const bv = b[sortKey] ?? -1;
       return (bv as number) - (av as number);
     });
-  }, [readers, sortKey, search]);
+  }, [readers, sortKey, search, ageGroup]);
 
   return (
     <main style={{ minHeight: "100dvh", padding: "0 0 32px" }}>
@@ -132,7 +177,9 @@ export default function AdminReadersPage() {
         </button>
         <h1 style={{ margin: 0, fontSize: 24, fontWeight: 900, color: "#ffffff" }}>📖 Рейтинг читателей</h1>
         <p style={{ margin: "4px 0 0", fontSize: 13, color: "rgba(255,255,255,0.6)" }}>
-          {readers.length > 0 ? `${readers.length} детей` : "Читатели платформы по объёму и качеству чтения"}
+          {readers.length > 0
+            ? `${rows.length}${ageGroup === "all" ? "" : ` из ${readers.length}`} детей${ageGroup === "all" ? "" : ` · ${AGE_GROUPS.find((g) => g.key === ageGroup)?.label}`}`
+            : "Читатели платформы по объёму и качеству чтения"}
         </p>
       </div>
 
@@ -144,6 +191,20 @@ export default function AdminReadersPage() {
           className="glass-input"
           style={{ marginBottom: 12 }}
         />
+        <div className="scrollbar-hide" style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, marginBottom: 10 }}>
+          {AGE_GROUPS.map((g) => {
+            const active = ageGroup === g.key;
+            return (
+              <button
+                key={g.key}
+                onClick={() => setAgeGroup(g.key)}
+                style={{ flexShrink: 0, padding: "7px 14px", borderRadius: 9999, border: active ? "none" : "1px solid rgba(255,255,255,0.22)", background: active ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.1)", color: active ? "#4776e6" : "rgba(255,255,255,0.75)", fontWeight: active ? 900 : 600, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}
+              >
+                {g.label}
+              </button>
+            );
+          })}
+        </div>
         <div className="scrollbar-hide" style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, marginBottom: 16 }}>
           {SORTS.map((s) => {
             const active = sortKey === s.key;
