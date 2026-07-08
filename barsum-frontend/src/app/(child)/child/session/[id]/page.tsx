@@ -60,6 +60,8 @@ function toReadingParagraphs(raw: string): { text: string; isDialogue: boolean }
   }));
 }
 
+const MAX_RECORDING_SECONDS = 600; // 10 минут
+
 // ─── Phase: read + record together ────────────────────────────────────────────
 function PhaseRead({
   session,
@@ -123,7 +125,7 @@ function PhaseRead({
       setStage("recording");
       timerRef.current = setInterval(() => {
         setRecordingTime((t) => {
-          if (t >= 179) { stopRecording(); return 180; }
+          if (t >= MAX_RECORDING_SECONDS - 1) { stopRecording(); return MAX_RECORDING_SECONDS; }
           return t + 1;
         });
       }, 1000);

@@ -21,11 +21,11 @@
 
 **Лимит размера загрузки** (`/etc/nginx/conf.d/upload_size.conf`, НЕ в git):
 ```nginx
-client_max_body_size 25m;
+client_max_body_size 50m;
 ```
-Отдельный сниптет в `conf.d` (подключается в http-контексте `nginx.conf`, действует на все server-блоки). Без него у nginx дефолт **1 МБ**, и загрузка аудио чтения длиннее ~45–60 сек падает с **HTTP 413 (Payload Too Large)** ещё до бэкенда. При переустановке сервера этот файл нужно создать заново:
+Отдельный сниптет в `conf.d` (подключается в http-контексте `nginx.conf`, действует на все server-блоки). Без него у nginx дефолт **1 МБ**, и загрузка аудио чтения длиннее ~45–60 сек падает с **HTTP 413 (Payload Too Large)** ещё до бэкенда. Запись чтения ограничена 10 минутами на клиенте (~10–20 МБ в худшем случае в зависимости от кодека) — лимит 50m даёт запас. При переустановке сервера этот файл нужно создать заново:
 ```bash
-echo "client_max_body_size 25m;" > /etc/nginx/conf.d/upload_size.conf
+echo "client_max_body_size 50m;" > /etc/nginx/conf.d/upload_size.conf
 nginx -t && systemctl restart nginx
 ```
 
