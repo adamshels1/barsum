@@ -54,9 +54,9 @@ export class DreamsController {
   @Post('send')
   sendCoins(
     @Request() req: any,
-    @Body() body: { amount: number; currentBalance: number },
+    @Body() body: { amount: number },
   ) {
-    return this.dreamsService.sendCoins(req.user.sub, body.amount, body.currentBalance);
+    return this.dreamsService.sendCoins(req.user.sub, body.amount);
   }
 
   @Patch(':id')

@@ -2,9 +2,10 @@ import { Injectable, BadRequestException, NotFoundException, ForbiddenException 
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Dream } from './entities/dream.entity';
-import { DreamStatus } from '../common/enums';
+import { DreamStatus, CoinTransactionType } from '../common/enums';
 import { Child } from '../children/entities/child.entity';
 import { FilesService, parseStoredFileUrl, imageMimeFromUrl } from '../files/files.service';
+import { CoinsService } from '../coins/coins.service';
 
 @Injectable()
 export class DreamsService {
@@ -14,6 +15,7 @@ export class DreamsService {
     @InjectRepository(Child)
     private childRepo: Repository<Child>,
     private filesService: FilesService,
+    private coinsService: CoinsService,
   ) {}
 
   async create(childId: string, dto: { name: string; photoUrl?: string }): Promise<Dream> {
@@ -69,14 +71,35 @@ export class DreamsService {
     return this.dreamRepo.save(dream);
   }
 
-  async sendCoins(childId: string, amount: number, currentBalance: number): Promise<Dream> {
-    if (currentBalance < amount) {
-      throw new BadRequestException('Insufficient balance');
+  async sendCoins(childId: string, amount: number): Promise<Dream> {
+    if (!Number.isInteger(amount) || amount <= 0) {
+      throw new BadRequestException('Сумма должна быть целым числом больше нуля');
     }
+
     const dream = await this.dreamRepo.findOne({
       where: { childId, status: DreamStatus.ACTIVE },
     });
     if (!dream) throw new NotFoundException('No active dream');
+
+    // Баланс считаем на сервере (сумма подтверждённых транзакций),
+    // не доверяя значению из запроса.
+    const balance = await this.coinsService.getBalance(childId, 'child');
+    if (balance < amount) {
+      throw new BadRequestException('Недостаточно монет на балансе');
+    }
+
+    // Реально списываем монеты: создаём транзакцию child -> system (type = dream).
+    // transfer() повторно проверяет баланс на сервере атомарно.
+    await this.coinsService.transfer({
+      fromId: childId,
+      fromType: 'child',
+      toId: 'system',
+      toType: 'system',
+      amount,
+      type: CoinTransactionType.DREAM,
+      referenceId: `dream-${dream.id}-${Date.now()}`,
+      referenceType: 'dream',
+    });
 
     dream.savedCoins += amount;
     if (dream.savedCoins >= dream.targetCoins) {

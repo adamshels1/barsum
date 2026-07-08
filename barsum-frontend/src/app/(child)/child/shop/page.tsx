@@ -412,13 +412,14 @@ function DreamTab({ childId }: { childId: string }) {
   });
 
   const sendMutation = useMutation({
-    mutationFn: (amount: number) => dreamsApi.send(amount, balance),
+    mutationFn: (amount: number) => dreamsApi.send(amount),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["dream-my"] });
       queryClient.invalidateQueries({ queryKey: ["child-balance", childId] });
       setSendAmount("");
     },
-    onError: () => toast.error("Ошибка"),
+    onError: (err: any) =>
+      toast.error(err?.response?.data?.message || "Не удалось отправить монеты"),
   });
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -778,6 +779,11 @@ function DreamTab({ childId }: { childId: string }) {
               {sendMutation.isPending ? "..." : "Внести"}
             </button>
           </div>
+          {sendAmount !== "" && Number(sendAmount) > balance && (
+            <p style={{ marginTop: 8, fontSize: 13, fontWeight: 700, color: "#ffd0d0" }}>
+              Не хватает монет — доступно {balance.toLocaleString()}
+            </p>
+          )}
           {sendMutation.isSuccess && (
             <p style={{ marginTop: 8, fontSize: 13, fontWeight: 700, color: "#aaffcc" }}>
               ✅ Монеты отправлены!

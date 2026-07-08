@@ -6,8 +6,8 @@ export const dreamsApi = {
     apiClient.post("/dreams", data).then((r) => r.data),
   update: (id: string, data: { name?: string; targetCoins?: number }) =>
     apiClient.patch(`/dreams/${id}`, data).then((r) => r.data),
-  send: (amount: number, currentBalance: number) =>
-    apiClient.post("/dreams/send", { amount, currentBalance }).then((r) => r.data),
+  send: (amount: number) =>
+    apiClient.post("/dreams/send", { amount }).then((r) => r.data),
   uploadPhoto: (id: string, file: File) => {
     const fd = new FormData();
     fd.append("photo", file);

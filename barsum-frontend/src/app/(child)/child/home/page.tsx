@@ -112,38 +112,47 @@ function DreamCard({ dream, currentBalance, onSend, isSending }: {
           <span>цель: {dream.targetCoins.toLocaleString()}</span>
         </div>
         {currentBalance > 0 && (
-          <div style={{ display: "flex", gap: 8 }}>
-            <input
-              type="number"
-              value={sendAmount}
-              onChange={(e) => setSendAmount(e.target.value)}
-              placeholder="Монет в мечту..."
-              className="glass-input"
-              style={{ flex: 1, padding: "10px 14px", fontSize: 14, borderRadius: 12 }}
-            />
-            <button
-              onClick={() => {
-                const amt = Number(sendAmount);
-                if (amt > 0 && amt <= currentBalance) { onSend(amt); setSendAmount(""); }
-              }}
-              disabled={!sendAmount || Number(sendAmount) < 1 || Number(sendAmount) > currentBalance || isSending}
-              style={{
-                padding: "10px 16px",
-                borderRadius: 12,
-                border: "none",
-                background: "rgba(255,255,255,0.9)",
-                color: "#0a7a62",
-                fontWeight: 900,
-                fontSize: 13,
-                cursor: "pointer",
-                flexShrink: 0,
-                fontFamily: "inherit",
-                opacity: (!sendAmount || Number(sendAmount) < 1 || Number(sendAmount) > currentBalance || isSending) ? 0.4 : 1,
-              }}
-            >
-              Внести
-            </button>
-          </div>
+          <>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input
+                type="number"
+                min={1}
+                max={currentBalance}
+                value={sendAmount}
+                onChange={(e) => setSendAmount(e.target.value)}
+                placeholder="Монет в мечту..."
+                className="glass-input"
+                style={{ flex: 1, padding: "10px 14px", fontSize: 14, borderRadius: 12 }}
+              />
+              <button
+                onClick={() => {
+                  const amt = Number(sendAmount);
+                  if (amt > 0 && amt <= currentBalance) { onSend(amt); setSendAmount(""); }
+                }}
+                disabled={!sendAmount || Number(sendAmount) < 1 || Number(sendAmount) > currentBalance || isSending}
+                style={{
+                  padding: "10px 16px",
+                  borderRadius: 12,
+                  border: "none",
+                  background: "rgba(255,255,255,0.9)",
+                  color: "#0a7a62",
+                  fontWeight: 900,
+                  fontSize: 13,
+                  cursor: "pointer",
+                  flexShrink: 0,
+                  fontFamily: "inherit",
+                  opacity: (!sendAmount || Number(sendAmount) < 1 || Number(sendAmount) > currentBalance || isSending) ? 0.4 : 1,
+                }}
+              >
+                Внести
+              </button>
+            </div>
+            {sendAmount !== "" && Number(sendAmount) > currentBalance && (
+              <p style={{ margin: "8px 0 0", fontSize: 12, fontWeight: 700, color: "#ffd0d0" }}>
+                Не хватает монет — доступно {currentBalance.toLocaleString()}
+              </p>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -177,13 +186,14 @@ export default function ChildHomePage() {
   const streak: number = (user as any)?.streak ?? 0;
 
   const sendMutation = useMutation({
-    mutationFn: (amount: number) => dreamsApi.send(amount, currentBalance),
+    mutationFn: (amount: number) => dreamsApi.send(amount),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["dream-my"] });
       queryClient.invalidateQueries({ queryKey: ["child-balance", user?.id] });
       toast.success("Монеты добавлены к мечте!");
     },
-    onError: () => toast.error("Ошибка"),
+    onError: (err: any) =>
+      toast.error(err?.response?.data?.message || "Не удалось отправить монеты"),
   });
 
   return (
