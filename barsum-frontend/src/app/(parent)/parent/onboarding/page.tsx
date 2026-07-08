@@ -5,9 +5,13 @@ import { Baby, ClipboardCopy, Share2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { z } from "zod";
 import { childrenApi } from "@/lib/api/children";
+import { rewardsApi } from "@/lib/api/rewards";
+import { RewardTemplatePicker } from "@/components/RewardTemplatePicker";
+import type { RewardTemplate } from "@/lib/rewardTemplates";
 
 const childSchema = z.object({
   name: z.string().min(2, "Минимум 2 символа"),
@@ -29,6 +33,20 @@ const GLASS: React.CSSProperties = {
 export default function ParentOnboardingPage() {
   const router = useRouter();
   const [created, setCreated] = useState<{ login: string; password: string; name: string } | null>(null);
+  const [showShopStep, setShowShopStep] = useState(false);
+  const [addedNames, setAddedNames] = useState<Set<string>>(new Set());
+  const [pendingName, setPendingName] = useState<string | null>(null);
+
+  const addTemplateMutation = useMutation({
+    mutationFn: (template: RewardTemplate) => rewardsApi.create({ name: template.name, cost: template.cost, type: template.type, photoUrl: template.image }),
+    onMutate: (template) => setPendingName(template.name),
+    onSuccess: (_data, template) => {
+      setAddedNames((prev) => new Set(prev).add(template.name));
+      toast.success(`«${template.name}» добавлена в магазин`);
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || "Ошибка при добавлении"),
+    onSettled: () => setPendingName(null),
+  });
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<ChildForm>({
     resolver: zodResolver(childSchema),
@@ -58,6 +76,36 @@ export default function ParentOnboardingPage() {
       navigator.clipboard.writeText(text).then(() => toast.success("Данные скопированы в буфер обмена"));
     }
   };
+
+  if (created && showShopStep) {
+    return (
+      <main style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <div style={{ width: "100%", maxWidth: 400 }}>
+          <div style={{ textAlign: "center", marginBottom: 20 }}>
+            <div style={{ fontSize: 44, marginBottom: 6 }}>🎁</div>
+            <h1 style={{ margin: "0 0 6px", fontSize: 24, fontWeight: 900, color: "#ffffff" }}>Настрой магазин</h1>
+            <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.65)" }}>
+              Добавь пару наград одним тапом — цену можно поправить. Это необязательно, всегда можно сделать позже.
+            </p>
+          </div>
+
+          <RewardTemplatePicker
+            onAdd={(t) => addTemplateMutation.mutate(t)}
+            addedNames={addedNames}
+            pendingName={pendingName}
+          />
+
+          <button
+            onClick={() => router.push("/parent/cabinet")}
+            className="btn-white"
+            style={{ marginTop: 20, color: "#4776e6" }}
+          >
+            В кабинет →
+          </button>
+        </div>
+      </main>
+    );
+  }
 
   if (created) {
     return (
@@ -109,8 +157,8 @@ export default function ParentOnboardingPage() {
             </button>
           </div>
 
-          <button onClick={() => router.push("/parent/cabinet")} className="btn-white" style={{ color: "#4776e6" }}>
-            В кабинет →
+          <button onClick={() => setShowShopStep(true)} className="btn-white" style={{ color: "#4776e6" }}>
+            Далее →
           </button>
         </div>
       </main>

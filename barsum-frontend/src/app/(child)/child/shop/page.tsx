@@ -10,6 +10,7 @@ import { dreamsApi } from "@/lib/api/dreams";
 import { rewardsApi } from "@/lib/api/rewards";
 import { useAuthStore } from "@/stores/auth-store";
 import { CoinIcon } from "@/components/CoinIcon";
+import { Portal } from "@/components/Portal";
 
 interface Reward {
   id: string;
@@ -52,9 +53,10 @@ function ConfirmModal({
   balanceAfter: number;
 }) {
   return (
+    <Portal>
     <div
-      className="fixed inset-0 flex items-end justify-center z-50 p-4"
-      style={{ background: "rgba(0,0,0,0.5)" }}
+      className="fixed inset-0 flex items-end justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.5)", zIndex: 60 }}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -68,7 +70,7 @@ function ConfirmModal({
           WebkitBackdropFilter: "blur(24px)",
           border: "1px solid rgba(255,255,255,0.15)",
           borderRadius: "28px 28px 0 0",
-          padding: "32px 24px 40px",
+          padding: "32px 24px max(40px, env(safe-area-inset-bottom))",
         }}
       >
         <div style={{ textAlign: "center", marginBottom: 20 }}>
@@ -141,6 +143,7 @@ function ConfirmModal({
         </div>
       </div>
     </div>
+    </Portal>
   );
 }
 

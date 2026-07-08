@@ -13,6 +13,7 @@ import { coinsApi } from "@/lib/api/coins";
 import { paymentsApi } from "@/lib/api/payments";
 import { useAuthStore } from "@/stores/auth-store";
 import { CoinIcon } from "@/components/CoinIcon";
+import { Portal } from "@/components/Portal";
 import type { Payment } from "@/types";
 
 const PAYMENT_STATUS_LABEL: Record<Payment["status"], string> = {
@@ -254,14 +255,15 @@ export default function ParentCabinetPage() {
 
       {/* Add child modal */}
       {showModal && (
+        <Portal>
         <div
-          className="fixed inset-0 flex items-end justify-center z-50 p-4"
-          style={{ background: "rgba(0,0,0,0.5)" }}
+          className="fixed inset-0 flex items-end justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.5)", zIndex: 60 }}
           onClick={(e) => {
             if (e.target === e.currentTarget) { setShowModal(false); setNewCreds(null); resetPhoto(); }
           }}
         >
-          <div style={{ width: "100%", maxWidth: 400, background: "rgba(20,10,60,0.92)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "28px 28px 0 0", padding: "28px 24px 40px" }}>
+          <div style={{ width: "100%", maxWidth: 400, background: "rgba(20,10,60,0.92)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "28px 28px 0 0", padding: "28px 24px max(40px, env(safe-area-inset-bottom))" }}>
             {newCreds ? (
               <div style={{ textAlign: "center" }}>
                 <div style={{ fontSize: 40, marginBottom: 12 }}>✅</div>
@@ -340,6 +342,7 @@ export default function ParentCabinetPage() {
             )}
           </div>
         </div>
+        </Portal>
       )}
     </main>
   );

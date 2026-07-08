@@ -9,6 +9,9 @@ import { rewardsApi } from "@/lib/api/rewards";
 import type { Reward, RewardRequest } from "@/types";
 import { CoinIcon } from "@/components/CoinIcon";
 import { RewardRequestCard } from "@/components/RewardRequestCard";
+import { RewardTemplatePicker } from "@/components/RewardTemplatePicker";
+import type { RewardTemplate } from "@/lib/rewardTemplates";
+import { Portal } from "@/components/Portal";
 
 interface ReviewQueueItem {
   id: string;
@@ -78,12 +81,13 @@ function CreateRewardModal({ onClose }: { onClose: () => void }) {
   });
 
   return (
+    <Portal>
     <div
-      className="fixed inset-0 flex items-end justify-center z-50 p-4"
-      style={{ background: "rgba(0,0,0,0.5)" }}
+      className="fixed inset-0 flex items-end justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.5)", zIndex: 60 }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div style={{ width: "100%", maxWidth: 400, background: "rgba(20,10,60,0.92)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "28px 28px 0 0", padding: "28px 24px 40px" }}>
+      <div style={{ width: "100%", maxWidth: 400, background: "rgba(20,10,60,0.92)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "28px 28px 0 0", padding: "28px 24px max(40px, env(safe-area-inset-bottom))" }}>
         <h3 style={{ margin: "0 0 20px", fontSize: 20, fontWeight: 900, color: "#ffffff" }}>Новая награда</h3>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <input ref={fileInputRef} type="file" accept="image/png,image/jpeg" onChange={handlePhotoChange} style={{ display: "none" }} />
@@ -134,6 +138,58 @@ function CreateRewardModal({ onClose }: { onClose: () => void }) {
         </div>
       </div>
     </div>
+    </Portal>
+  );
+}
+
+function AddRewardModal({ onClose, onCustom }: { onClose: () => void; onCustom: () => void }) {
+  const queryClient = useQueryClient();
+  const [addedNames, setAddedNames] = useState<Set<string>>(new Set());
+  const [pendingName, setPendingName] = useState<string | null>(null);
+
+  const addMutation = useMutation({
+    mutationFn: (template: RewardTemplate) => rewardsApi.create({ name: template.name, cost: template.cost, type: template.type, photoUrl: template.image }),
+    onMutate: (template) => setPendingName(template.name),
+    onSuccess: (_data, template) => {
+      queryClient.invalidateQueries({ queryKey: ["rewards"] });
+      setAddedNames((prev) => new Set(prev).add(template.name));
+      toast.success(`«${template.name}» добавлена`);
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.message || "Ошибка при добавлении"),
+    onSettled: () => setPendingName(null),
+  });
+
+  return (
+    <Portal>
+    <div
+      className="fixed inset-0 flex items-end justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.5)", zIndex: 60 }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div style={{ width: "100%", maxWidth: 400, maxHeight: "85vh", overflowY: "auto", background: "rgba(20,10,60,0.92)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "28px 28px 0 0", padding: "28px 24px max(32px, env(safe-area-inset-bottom))" }}>
+        <h3 style={{ margin: "0 0 4px", fontSize: 20, fontWeight: 900, color: "#ffffff" }}>Добавить награду</h3>
+        <p style={{ margin: "0 0 18px", fontSize: 13, color: "rgba(255,255,255,0.6)" }}>Выбери готовую — цену можно поправить, или создай свою</p>
+
+        <RewardTemplatePicker onAdd={(t) => addMutation.mutate(t)} addedNames={addedNames} pendingName={pendingName} />
+
+        <button
+          type="button"
+          onClick={onCustom}
+          style={{ width: "100%", marginTop: 16, padding: "13px 0", borderRadius: 14, border: "1px dashed rgba(255,255,255,0.35)", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 14, background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.85)" }}
+        >
+          ✏️ Своя награда
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="btn-white"
+          style={{ width: "100%", marginTop: 10, color: "#4776e6" }}
+        >
+          Готово
+        </button>
+      </div>
+    </div>
+    </Portal>
   );
 }
 
@@ -266,7 +322,7 @@ function Section({ title, action, children }: { title: string; action?: React.Re
 }
 
 export default function ParentRewardsPage() {
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [modalStep, setModalStep] = useState<"closed" | "catalog" | "custom">("closed");
 
   const { data: rewards = [], isLoading: loadingRewards } = useQuery<Reward[]>({
     queryKey: ["rewards"],
@@ -313,7 +369,7 @@ export default function ParentRewardsPage() {
         title="Мои награды"
         action={
           <button
-            onClick={() => setShowCreateModal(true)}
+            onClick={() => setModalStep("catalog")}
             style={{ fontSize: 13, fontWeight: 700, padding: "7px 14px", borderRadius: 9999, border: "none", cursor: "pointer", fontFamily: "inherit", background: "rgba(255,255,255,0.9)", color: "#4776e6" }}
           >
             + Создать
@@ -343,7 +399,10 @@ export default function ParentRewardsPage() {
         )}
       </Section>
 
-      {showCreateModal && <CreateRewardModal onClose={() => setShowCreateModal(false)} />}
+      {modalStep === "catalog" && (
+        <AddRewardModal onClose={() => setModalStep("closed")} onCustom={() => setModalStep("custom")} />
+      )}
+      {modalStep === "custom" && <CreateRewardModal onClose={() => setModalStep("closed")} />}
     </main>
   );
 }

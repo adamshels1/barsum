@@ -2,8 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
+import { useState } from "react";
 import { toast } from "sonner";
 import { challengesApi } from "@/lib/api/challenges";
 import { childrenApi } from "@/lib/api/children";
@@ -12,6 +11,7 @@ import { rewardsApi } from "@/lib/api/rewards";
 import type { Challenge, Child, Payment, RewardRequest } from "@/types/index";
 import { CoinIcon } from "@/components/CoinIcon";
 import { RewardRequestCard } from "@/components/RewardRequestCard";
+import { Portal } from "@/components/Portal";
 
 const COIN_MAX = 50_000;
 const COIN_STEP = 1_000;
@@ -151,16 +151,6 @@ function KaspiQrStep({
       </button>
     </div>
   );
-}
-
-// Рендерит содержимое поверх всего в document.body, минуя stacking-context
-// родителя (обёртка контента в layout имеет zIndex:1, из-за чего модалка иначе
-// оказывается под нижним меню).
-function Portal({ children }: { children: React.ReactNode }) {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  if (!mounted) return null;
-  return createPortal(children, document.body);
 }
 
 function PurchaseModal({
