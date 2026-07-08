@@ -4,6 +4,44 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, Lock } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { sessionsApi } from "@/lib/api/sessions";
+import { useT, type Dict } from "@/i18n/useT";
+
+const dict: Dict = {
+  ru: {
+    back: "Назад",
+    bookLabel: "📖 Книга",
+    loading: "Загрузка...",
+    progress: "Прогресс",
+    partsOf: "{done} из {total} частей",
+    bookDone: "Книга прочитана!",
+    bookDoneSub: "Ты молодец — прочитал все части",
+    partsHeading: "Части книги",
+    part: "Часть {n}",
+    pages: "стр. {start}–{end}",
+    partOfTotal: "Часть {n} из {total}",
+    done: "Готово",
+    continue: "Продолжить",
+    read: "Читать",
+    loadingBook: "Загружаем книгу...",
+  },
+  kk: {
+    back: "Артқа",
+    bookLabel: "📖 Кітап",
+    loading: "Жүктелуде...",
+    progress: "Барыс",
+    partsOf: "{total} бөлімнен {done}",
+    bookDone: "Кітап оқып бітті!",
+    bookDoneSub: "Жарайсың — барлық бөлімді оқып шықтың",
+    partsHeading: "Кітап бөлімдері",
+    part: "{n}-бөлім",
+    pages: "бет. {start}–{end}",
+    partOfTotal: "{total} бөлімнен {n}-бөлім",
+    done: "Дайын",
+    continue: "Жалғастыру",
+    read: "Оқу",
+    loadingBook: "Кітап жүктелуде...",
+  },
+};
 
 interface Session {
   id: string;
@@ -50,6 +88,7 @@ export default function BookPage() {
   const { enrollmentId } = useParams<{ enrollmentId: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const t = useT(dict);
 
   const { data: enrollments = [] } = useQuery<Enrollment[]>({
     queryKey: ["enrollments"],
@@ -94,7 +133,7 @@ export default function BookPage() {
         style={{ display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.65)", fontSize: 14, fontWeight: 700, fontFamily: "inherit", marginBottom: 20, padding: 0 }}
       >
         <ChevronLeft size={18} strokeWidth={2.5} />
-        Назад
+        {t("back")}
       </button>
 
       {/* Book header */}
@@ -110,10 +149,10 @@ export default function BookPage() {
           )}
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.55)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
-              📖 Книга
+              {t("bookLabel")}
             </p>
             <h1 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: "#ffffff", lineHeight: 1.2 }}>
-              {ch?.bookTitle || ch?.title || "Загрузка..."}
+              {ch?.bookTitle || ch?.title || t("loading")}
             </h1>
             {ch?.bookAuthor && (
               <p style={{ margin: "4px 0 0", fontSize: 13, color: "rgba(255,255,255,0.55)", fontWeight: 600 }}>{ch.bookAuthor}</p>
@@ -124,8 +163,8 @@ export default function BookPage() {
         {/* Progress bar */}
         <div style={{ marginTop: 16 }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.65)" }}>
-            <span>Прогресс</span>
-            <span>{completedParts} из {totalParts} частей</span>
+            <span>{t("progress")}</span>
+            <span>{t("partsOf", { done: completedParts, total: totalParts })}</span>
           </div>
           <div style={{ height: 6, borderRadius: 9999, background: "rgba(255,255,255,0.15)", overflow: "hidden" }}>
             <div
@@ -144,14 +183,14 @@ export default function BookPage() {
       {allDone && (
         <div className="glass" style={{ padding: 20, borderRadius: 20, marginBottom: 20, textAlign: "center", background: "rgba(0,200,100,0.15)", border: "1px solid rgba(100,255,150,0.3)" }}>
           <p style={{ margin: 0, fontSize: 32 }}>🏆</p>
-          <p style={{ margin: "8px 0 0", fontWeight: 900, fontSize: 18, color: "#ffffff" }}>Книга прочитана!</p>
-          <p style={{ margin: "4px 0 0", fontSize: 13, color: "rgba(255,255,255,0.65)" }}>Ты молодец — прочитал все части</p>
+          <p style={{ margin: "8px 0 0", fontWeight: 900, fontSize: 18, color: "#ffffff" }}>{t("bookDone")}</p>
+          <p style={{ margin: "4px 0 0", fontSize: 13, color: "rgba(255,255,255,0.65)" }}>{t("bookDoneSub")}</p>
         </div>
       )}
 
       {/* Parts list */}
       <p style={{ margin: "0 0 12px", fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-        Части книги
+        {t("partsHeading")}
       </p>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -230,10 +269,10 @@ export default function BookPage() {
               {/* Info */}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ margin: 0, fontWeight: 900, fontSize: 15, color: isLocked ? "rgba(255,255,255,0.4)" : "#ffffff" }}>
-                  Часть {partNum}
+                  {t("part", { n: partNum })}
                 </p>
                 <p style={{ margin: "2px 0 0", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.5)" }}>
-                  {pagesPerPart > 0 ? `стр. ${startPage}–${endPage}` : `Часть ${partNum} из ${totalParts}`}
+                  {pagesPerPart > 0 ? t("pages", { start: startPage, end: endPage }) : t("partOfTotal", { n: partNum, total: totalParts })}
                 </p>
               </div>
 
@@ -241,17 +280,17 @@ export default function BookPage() {
               <div style={{ flexShrink: 0 }}>
                 {isCompleted && (
                   <span style={{ fontSize: 11, fontWeight: 800, color: "#aaffcc", background: "rgba(0,200,100,0.2)", padding: "4px 10px", borderRadius: 9999 }}>
-                    Готово
+                    {t("done")}
                   </span>
                 )}
                 {isCurrent && (
                   <span style={{ fontSize: 11, fontWeight: 800, color: "#ffffff", background: "rgba(255,255,255,0.25)", padding: "4px 10px", borderRadius: 9999 }}>
-                    Продолжить
+                    {t("continue")}
                   </span>
                 )}
                 {isUnlocked && (
                   <span style={{ fontSize: 11, fontWeight: 800, color: "#4776e6", background: "rgba(255,255,255,0.9)", padding: "4px 10px", borderRadius: 9999 }}>
-                    Читать
+                    {t("read")}
                   </span>
                 )}
                 {isLocked && (
@@ -268,7 +307,7 @@ export default function BookPage() {
       {totalParts === 0 && (
         <div className="glass" style={{ padding: 40, textAlign: "center", borderRadius: 20 }}>
           <p style={{ margin: 0, fontSize: 36 }}>📚</p>
-          <p style={{ margin: "12px 0 0", fontWeight: 900, fontSize: 16, color: "#ffffff" }}>Загружаем книгу...</p>
+          <p style={{ margin: "12px 0 0", fontWeight: 900, fontSize: 16, color: "#ffffff" }}>{t("loadingBook")}</p>
         </div>
       )}
     </main>

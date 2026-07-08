@@ -5,6 +5,43 @@ import { BookOpen, CreditCard, LogOut, Search, Trophy, Users, Users2 } from "luc
 import { useRouter } from "next/navigation";
 import { adminApi } from "@/lib/api/admin";
 import { useAuthStore } from "@/stores/auth-store";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useT, type Dict } from "@/i18n/useT";
+
+const dict: Dict = {
+  ru: {
+    panel: "Панель",
+    logout: "Выйти",
+    users: "Пользователи",
+    children: "Дети",
+    payments: "Платежи",
+    revenue: "Выручка",
+    pendingPayments: "Ожид. платежи",
+    pendingExperts: "Ожид. эксперты",
+    pendingChallenges: "Ожид. задания",
+    go: "ПЕРЕЙТИ →",
+    sections: "Разделы",
+    readersRating: "Рейтинг читателей",
+    experts: "Эксперты",
+    challenges: "Задания",
+  },
+  kk: {
+    panel: "Панель",
+    logout: "Шығу",
+    users: "Пайдаланушылар",
+    children: "Балалар",
+    payments: "Төлемдер",
+    revenue: "Түсім",
+    pendingPayments: "Күтудегі төлемдер",
+    pendingExperts: "Күтудегі сарапшылар",
+    pendingChallenges: "Күтудегі тапсырмалар",
+    go: "ӨТУ →",
+    sections: "Бөлімдер",
+    readersRating: "Оқырмандар рейтингі",
+    experts: "Сарапшылар",
+    challenges: "Тапсырмалар",
+  },
+};
 
 const GLASS: React.CSSProperties = {
   background: "rgba(255,255,255,0.13)",
@@ -16,6 +53,7 @@ const GLASS: React.CSSProperties = {
 
 export default function AdminDashboardPage() {
   const router = useRouter();
+  const t = useT(dict);
   const clearAuth = useAuthStore((s) => s.clearAuth);
 
   const { data: stats, isLoading } = useQuery({
@@ -29,30 +67,30 @@ export default function AdminDashboardPage() {
   };
 
   const statCards = [
-    { label: "Пользователи", value: stats?.totalUsers, Icon: Users },
-    { label: "Дети", value: stats?.totalChildren, Icon: Users2 },
-    { label: "Платежи", value: stats?.totalPayments, Icon: CreditCard },
+    { label: t("users"), value: stats?.totalUsers, Icon: Users },
+    { label: t("children"), value: stats?.totalChildren, Icon: Users2 },
+    { label: t("payments"), value: stats?.totalPayments, Icon: CreditCard },
     {
-      label: "Выручка",
+      label: t("revenue"),
       value: stats?.totalRevenueTg != null ? `${stats.totalRevenueTg} ₸` : "—",
       Icon: CreditCard,
     },
     {
-      label: "Ожид. платежи",
+      label: t("pendingPayments"),
       value: stats?.pendingPayments,
       Icon: CreditCard,
       urgent: stats?.pendingPayments > 0,
       href: "/admin/payments",
     },
     {
-      label: "Ожид. эксперты",
+      label: t("pendingExperts"),
       value: stats?.pendingExperts,
       Icon: Search,
       urgent: stats?.pendingExperts > 0,
       href: "/admin/experts",
     },
     {
-      label: "Ожид. задания",
+      label: t("pendingChallenges"),
       value: stats?.pendingChallenges,
       Icon: BookOpen,
       urgent: stats?.pendingChallenges > 0,
@@ -61,10 +99,10 @@ export default function AdminDashboardPage() {
   ];
 
   const navCards = [
-    { label: "Рейтинг читателей", Icon: Trophy, href: "/admin/readers", badge: undefined },
-    { label: "Платежи", Icon: CreditCard, href: "/admin/payments", badge: stats?.pendingPayments },
-    { label: "Эксперты", Icon: Search, href: "/admin/experts", badge: stats?.pendingExperts },
-    { label: "Задания", Icon: BookOpen, href: "/admin/challenges", badge: stats?.pendingChallenges },
+    { label: t("readersRating"), Icon: Trophy, href: "/admin/readers", badge: undefined },
+    { label: t("payments"), Icon: CreditCard, href: "/admin/payments", badge: stats?.pendingPayments },
+    { label: t("experts"), Icon: Search, href: "/admin/experts", badge: stats?.pendingExperts },
+    { label: t("challenges"), Icon: BookOpen, href: "/admin/challenges", badge: stats?.pendingChallenges },
   ];
 
   return (
@@ -79,17 +117,20 @@ export default function AdminDashboardPage() {
             Barsum Admin
           </p>
           <h1 style={{ margin: "4px 0 0", fontSize: 26, fontWeight: 900, color: "#ffffff" }}>
-            Панель
+            {t("panel")}
           </h1>
         </div>
-        <button
-          onClick={handleLogout}
-          className="glass-chip"
-          style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", border: "none", cursor: "pointer", fontFamily: "inherit", color: "#ffffff", fontWeight: 700, fontSize: 13 }}
-        >
-          <LogOut size={14} strokeWidth={2.5} />
-          Выйти
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <LanguageSwitcher />
+          <button
+            onClick={handleLogout}
+            className="glass-chip"
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", border: "none", cursor: "pointer", fontFamily: "inherit", color: "#ffffff", fontWeight: 700, fontSize: 13 }}
+          >
+            <LogOut size={14} strokeWidth={2.5} />
+            {t("logout")}
+          </button>
+        </div>
       </div>
 
       <div style={{ padding: "20px 20px 0" }}>
@@ -124,7 +165,7 @@ export default function AdminDashboardPage() {
                   </p>
                   {card.urgent && card.href && (
                     <p style={{ margin: "4px 0 0", fontSize: 10, fontWeight: 700, color: "rgba(255,160,160,0.9)", letterSpacing: "0.04em" }}>
-                      ПЕРЕЙТИ →
+                      {t("go")}
                     </p>
                   )}
                 </Tag>
@@ -135,7 +176,7 @@ export default function AdminDashboardPage() {
 
         {/* Navigation cards */}
         <p style={{ margin: "0 0 10px", fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-          Разделы
+          {t("sections")}
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {navCards.map((card) => (

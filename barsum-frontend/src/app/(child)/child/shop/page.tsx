@@ -12,6 +12,104 @@ import { useAuthStore } from "@/stores/auth-store";
 import { CoinIcon } from "@/components/CoinIcon";
 import { Portal } from "@/components/Portal";
 import { dreamPhotoUrl, rewardPhotoUrl } from "@/lib/media";
+import { useT, type Dict } from "@/i18n/useT";
+
+const dict: Dict = {
+  ru: {
+    requestReward: "Запросить награду?",
+    rewardFor: "«{name}» за",
+    balanceAfterLabel: "Баланс после:",
+    cancel: "Отмена",
+    sending: "Отправляем...",
+    confirm: "Подтвердить",
+    noRewards: "Наград пока нет",
+    askParents: "Попроси родителей добавить награды",
+    myBalance: "Мой баланс",
+    requestSent: "Запрос отправлен родителю!",
+    take: "Взять",
+    more: "ещё {n}",
+    loading: "Загрузка...",
+    prevDreamRejected: "Предыдущая мечта отклонена",
+    reason: "Причина: {reason}",
+    changePhoto: "📸 Изменить фото",
+    photographDream: "Сфотографируй свою мечту",
+    orFromGallery: "или выбери из галереи",
+    whatDoYouWant: "Что ты хочешь? ✨",
+    dreamPlaceholder: "Например: Велосипед",
+    parentWillApprove: "Родитель установит стоимость и одобрит мечту 🌟",
+    creating: "Создаём...",
+    sendToParent: "✨ Отправить родителю",
+    waitingParentApproval: "Ждём, пока родитель установит стоимость и одобрит мечту",
+    myDream: "Моя мечта",
+    edit: "Изменить",
+    dreamAchieved: "🎉 Мечта достигнута!",
+    outOf: "из {n}",
+    sendCoinsToDream: "Отправить монеты в мечту",
+    available: "Доступно:",
+    howManyCoins: "Сколько монет?",
+    deposit: "Внести",
+    insufficient: "Не хватает монет — доступно {n}",
+    coinsSent: "✅ Монеты отправлены!",
+    earnCoinsHint: "Заработай монеты, читая книги, чтобы приблизить мечту!",
+    createDreamError: "Ошибка создания мечты",
+    sendCoinsError: "Не удалось отправить монеты",
+    back: "Назад",
+    shopTitle: "🎁 Магазин наград",
+    dreamTitle: "💫 Моя мечта",
+    addYourDream: "Добавь свою мечту!",
+    parentsHelp: "Родители помогут её осуществить",
+    dreamWaitingApproval: "Мечта «{name}» ждёт одобрения родителя",
+    tabRewards: "🎁 Награды",
+    tabDream: "💫 Мечта",
+  },
+  kk: {
+    requestReward: "Сыйлық сұрау керек пе?",
+    rewardFor: "«{name}» —",
+    balanceAfterLabel: "Кейінгі баланс:",
+    cancel: "Бас тарту",
+    sending: "Жіберілуде...",
+    confirm: "Растау",
+    noRewards: "Сыйлықтар әзірге жоқ",
+    askParents: "Ата-анаңнан сыйлық қосуын сұра",
+    myBalance: "Менің балансым",
+    requestSent: "Сұрау ата-анаға жіберілді!",
+    take: "Алу",
+    more: "тағы {n}",
+    loading: "Жүктелуде...",
+    prevDreamRejected: "Алдыңғы арман қабылданбады",
+    reason: "Себебі: {reason}",
+    changePhoto: "📸 Фотоны өзгерту",
+    photographDream: "Арманыңды суретке түсір",
+    orFromGallery: "немесе галереядан таңда",
+    whatDoYouWant: "Не қалайсың? ✨",
+    dreamPlaceholder: "Мысалы: Велосипед",
+    parentWillApprove: "Ата-ана бағасын белгілеп, арманды мақұлдайды 🌟",
+    creating: "Құрылуда...",
+    sendToParent: "✨ Ата-анаға жіберу",
+    waitingParentApproval: "Ата-ана бағасын белгілеп, арманды мақұлдағанын күтеміз",
+    myDream: "Менің арманым",
+    edit: "Өзгерту",
+    dreamAchieved: "🎉 Арман орындалды!",
+    outOf: "{n} ішінен",
+    sendCoinsToDream: "Монеталарды арманға жіберу",
+    available: "Қолжетімді:",
+    howManyCoins: "Қанша монета?",
+    deposit: "Салу",
+    insufficient: "Монета жетпейді — қолжетімді {n}",
+    coinsSent: "✅ Монеталар жіберілді!",
+    earnCoinsHint: "Арманыңа жақындау үшін кітап оқып, монета жинап ал!",
+    createDreamError: "Арман құру қатесі",
+    sendCoinsError: "Монеталарды жіберу мүмкін болмады",
+    back: "Артқа",
+    shopTitle: "🎁 Сыйлықтар дүкені",
+    dreamTitle: "💫 Менің арманым",
+    addYourDream: "Арманыңды қос!",
+    parentsHelp: "Ата-анаң оны орындауға көмектеседі",
+    dreamWaitingApproval: "«{name}» арманы ата-ананың мақұлдауын күтуде",
+    tabRewards: "🎁 Сыйлықтар",
+    tabDream: "💫 Арман",
+  },
+};
 
 interface Reward {
   id: string;
@@ -53,6 +151,7 @@ function ConfirmModal({
   balanceBefore: number;
   balanceAfter: number;
 }) {
+  const t = useT(dict);
   return (
     <Portal>
     <div
@@ -95,10 +194,10 @@ function ConfirmModal({
             )}
           </div>
           <h3 style={{ margin: 0, fontSize: 20, fontWeight: 900, color: "#ffffff" }}>
-            Запросить награду?
+            {t("requestReward")}
           </h3>
           <p style={{ margin: "8px 0 0", fontSize: 14, color: "rgba(255,255,255,0.65)" }}>
-            «{reward.name}» за{" "}
+            {t("rewardFor", { name: reward.name })}{" "}
             <span style={{ fontWeight: 800, color: "#ffffff" }}>
               {reward.cost} <CoinIcon size={13} />
             </span>
@@ -116,7 +215,7 @@ function ConfirmModal({
             fontSize: 14,
           }}
         >
-          <span style={{ color: "rgba(255,255,255,0.65)" }}>Баланс после:</span>
+          <span style={{ color: "rgba(255,255,255,0.65)" }}>{t("balanceAfterLabel")}</span>
           <span>
             <span style={{ color: "rgba(255,255,255,0.65)" }}>{balanceBefore.toLocaleString()}</span>
             {" → "}
@@ -131,7 +230,7 @@ function ConfirmModal({
             className="btn-glass"
             style={{ flex: 1 }}
           >
-            Отмена
+            {t("cancel")}
           </button>
           <button
             onClick={onConfirm}
@@ -139,7 +238,7 @@ function ConfirmModal({
             className="btn-white"
             style={{ flex: 1, color: "#4776e6", opacity: isPending ? 0.6 : 1 }}
           >
-            {isPending ? "Отправляем..." : "Подтвердить"}
+            {isPending ? t("sending") : t("confirm")}
           </button>
         </div>
       </div>
@@ -149,6 +248,7 @@ function ConfirmModal({
 }
 
 function RewardsTab({ childId }: { childId: string }) {
+  const t = useT(dict);
   const queryClient = useQueryClient();
   const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
   const [successId, setSuccessId] = useState<string | null>(null);
@@ -197,10 +297,10 @@ function RewardsTab({ childId }: { childId: string }) {
       <div className="glass" style={{ padding: 40, textAlign: "center" }}>
         <p style={{ fontSize: 40, margin: "0 0 12px" }}>🎁</p>
         <p style={{ margin: 0, fontWeight: 900, color: "#ffffff" }}>
-          Наград пока нет
+          {t("noRewards")}
         </p>
         <p style={{ margin: "6px 0 0", fontSize: 13, color: "rgba(255,255,255,0.65)" }}>
-          Попроси родителей добавить награды
+          {t("askParents")}
         </p>
       </div>
     );
@@ -221,7 +321,7 @@ function RewardsTab({ childId }: { childId: string }) {
       >
         <div>
           <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.65)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-            Мой баланс
+            {t("myBalance")}
           </p>
           <p style={{ margin: "4px 0 0", fontSize: 24, fontWeight: 900, color: "#ffffff" }}>
             {balance.toLocaleString()} <CoinIcon size={20} />
@@ -243,7 +343,7 @@ function RewardsTab({ childId }: { childId: string }) {
           }}
         >
           <CheckCircle2 size={16} style={{ display: "inline", marginRight: 6, verticalAlign: "middle" }} />
-          Запрос отправлен родителю!
+          {t("requestSent")}
         </div>
       )}
 
@@ -333,11 +433,11 @@ function RewardsTab({ childId }: { childId: string }) {
                             flexShrink: 0,
                           }}
                         >
-                          Взять
+                          {t("take")}
                         </button>
                       ) : (
                         <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,160,160,0.9)", textAlign: "right" }}>
-                          ещё {diff} <CoinIcon size={11} />
+                          {t("more", { n: diff })} <CoinIcon size={11} />
                         </span>
                       )}
                     </div>
@@ -362,6 +462,7 @@ function RewardsTab({ childId }: { childId: string }) {
 }
 
 function DreamTab({ childId }: { childId: string }) {
+  const t = useT(dict);
   const queryClient = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -399,7 +500,7 @@ function DreamTab({ childId }: { childId: string }) {
       setPhotoFile(null);
       setPhotoPreview(null);
     },
-    onError: () => toast.error("Ошибка создания мечты"),
+    onError: () => toast.error(t("createDreamError")),
   });
 
   const updateMutation = useMutation({
@@ -419,7 +520,7 @@ function DreamTab({ childId }: { childId: string }) {
       setSendAmount("");
     },
     onError: (err: any) =>
-      toast.error(err?.response?.data?.message || "Не удалось отправить монеты"),
+      toast.error(err?.response?.data?.message || t("sendCoinsError")),
   });
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -434,7 +535,7 @@ function DreamTab({ childId }: { childId: string }) {
   if (loadingDream) {
     return (
       <p style={{ fontSize: 14, textAlign: "center", padding: "32px 0", color: "rgba(255,255,255,0.65)" }}>
-        Загрузка...
+        {t("loading")}
       </p>
     );
   }
@@ -451,11 +552,11 @@ function DreamTab({ childId }: { childId: string }) {
             }}
           >
             <p style={{ margin: 0, fontWeight: 700, fontSize: 14, color: "rgba(255,160,160,0.9)" }}>
-              Предыдущая мечта отклонена
+              {t("prevDreamRejected")}
             </p>
             {dream.rejectedReason && (
               <p style={{ margin: "4px 0 0", fontSize: 12, color: "rgba(255,160,160,0.75)" }}>
-                Причина: {dream.rejectedReason}
+                {t("reason", { reason: dream.rejectedReason })}
               </p>
             )}
           </div>
@@ -494,15 +595,15 @@ function DreamTab({ childId }: { childId: string }) {
                 }}
               >
                 <span style={{ color: "#ffffff", fontWeight: 700, fontSize: 14, background: "rgba(0,0,0,0.4)", padding: "6px 14px", borderRadius: 9999 }}>
-                  📸 Изменить фото
+                  {t("changePhoto")}
                 </span>
               </div>
             </>
           ) : (
             <>
               <Camera size={40} color="rgba(255,255,255,0.6)" strokeWidth={1.5} />
-              <span style={{ fontWeight: 700, fontSize: 14, color: "#ffffff" }}>Сфотографируй свою мечту</span>
-              <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>или выбери из галереи</span>
+              <span style={{ fontWeight: 700, fontSize: 14, color: "#ffffff" }}>{t("photographDream")}</span>
+              <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>{t("orFromGallery")}</span>
             </>
           )}
         </button>
@@ -518,17 +619,17 @@ function DreamTab({ childId }: { childId: string }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div>
             <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-              Что ты хочешь? ✨
+              {t("whatDoYouWant")}
             </label>
             <input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              placeholder="Например: Велосипед"
+              placeholder={t("dreamPlaceholder")}
               className="glass-input"
             />
           </div>
           <p style={{ margin: 0, fontSize: 12, textAlign: "center", color: "rgba(255,255,255,0.55)" }}>
-            Родитель установит стоимость и одобрит мечту 🌟
+            {t("parentWillApprove")}
           </p>
           <button
             onClick={() => createMutation.mutate()}
@@ -536,7 +637,7 @@ function DreamTab({ childId }: { childId: string }) {
             className="btn-white"
             style={{ color: "#4776e6", opacity: !newName.trim() || createMutation.isPending ? 0.5 : 1 }}
           >
-            {createMutation.isPending ? "Создаём..." : "✨ Отправить родителю"}
+            {createMutation.isPending ? t("creating") : t("sendToParent")}
           </button>
         </div>
       </div>
@@ -560,7 +661,7 @@ function DreamTab({ childId }: { childId: string }) {
             {dream.name}
           </p>
           <p style={{ margin: "8px 0 0", fontSize: 13, color: "rgba(255,255,255,0.65)" }}>
-            Ждём, пока родитель установит стоимость и одобрит мечту
+            {t("waitingParentApproval")}
           </p>
         </div>
       </div>
@@ -648,7 +749,7 @@ function DreamTab({ childId }: { childId: string }) {
               <>
                 <div>
                   <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.65)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                    Моя мечта
+                    {t("myDream")}
                   </p>
                   <p style={{ margin: "4px 0 0", fontSize: 20, fontWeight: 900, color: "#ffffff" }}>
                     {dream.name}
@@ -676,7 +777,7 @@ function DreamTab({ childId }: { childId: string }) {
                     }}
                   >
                     <Pencil size={12} strokeWidth={2.5} />
-                    Изменить
+                    {t("edit")}
                   </button>
                 )}
               </>
@@ -689,7 +790,7 @@ function DreamTab({ childId }: { childId: string }) {
               style={{ background: "rgba(0,200,100,0.25)", borderRadius: 12, padding: 12, textAlign: "center" }}
             >
               <p style={{ margin: 0, fontSize: 16, fontWeight: 900, color: "#aaffcc" }}>
-                🎉 Мечта достигнута!
+                {t("dreamAchieved")}
               </p>
             </div>
           )}
@@ -697,7 +798,7 @@ function DreamTab({ childId }: { childId: string }) {
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, marginBottom: 8 }}>
               <span style={{ fontWeight: 700, color: "#ffffff" }}><CoinIcon size={13} /> {dream.savedCoins.toLocaleString()}</span>
-              <span style={{ color: "rgba(255,255,255,0.65)" }}>из {dream.targetCoins.toLocaleString()}</span>
+              <span style={{ color: "rgba(255,255,255,0.65)" }}>{t("outOf", { n: dream.targetCoins.toLocaleString() })}</span>
             </div>
             <div
               style={{
@@ -740,10 +841,10 @@ function DreamTab({ childId }: { childId: string }) {
       {!isCompleted && balance > 0 && (
         <div className="glass" style={{ padding: 20, borderRadius: 16 }}>
           <p style={{ margin: "0 0 4px", fontWeight: 700, color: "#ffffff" }}>
-            Отправить монеты в мечту
+            {t("sendCoinsToDream")}
           </p>
           <p style={{ margin: "0 0 12px", fontSize: 12, color: "rgba(255,255,255,0.65)" }}>
-            Доступно: <CoinIcon size={12} /> {balance.toLocaleString()}
+            {t("available")} <CoinIcon size={12} /> {balance.toLocaleString()}
           </p>
           <div style={{ display: "flex", gap: 8 }}>
             <input
@@ -752,7 +853,7 @@ function DreamTab({ childId }: { childId: string }) {
               max={balance}
               value={sendAmount}
               onChange={(e) => setSendAmount(e.target.value)}
-              placeholder="Сколько монет?"
+              placeholder={t("howManyCoins")}
               className="glass-input"
               style={{ flex: 1 }}
             />
@@ -776,17 +877,17 @@ function DreamTab({ childId }: { childId: string }) {
                     : 1,
               }}
             >
-              {sendMutation.isPending ? "..." : "Внести"}
+              {sendMutation.isPending ? "..." : t("deposit")}
             </button>
           </div>
           {sendAmount !== "" && Number(sendAmount) > balance && (
             <p style={{ marginTop: 8, fontSize: 13, fontWeight: 700, color: "#ffd0d0" }}>
-              Не хватает монет — доступно {balance.toLocaleString()}
+              {t("insufficient", { n: balance.toLocaleString() })}
             </p>
           )}
           {sendMutation.isSuccess && (
             <p style={{ marginTop: 8, fontSize: 13, fontWeight: 700, color: "#aaffcc" }}>
-              ✅ Монеты отправлены!
+              {t("coinsSent")}
             </p>
           )}
         </div>
@@ -795,7 +896,7 @@ function DreamTab({ childId }: { childId: string }) {
       {!isCompleted && balance === 0 && (
         <div className="glass-sm" style={{ padding: 16, textAlign: "center" }}>
           <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.65)" }}>
-            Заработай монеты, читая книги, чтобы приблизить мечту!
+            {t("earnCoinsHint")}
           </p>
         </div>
       )}
@@ -804,6 +905,7 @@ function DreamTab({ childId }: { childId: string }) {
 }
 
 function ChildShopInner() {
+  const t = useT(dict);
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialTab = searchParams.get("tab") === "dream" ? "dream" : "rewards";
@@ -832,10 +934,10 @@ function ChildShopInner() {
           style={{ display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.65)", fontSize: 14, fontWeight: 700, fontFamily: "inherit", marginBottom: 12, padding: 0 }}
         >
           <ChevronLeft size={18} strokeWidth={2.5} />
-          Назад
+          {t("back")}
         </button>
         <h2 style={{ margin: 0, fontSize: 20, fontWeight: 900, color: "#ffffff" }}>
-          {activeTab === "rewards" ? "🎁 Магазин наград" : "💫 Моя мечта"}
+          {activeTab === "rewards" ? t("shopTitle") : t("dreamTitle")}
         </h2>
       </div>
 
@@ -860,10 +962,10 @@ function ChildShopInner() {
           <Sparkles size={24} color="#ffffff" strokeWidth={2} />
           <div style={{ flex: 1 }}>
             <p style={{ margin: 0, fontWeight: 700, fontSize: 14, color: "#ffffff" }}>
-              Добавь свою мечту!
+              {t("addYourDream")}
             </p>
             <p style={{ margin: "2px 0 0", fontSize: 12, color: "rgba(255,255,255,0.65)" }}>
-              Родители помогут её осуществить
+              {t("parentsHelp")}
             </p>
           </div>
           <ChevronRight size={20} color="rgba(255,255,255,0.7)" />
@@ -887,7 +989,7 @@ function ChildShopInner() {
         >
           <span style={{ fontSize: 18 }}>⏳</span>
           <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#ffffff" }}>
-            Мечта «{dream.name}» ждёт одобрения родителя
+            {t("dreamWaitingApproval", { name: dream.name })}
           </p>
         </button>
       ) : hasActiveDream ? (
@@ -958,7 +1060,7 @@ function ChildShopInner() {
               color: activeTab === tab ? "#4776e6" : "rgba(255,255,255,0.55)",
             }}
           >
-            {tab === "rewards" ? "🎁 Награды" : "💫 Мечта"}
+            {tab === "rewards" ? t("tabRewards") : t("tabDream")}
           </button>
         ))}
       </div>

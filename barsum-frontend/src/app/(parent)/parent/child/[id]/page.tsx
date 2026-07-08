@@ -13,25 +13,196 @@ import { sessionsApi } from "@/lib/api/sessions";
 import type { Child, ChildStats, RewardRequest, Session } from "@/types";
 import { CoinIcon } from "@/components/CoinIcon";
 import { childPhotoUrl, dreamPhotoUrl, rewardPhotoUrl } from "@/lib/media";
+import { useT, type Dict } from "@/i18n/useT";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3012";
 
-const REJECT_REASONS = [
-  "Слишком дорого",
-  "Подумай ещё раз",
-  "Сначала нужно заслужить",
-  "Выбери что-то другое",
-];
+const dict: Dict = {
+  ru: {
+    back: "← Назад",
+    notFound: "Ребёнок не найден",
+    backToCabinet: "Вернуться в кабинет",
+    ageYears: "{age} лет",
+    streakDays: "🔥 {n} дней",
+    statStreak: "Дней подряд",
+    statSessions: "Сессий",
+    statCoinsEarned: "Монет заработано",
+    statActiveCourses: "Активных курсов",
+    loading: "Загрузка...",
+    noSessions: "Сессий пока нет",
+    noSessionsHint: "Начните первый курс, чтобы увидеть прогресс",
+    statusCompleted: "Выполнено",
+    statusPending: "В процессе",
+    statusFailed: "Не выполнено",
+    book: "Книга",
+    partN: "часть {n}",
+    recordingTitle: "Запись чтения",
+    recordingUnavailable: "Запись недоступна",
+    expertReport: "Отчёт эксперта",
+    aiReport: "AI-отчёт",
+    waitingExpert: "Аудио записано — ждёт проверки эксперта",
+    reportPreparing: "Отчёт готовится...",
+    readingScore: "Оценка чтения",
+    overallExcellent: "Отлично",
+    overallGood: "Хорошо",
+    overallRetry: "Стоит повторить",
+    metricAccuracy: "Точность",
+    metricSpeed: "Скорость",
+    metricCompleteness: "Полнота",
+    wpmUnit: "{n}/мин",
+    stumbled: "🔴 Споткнулся: {words}",
+    expertPrefix: "Эксперт:",
+    credentialsTitle: "🔑 Логин и пароль ребёнка",
+    loginLabel: "Логин",
+    passwordLabel: "Пароль",
+    copiedX: "{label} скопирован",
+    copyFailed: "Не удалось скопировать",
+    copyLoginAria: "Скопировать логин",
+    showPasswordAria: "Показать пароль",
+    hidePasswordAria: "Скрыть пароль",
+    copyPasswordAria: "Скопировать пароль",
+    passwordLegacy: "Пароль задан до обновления и недоступен для просмотра — задайте новый ниже",
+    profileUpdated: "Профиль обновлён!",
+    saveError: "Ошибка сохранения",
+    editProfileBtn: "✏️ Редактировать профиль",
+    editProfileTitle: "Редактировать профиль",
+    namePlaceholder: "Имя",
+    agePlaceholder: "Возраст",
+    cancel: "Отмена",
+    saving: "Сохранение...",
+    save: "Сохранить",
+    passwordChanged: "Пароль изменён!",
+    passwordChangeError: "Ошибка смены пароля",
+    changePasswordBtn: "🔑 Изменить пароль ребёнка",
+    changePasswordTitle: "Изменить пароль",
+    newPasswordPlaceholder: "Новый пароль (мин. 4 символа)",
+    repeatPasswordPlaceholder: "Повторите пароль",
+    passwordsMismatch: "Пароли не совпадают",
+    dreamApproved: "Мечта одобрена!",
+    error: "Ошибка",
+    dreamRejected: "Мечта отклонена",
+    dreamsToApprove: "💫 Мечты на одобрение",
+    childPrefix: "Ребёнок: {name}",
+    waitingApproval: "Ждёт одобрения",
+    setCoinPrice: "Установите стоимость в монетах:",
+    coinsPlaceholder: "Например: 1000",
+    approveBtn: "✅ Одобрить",
+    rejectReasonLabel: "Причина отказа:",
+    ownReasonPlaceholder: "Или своя причина...",
+    rejectBtn: "❌ Отклонить",
+    reason1: "Слишком дорого",
+    reason2: "Подумай ещё раз",
+    reason3: "Сначала нужно заслужить",
+    reason4: "Выбери что-то другое",
+    spendPending: "Запрошено",
+    spendDelivered: "Получено",
+    spendRejected: "Отклонено",
+    spendingHistory: "История расходов",
+    writtenOff: "Списано:",
+    noSpending: "Ребёнок ещё не тратил монеты на награды",
+    rewardFallback: "Награда",
+    tabOverview: "Обзор",
+    tabExpenses: "Расходы",
+    tabSessions: "Сессии",
+  },
+  kk: {
+    back: "← Артқа",
+    notFound: "Бала табылмады",
+    backToCabinet: "Кабинетке оралу",
+    ageYears: "{age} жаста",
+    streakDays: "🔥 {n} күн",
+    statStreak: "Қатарынан күн",
+    statSessions: "Сессиялар",
+    statCoinsEarned: "Жиналған монета",
+    statActiveCourses: "Белсенді курстар",
+    loading: "Жүктелуде...",
+    noSessions: "Әзірге сессиялар жоқ",
+    noSessionsHint: "Прогресті көру үшін алғашқы курсты бастаңыз",
+    statusCompleted: "Орындалды",
+    statusPending: "Орындалуда",
+    statusFailed: "Орындалмады",
+    book: "Кітап",
+    partN: "{n}-бөлім",
+    recordingTitle: "Оқу жазбасы",
+    recordingUnavailable: "Жазба қолжетімсіз",
+    expertReport: "Сарапшы есебі",
+    aiReport: "AI-есеп",
+    waitingExpert: "Аудио жазылды — сарапшы тексеруін күтуде",
+    reportPreparing: "Есеп дайындалуда...",
+    readingScore: "Оқу бағасы",
+    overallExcellent: "Өте жақсы",
+    overallGood: "Жақсы",
+    overallRetry: "Қайталаған жөн",
+    metricAccuracy: "Дәлдік",
+    metricSpeed: "Жылдамдық",
+    metricCompleteness: "Толықтық",
+    wpmUnit: "{n}/мин",
+    stumbled: "🔴 Мүдірген сөздер: {words}",
+    expertPrefix: "Сарапшы:",
+    credentialsTitle: "🔑 Баланың логині мен құпиясөзі",
+    loginLabel: "Логин",
+    passwordLabel: "Құпиясөз",
+    copiedX: "{label} көшірілді",
+    copyFailed: "Көшіру мүмкін болмады",
+    copyLoginAria: "Логинді көшіру",
+    showPasswordAria: "Құпиясөзді көрсету",
+    hidePasswordAria: "Құпиясөзді жасыру",
+    copyPasswordAria: "Құпиясөзді көшіру",
+    passwordLegacy: "Құпиясөз жаңартуға дейін орнатылған және көру мүмкін емес — төменде жаңасын орнатыңыз",
+    profileUpdated: "Профиль жаңартылды!",
+    saveError: "Сақтау қатесі",
+    editProfileBtn: "✏️ Профильді өңдеу",
+    editProfileTitle: "Профильді өңдеу",
+    namePlaceholder: "Аты",
+    agePlaceholder: "Жасы",
+    cancel: "Бас тарту",
+    saving: "Сақталуда...",
+    save: "Сақтау",
+    passwordChanged: "Құпиясөз өзгертілді!",
+    passwordChangeError: "Құпиясөзді ауыстыру қатесі",
+    changePasswordBtn: "🔑 Баланың құпиясөзін өзгерту",
+    changePasswordTitle: "Құпиясөзді өзгерту",
+    newPasswordPlaceholder: "Жаңа құпиясөз (кемінде 4 таңба)",
+    repeatPasswordPlaceholder: "Құпиясөзді қайталаңыз",
+    passwordsMismatch: "Құпиясөздер сәйкес келмейді",
+    dreamApproved: "Арман мақұлданды!",
+    error: "Қате",
+    dreamRejected: "Арман қабылданбады",
+    dreamsToApprove: "💫 Мақұлдауға арналған армандар",
+    childPrefix: "Бала: {name}",
+    waitingApproval: "Мақұлдауды күтуде",
+    setCoinPrice: "Монетамен құнын белгілеңіз:",
+    coinsPlaceholder: "Мысалы: 1000",
+    approveBtn: "✅ Мақұлдау",
+    rejectReasonLabel: "Бас тарту себебі:",
+    ownReasonPlaceholder: "Немесе өз себебіңіз...",
+    rejectBtn: "❌ Қабылдамау",
+    reason1: "Тым қымбат",
+    reason2: "Тағы бір ойлан",
+    reason3: "Алдымен еңбекпен табу керек",
+    reason4: "Басқа нәрсе таңда",
+    spendPending: "Сұралды",
+    spendDelivered: "Алынды",
+    spendRejected: "Қабылданбады",
+    spendingHistory: "Шығыстар тарихы",
+    writtenOff: "Есептен шығарылды:",
+    noSpending: "Бала әлі сыйлықтарға монета жұмсаған жоқ",
+    rewardFallback: "Сыйлық",
+    tabOverview: "Шолу",
+    tabExpenses: "Шығыстар",
+    tabSessions: "Сессиялар",
+  },
+};
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("ru-RU", { day: "2-digit", month: "short", year: "numeric" });
 }
 
 const STATUS_CONFIG = {
-  completed: { icon: "✅", label: "Выполнено", bg: "rgba(34,197,94,0.3)", color: "#ffffff" },
-  pending: { icon: "⏳", label: "В процессе", bg: "rgba(255,200,0,0.25)", color: "#ffffff" },
-  failed: { icon: "❌", label: "Не выполнено", bg: "rgba(239,68,68,0.35)", color: "#ffffff" },
-} satisfies Record<Session["status"], { icon: string; label: string; bg: string; color: string }>;
+  completed: { icon: "✅", bg: "rgba(34,197,94,0.3)", color: "#ffffff" },
+  pending: { icon: "⏳", bg: "rgba(255,200,0,0.25)", color: "#ffffff" },
+  failed: { icon: "❌", bg: "rgba(239,68,68,0.35)", color: "#ffffff" },
+} satisfies Record<Session["status"], { icon: string; bg: string; color: string }>;
 
 const GLASS: React.CSSProperties = {
   background: "rgba(255,255,255,0.13)",
@@ -82,6 +253,7 @@ function MetricBar({ label, light, fillPct, valueText }: { label: string; light:
 }
 
 function ReadingReport({ session }: { session: Session }) {
+  const t = useT(dict);
   const score = session.aiScore != null ? Math.round(Number(session.aiScore)) : null;
   const acc = session.readingAccuracy;
   const comp = session.readingCompleteness;
@@ -89,11 +261,11 @@ function ReadingReport({ session }: { session: Session }) {
   const errors = session.errorWords ?? [];
 
   const overallLight = lightFor(score, 8, 5);
-  const overallLabel = score == null ? "—" : score >= 8 ? "Отлично" : score >= 5 ? "Хорошо" : "Стоит повторить";
+  const overallLabel = score == null ? "—" : score >= 8 ? t("overallExcellent") : score >= 5 ? t("overallGood") : t("overallRetry");
 
   return (
     <div style={{ margin: "10px 0 0" }}>
-      <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.5)", textTransform: "uppercase" }}>Оценка чтения</p>
+      <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.5)", textTransform: "uppercase" }}>{t("readingScore")}</p>
       {/* Итоговый светофор */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
         <span style={{ fontSize: 16 }}>{LIGHT_DOT[overallLight]}</span>
@@ -103,12 +275,12 @@ function ReadingReport({ session }: { session: Session }) {
         )}
       </div>
       {/* Полоски-индикаторы */}
-      <MetricBar label="Точность" light={lightFor(acc, 85, 70)} fillPct={acc ?? 0} valueText={acc != null ? `${acc}%` : "—"} />
-      <MetricBar label="Скорость" light={lightFor(wpm, 90, 60)} fillPct={wpm != null ? (wpm / 150) * 100 : 0} valueText={wpm != null ? `${wpm}/мин` : "—"} />
-      <MetricBar label="Полнота" light={lightFor(comp, 75, 40)} fillPct={comp ?? 0} valueText={comp != null ? `${comp}%` : "—"} />
+      <MetricBar label={t("metricAccuracy")} light={lightFor(acc, 85, 70)} fillPct={acc ?? 0} valueText={acc != null ? `${acc}%` : "—"} />
+      <MetricBar label={t("metricSpeed")} light={lightFor(wpm, 90, 60)} fillPct={wpm != null ? (wpm / 150) * 100 : 0} valueText={wpm != null ? t("wpmUnit", { n: wpm }) : "—"} />
+      <MetricBar label={t("metricCompleteness")} light={lightFor(comp, 75, 40)} fillPct={comp ?? 0} valueText={comp != null ? `${comp}%` : "—"} />
       {errors.length > 0 && (
         <p style={{ margin: "8px 0 0", fontSize: 12.5, color: "rgba(255,255,255,0.75)" }}>
-          🔴 Споткнулся: {errors.map((w) => `«${w}»`).join(", ")}
+          {t("stumbled", { words: errors.map((w) => `«${w}»`).join(", ") })}
         </p>
       )}
       {session.aiFeedback && (
@@ -116,7 +288,7 @@ function ReadingReport({ session }: { session: Session }) {
       )}
       {session.expertReport && (
         <p style={{ margin: "6px 0 0", fontSize: 12.5, color: "rgba(255,255,255,0.75)" }}>
-          <span style={{ fontWeight: 800 }}>Эксперт:</span> {session.expertReport}
+          <span style={{ fontWeight: 800 }}>{t("expertPrefix")}</span> {session.expertReport}
         </p>
       )}
     </div>
@@ -124,8 +296,10 @@ function ReadingReport({ session }: { session: Session }) {
 }
 
 function SessionRow({ session, defaultOpen }: { session: Session; defaultOpen?: boolean }) {
+  const t = useT(dict);
   const [open, setOpen] = useState(!!defaultOpen);
   const cfg = STATUS_CONFIG[session.status] ?? STATUS_CONFIG.pending;
+  const statusLabel = { completed: t("statusCompleted"), pending: t("statusPending"), failed: t("statusFailed") }[session.status];
 
   return (
     <div style={{ ...GLASS, overflow: "hidden" }}>
@@ -133,12 +307,12 @@ function SessionRow({ session, defaultOpen }: { session: Session; defaultOpen?: 
         <span style={{ fontSize: 18 }}>{cfg.icon}</span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ margin: 0, fontWeight: 700, fontSize: 14, color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {session.enrollment?.challenge?.bookTitle ?? "Книга"} · часть {session.partNumber}
+            {session.enrollment?.challenge?.bookTitle ?? t("book")} · {t("partN", { n: session.partNumber })}
           </p>
           <p style={{ margin: "2px 0 0", fontSize: 12, color: "rgba(255,255,255,0.55)" }}>{formatDate(session.createdAt)}</p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 11, padding: "4px 10px", borderRadius: 9999, fontWeight: 800, background: cfg.bg, color: cfg.color }}>{cfg.label}</span>
+          <span style={{ fontSize: 11, padding: "4px 10px", borderRadius: 9999, fontWeight: 800, background: cfg.bg, color: cfg.color }}>{statusLabel}</span>
           <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 14 }}>{open ? "▲" : "▼"}</span>
         </div>
       </button>
@@ -146,33 +320,33 @@ function SessionRow({ session, defaultOpen }: { session: Session; defaultOpen?: 
         <div style={{ padding: "0 16px 14px", borderTop: "1px solid rgba(255,255,255,0.12)" }}>
           {session.audioUrl ? (
             <div style={{ margin: "10px 0" }}>
-              <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.5)", textTransform: "uppercase" }}>Запись чтения</p>
+              <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.5)", textTransform: "uppercase" }}>{t("recordingTitle")}</p>
               {/* Через backend-прокси (https), а не прямую http-ссылку MinIO — иначе mixed-content на проде */}
               {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
               <audio controls src={`${API_BASE}/sessions/${session.id}/audio`} style={{ width: "100%", height: 36 }} />
             </div>
           ) : (
-            <p style={{ margin: "10px 0 0", fontSize: 13, color: "rgba(255,255,255,0.5)" }}>Запись недоступна</p>
+            <p style={{ margin: "10px 0 0", fontSize: 13, color: "rgba(255,255,255,0.5)" }}>{t("recordingUnavailable")}</p>
           )}
           {session.readingAccuracy != null ? (
             <ReadingReport session={session} />
           ) : session.expertReport ? (
             <div>
-              <p style={{ margin: "10px 0 4px", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.5)", textTransform: "uppercase" }}>Отчёт эксперта</p>
+              <p style={{ margin: "10px 0 4px", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.5)", textTransform: "uppercase" }}>{t("expertReport")}</p>
               <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.85)", lineHeight: 1.5, background: "rgba(255,255,255,0.08)", borderRadius: 10, padding: "8px 10px" }}>
                 {session.expertReport}
               </p>
             </div>
           ) : session.aiFeedback ? (
             <div>
-              <p style={{ margin: "10px 0 4px", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.5)", textTransform: "uppercase" }}>AI-отчёт</p>
+              <p style={{ margin: "10px 0 4px", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.5)", textTransform: "uppercase" }}>{t("aiReport")}</p>
               <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.85)", lineHeight: 1.5, background: "rgba(255,255,255,0.08)", borderRadius: 10, padding: "8px 10px" }}>
                 {session.aiFeedback}
               </p>
             </div>
           ) : (
             <p style={{ margin: "8px 0 0", fontSize: 13, color: "rgba(255,255,255,0.5)" }}>
-              {session.status === "pending" ? "Аудио записано — ждёт проверки эксперта" : "Отчёт готовится..."}
+              {session.status === "pending" ? t("waitingExpert") : t("reportPreparing")}
             </p>
           )}
         </div>
@@ -197,45 +371,46 @@ const iconButtonStyle: React.CSSProperties = {
 
 /** Логин и пароль ребёнка — родитель может посмотреть и скопировать их в любой момент (задача 8). */
 function CredentialsSection({ child }: { child: Child }) {
+  const t = useT(dict);
   const [showPassword, setShowPassword] = useState(false);
 
   const copy = async (value: string, label: string) => {
     try {
       await navigator.clipboard.writeText(value);
-      toast.success(`${label} скопирован`);
+      toast.success(t("copiedX", { label }));
     } catch {
-      toast.error("Не удалось скопировать");
+      toast.error(t("copyFailed"));
     }
   };
 
   return (
     <div style={{ ...GLASS, padding: "14px 16px", marginBottom: 12 }}>
-      <p style={{ margin: "0 0 12px", fontWeight: 800, fontSize: 14, color: "#ffffff" }}>🔑 Логин и пароль ребёнка</p>
+      <p style={{ margin: "0 0 12px", fontWeight: 800, fontSize: 14, color: "#ffffff" }}>{t("credentialsTitle")}</p>
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", width: 52, flexShrink: 0 }}>Логин</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", width: 52, flexShrink: 0 }}>{t("loginLabel")}</span>
           <span style={{ flex: 1, fontFamily: "monospace", fontSize: 14, color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{child.login}</span>
-          <button onClick={() => copy(child.login, "Логин")} style={iconButtonStyle} aria-label="Скопировать логин">
+          <button onClick={() => copy(child.login, t("loginLabel"))} style={iconButtonStyle} aria-label={t("copyLoginAria")}>
             <Copy size={14} strokeWidth={2.5} />
           </button>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", width: 52, flexShrink: 0 }}>Пароль</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", width: 52, flexShrink: 0 }}>{t("passwordLabel")}</span>
           {child.password ? (
             <>
               <span style={{ flex: 1, fontFamily: "monospace", fontSize: 14, color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {showPassword ? child.password : "•".repeat(Math.max(child.password.length, 6))}
               </span>
-              <button onClick={() => setShowPassword((v) => !v)} style={iconButtonStyle} aria-label={showPassword ? "Скрыть пароль" : "Показать пароль"}>
+              <button onClick={() => setShowPassword((v) => !v)} style={iconButtonStyle} aria-label={showPassword ? t("hidePasswordAria") : t("showPasswordAria")}>
                 {showPassword ? <EyeOff size={14} strokeWidth={2.5} /> : <Eye size={14} strokeWidth={2.5} />}
               </button>
-              <button onClick={() => copy(child.password!, "Пароль")} style={iconButtonStyle} aria-label="Скопировать пароль">
+              <button onClick={() => copy(child.password!, t("passwordLabel"))} style={iconButtonStyle} aria-label={t("copyPasswordAria")}>
                 <Copy size={14} strokeWidth={2.5} />
               </button>
             </>
           ) : (
             <span style={{ flex: 1, fontSize: 12.5, color: "rgba(255,255,255,0.6)" }}>
-              Пароль задан до обновления и недоступен для просмотра — задайте новый ниже
+              {t("passwordLegacy")}
             </span>
           )}
         </div>
@@ -245,6 +420,7 @@ function CredentialsSection({ child }: { child: Child }) {
 }
 
 function EditProfileSection({ child }: { child: Child }) {
+  const t = useT(dict);
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(child.name);
@@ -266,14 +442,14 @@ function EditProfileSection({ child }: { child: Child }) {
       if (photoFile) await childrenApi.uploadPhoto(child.id, photoFile);
     },
     onSuccess: () => {
-      toast.success("Профиль обновлён!");
+      toast.success(t("profileUpdated"));
       queryClient.invalidateQueries({ queryKey: ["child", child.id] });
       queryClient.invalidateQueries({ queryKey: ["children"] });
       setOpen(false);
       setPhotoFile(null);
       setPhotoPreview(null);
     },
-    onError: () => toast.error("Ошибка сохранения"),
+    onError: () => toast.error(t("saveError")),
   });
 
   const valid = name.trim().length >= 2 && Number(age) >= 4 && Number(age) <= 16;
@@ -284,14 +460,14 @@ function EditProfileSection({ child }: { child: Child }) {
         onClick={() => setOpen(true)}
         style={{ width: "100%", ...GLASS, padding: "13px 16px", border: "1px solid rgba(255,255,255,0.2)", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 14, color: "rgba(255,255,255,0.7)" }}
       >
-        ✏️ Редактировать профиль
+        {t("editProfileBtn")}
       </button>
     );
   }
 
   return (
     <div style={{ ...GLASS, padding: "16px 16px" }}>
-      <p style={{ margin: "0 0 12px", fontWeight: 800, fontSize: 14, color: "#ffffff" }}>Редактировать профиль</p>
+      <p style={{ margin: "0 0 12px", fontWeight: 800, fontSize: 14, color: "#ffffff" }}>{t("editProfileTitle")}</p>
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <input ref={fileInputRef} type="file" accept="image/png,image/jpeg" onChange={handlePhotoChange} style={{ display: "none" }} />
         <button
@@ -316,12 +492,12 @@ function EditProfileSection({ child }: { child: Child }) {
         >
           {!photoPreview && !child.photoUrl && <Camera size={20} color="rgba(255,255,255,0.6)" strokeWidth={2} />}
         </button>
-        <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Имя" className="glass-input" />
-        <input type="number" min={4} max={16} value={age} onChange={(e) => setAge(e.target.value)} placeholder="Возраст" className="glass-input" />
+        <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder={t("namePlaceholder")} className="glass-input" />
+        <input type="number" min={4} max={16} value={age} onChange={(e) => setAge(e.target.value)} placeholder={t("agePlaceholder")} className="glass-input" />
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => { setOpen(false); setName(child.name); setAge(String(child.age)); setPhotoFile(null); setPhotoPreview(null); }} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13, background: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.7)" }}>Отмена</button>
+          <button onClick={() => { setOpen(false); setName(child.name); setAge(String(child.age)); setPhotoFile(null); setPhotoPreview(null); }} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13, background: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.7)" }}>{t("cancel")}</button>
           <button onClick={() => mutation.mutate()} disabled={!valid || mutation.isPending} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 800, fontSize: 13, background: "rgba(255,255,255,0.9)", color: "#4776e6", opacity: !valid ? 0.5 : 1 }}>
-            {mutation.isPending ? "Сохранение..." : "Сохранить"}
+            {mutation.isPending ? t("saving") : t("save")}
           </button>
         </div>
       </div>
@@ -330,6 +506,7 @@ function EditProfileSection({ child }: { child: Child }) {
 }
 
 function ChangePasswordSection({ childId }: { childId: string; parentId: string }) {
+  const t = useT(dict);
   const [newPassword, setNewPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [open, setOpen] = useState(false);
@@ -337,12 +514,12 @@ function ChangePasswordSection({ childId }: { childId: string; parentId: string 
   const mutation = useMutation({
     mutationFn: () => childrenApi.update(childId, { password: newPassword }),
     onSuccess: () => {
-      toast.success("Пароль изменён!");
+      toast.success(t("passwordChanged"));
       setNewPassword("");
       setConfirm("");
       setOpen(false);
     },
-    onError: () => toast.error("Ошибка смены пароля"),
+    onError: () => toast.error(t("passwordChangeError")),
   });
 
   const valid = newPassword.length >= 4 && newPassword === confirm;
@@ -353,22 +530,22 @@ function ChangePasswordSection({ childId }: { childId: string; parentId: string 
         onClick={() => setOpen(true)}
         style={{ width: "100%", ...GLASS, padding: "13px 16px", border: "1px solid rgba(255,255,255,0.2)", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 14, color: "rgba(255,255,255,0.7)" }}
       >
-        🔑 Изменить пароль ребёнка
+        {t("changePasswordBtn")}
       </button>
     );
   }
 
   return (
     <div style={{ ...GLASS, padding: "16px 16px" }}>
-      <p style={{ margin: "0 0 12px", fontWeight: 800, fontSize: 14, color: "#ffffff" }}>Изменить пароль</p>
+      <p style={{ margin: "0 0 12px", fontWeight: 800, fontSize: 14, color: "#ffffff" }}>{t("changePasswordTitle")}</p>
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Новый пароль (мин. 4 символа)" className="glass-input" />
-        <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="Повторите пароль" className="glass-input" style={confirm && confirm !== newPassword ? { borderColor: "rgba(239,68,68,0.6)" } : {}} />
-        {confirm && confirm !== newPassword && <p style={{ margin: 0, fontSize: 12, color: "#ffd6d6" }}>Пароли не совпадают</p>}
+        <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder={t("newPasswordPlaceholder")} className="glass-input" />
+        <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder={t("repeatPasswordPlaceholder")} className="glass-input" style={confirm && confirm !== newPassword ? { borderColor: "rgba(239,68,68,0.6)" } : {}} />
+        {confirm && confirm !== newPassword && <p style={{ margin: 0, fontSize: 12, color: "#ffd6d6" }}>{t("passwordsMismatch")}</p>}
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => { setOpen(false); setNewPassword(""); setConfirm(""); }} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13, background: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.7)" }}>Отмена</button>
+          <button onClick={() => { setOpen(false); setNewPassword(""); setConfirm(""); }} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13, background: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.7)" }}>{t("cancel")}</button>
           <button onClick={() => mutation.mutate()} disabled={!valid || mutation.isPending} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 800, fontSize: 13, background: "rgba(255,255,255,0.9)", color: "#4776e6", opacity: !valid ? 0.5 : 1 }}>
-            {mutation.isPending ? "Сохранение..." : "Сохранить"}
+            {mutation.isPending ? t("saving") : t("save")}
           </button>
         </div>
       </div>
@@ -377,6 +554,8 @@ function ChangePasswordSection({ childId }: { childId: string; parentId: string 
 }
 
 function DreamApprovalSection() {
+  const t = useT(dict);
+  const REJECT_REASONS = [t("reason1"), t("reason2"), t("reason3"), t("reason4")];
   const queryClient = useQueryClient();
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [targetCoins, setTargetCoins] = useState("");
@@ -391,21 +570,21 @@ function DreamApprovalSection() {
 
   const approveMutation = useMutation({
     mutationFn: ({ id, coins }: { id: string; coins: number }) => dreamsApi.approve(id, coins),
-    onSuccess: () => { toast.success("Мечта одобрена!"); setApprovingId(null); setTargetCoins(""); queryClient.invalidateQueries({ queryKey: ["dreams-pending"] }); },
-    onError: () => toast.error("Ошибка"),
+    onSuccess: () => { toast.success(t("dreamApproved")); setApprovingId(null); setTargetCoins(""); queryClient.invalidateQueries({ queryKey: ["dreams-pending"] }); },
+    onError: () => toast.error(t("error")),
   });
 
   const rejectMutation = useMutation({
     mutationFn: ({ id, reason }: { id: string; reason: string }) => dreamsApi.reject(id, reason),
-    onSuccess: () => { toast.success("Мечта отклонена"); setRejectingId(null); setRejectReason(""); setCustomReason(""); queryClient.invalidateQueries({ queryKey: ["dreams-pending"] }); },
-    onError: () => toast.error("Ошибка"),
+    onSuccess: () => { toast.success(t("dreamRejected")); setRejectingId(null); setRejectReason(""); setCustomReason(""); queryClient.invalidateQueries({ queryKey: ["dreams-pending"] }); },
+    onError: () => toast.error(t("error")),
   });
 
   if (pendingDreams.length === 0) return null;
 
   return (
     <div style={{ marginBottom: 20 }}>
-      <h2 style={{ margin: "0 0 12px", fontSize: 15, fontWeight: 900, color: "#ffffff" }}>💫 Мечты на одобрение</h2>
+      <h2 style={{ margin: "0 0 12px", fontSize: 15, fontWeight: 900, color: "#ffffff" }}>{t("dreamsToApprove")}</h2>
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {pendingDreams.map((dream: any) => (
           <div key={dream.id} style={{ ...GLASS, padding: "14px 16px" }}>
@@ -417,25 +596,25 @@ function DreamApprovalSection() {
               )}
               <div>
                 <p style={{ margin: 0, fontWeight: 800, color: "#ffffff" }}>{dream.name}</p>
-                <p style={{ margin: "2px 0 4px", fontSize: 12, color: "rgba(255,255,255,0.6)" }}>Ребёнок: {dream.child?.name ?? ""}</p>
-                <span style={{ fontSize: 11, padding: "3px 8px", borderRadius: 9999, fontWeight: 800, background: "rgba(255,255,255,0.2)", color: "#ffffff" }}>Ждёт одобрения</span>
+                <p style={{ margin: "2px 0 4px", fontSize: 12, color: "rgba(255,255,255,0.6)" }}>{t("childPrefix", { name: dream.child?.name ?? "" })}</p>
+                <span style={{ fontSize: 11, padding: "3px 8px", borderRadius: 9999, fontWeight: 800, background: "rgba(255,255,255,0.2)", color: "#ffffff" }}>{t("waitingApproval")}</span>
               </div>
             </div>
 
             {approvingId === dream.id ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.6)" }}>Установите стоимость в монетах:</p>
-                <input type="number" min={1} value={targetCoins} onChange={(e) => setTargetCoins(e.target.value)} placeholder="Например: 1000" className="glass-input" />
+                <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.6)" }}>{t("setCoinPrice")}</p>
+                <input type="number" min={1} value={targetCoins} onChange={(e) => setTargetCoins(e.target.value)} placeholder={t("coinsPlaceholder")} className="glass-input" />
                 <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={() => setApprovingId(null)} style={{ flex: 1, padding: "11px 0", borderRadius: 12, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13, background: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.7)" }}>Отмена</button>
+                  <button onClick={() => setApprovingId(null)} style={{ flex: 1, padding: "11px 0", borderRadius: 12, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13, background: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.7)" }}>{t("cancel")}</button>
                   <button onClick={() => approveMutation.mutate({ id: dream.id, coins: Number(targetCoins) })} disabled={!targetCoins || Number(targetCoins) < 1 || approveMutation.isPending} style={{ flex: 1, padding: "11px 0", borderRadius: 12, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13, background: "rgba(34,197,94,0.7)", color: "#ffffff", opacity: !targetCoins || Number(targetCoins) < 1 ? 0.5 : 1 }}>
-                    {approveMutation.isPending ? "..." : "✅ Одобрить"}
+                    {approveMutation.isPending ? "..." : t("approveBtn")}
                   </button>
                 </div>
               </div>
             ) : rejectingId === dream.id ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.6)" }}>Причина отказа:</p>
+                <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.6)" }}>{t("rejectReasonLabel")}</p>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                   {REJECT_REASONS.map((r) => (
                     <button key={r} onClick={() => setRejectReason(r)} style={{ padding: "6px 10px", borderRadius: 9999, border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, background: rejectReason === r ? "rgba(239,68,68,0.7)" : "rgba(255,255,255,0.15)", color: "#ffffff" }}>
@@ -443,18 +622,18 @@ function DreamApprovalSection() {
                     </button>
                   ))}
                 </div>
-                <input type="text" value={customReason} onChange={(e) => { setCustomReason(e.target.value); setRejectReason(""); }} placeholder="Или своя причина..." className="glass-input" />
+                <input type="text" value={customReason} onChange={(e) => { setCustomReason(e.target.value); setRejectReason(""); }} placeholder={t("ownReasonPlaceholder")} className="glass-input" />
                 <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={() => { setRejectingId(null); setRejectReason(""); setCustomReason(""); }} style={{ flex: 1, padding: "11px 0", borderRadius: 12, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13, background: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.7)" }}>Отмена</button>
+                  <button onClick={() => { setRejectingId(null); setRejectReason(""); setCustomReason(""); }} style={{ flex: 1, padding: "11px 0", borderRadius: 12, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13, background: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.7)" }}>{t("cancel")}</button>
                   <button onClick={() => rejectMutation.mutate({ id: dream.id, reason: customReason || rejectReason })} disabled={(!rejectReason && !customReason) || rejectMutation.isPending} style={{ flex: 1, padding: "11px 0", borderRadius: 12, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13, background: "rgba(239,68,68,0.7)", color: "#ffffff", opacity: !rejectReason && !customReason ? 0.5 : 1 }}>
-                    {rejectMutation.isPending ? "..." : "❌ Отклонить"}
+                    {rejectMutation.isPending ? "..." : t("rejectBtn")}
                   </button>
                 </div>
               </div>
             ) : (
               <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={() => setApprovingId(dream.id)} style={{ flex: 1, padding: "11px 0", borderRadius: 12, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13, background: "rgba(34,197,94,0.7)", color: "#ffffff" }}>✅ Одобрить</button>
-                <button onClick={() => setRejectingId(dream.id)} style={{ flex: 1, padding: "11px 0", borderRadius: 12, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13, background: "rgba(239,68,68,0.5)", color: "#ffffff" }}>❌ Отклонить</button>
+                <button onClick={() => setApprovingId(dream.id)} style={{ flex: 1, padding: "11px 0", borderRadius: 12, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13, background: "rgba(34,197,94,0.7)", color: "#ffffff" }}>{t("approveBtn")}</button>
+                <button onClick={() => setRejectingId(dream.id)} style={{ flex: 1, padding: "11px 0", borderRadius: 12, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13, background: "rgba(239,68,68,0.5)", color: "#ffffff" }}>{t("rejectBtn")}</button>
               </div>
             )}
           </div>
@@ -464,14 +643,15 @@ function DreamApprovalSection() {
   );
 }
 
-const SPEND_STATUS: Record<RewardRequest["status"], { label: string; bg: string }> = {
-  pending: { label: "Запрошено", bg: "rgba(255,200,0,0.28)" },
-  delivered: { label: "Получено", bg: "rgba(34,197,94,0.32)" },
-  rejected: { label: "Отклонено", bg: "rgba(239,68,68,0.32)" },
+const SPEND_STATUS: Record<RewardRequest["status"], { bg: string }> = {
+  pending: { bg: "rgba(255,200,0,0.28)" },
+  delivered: { bg: "rgba(34,197,94,0.32)" },
+  rejected: { bg: "rgba(239,68,68,0.32)" },
 };
 
 /** История расходов монет ребёнка: на что потрачено, сколько, дата, статус (задача 12). */
 function SpendingHistory({ childId }: { childId: string }) {
+  const t = useT(dict);
   const { data: allRequests = [], isLoading } = useQuery<RewardRequest[]>({
     queryKey: ["reward-requests"],
     queryFn: rewardsApi.listRequests,
@@ -487,25 +667,26 @@ function SpendingHistory({ childId }: { childId: string }) {
   return (
     <div style={{ marginBottom: 24 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-        <h2 style={{ margin: 0, fontSize: 15, fontWeight: 900, color: "#ffffff" }}>История расходов</h2>
+        <h2 style={{ margin: 0, fontSize: 15, fontWeight: 900, color: "#ffffff" }}>{t("spendingHistory")}</h2>
         {requests.length > 0 && (
           <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)" }}>
-            Списано: <CoinIcon size={12} /> {totalSpent}
+            {t("writtenOff")} <CoinIcon size={12} /> {totalSpent}
           </span>
         )}
       </div>
       {isLoading ? (
-        <p style={{ fontSize: 13, color: "rgba(255,255,255,0.6)" }}>Загрузка...</p>
+        <p style={{ fontSize: 13, color: "rgba(255,255,255,0.6)" }}>{t("loading")}</p>
       ) : requests.length === 0 ? (
         <div style={{ background: "rgba(255,255,255,0.1)", borderRadius: 18, padding: "24px 16px", textAlign: "center" }}>
           <p style={{ fontSize: 28, margin: "0 0 8px" }}>🪙</p>
-          <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.65)" }}>Ребёнок ещё не тратил монеты на награды</p>
+          <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.65)" }}>{t("noSpending")}</p>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {requests.map((req) => {
             const cfg = SPEND_STATUS[req.status];
-            const rewardName = req.reward?.name ?? "Награда";
+            const spendLabel = { pending: t("spendPending"), delivered: t("spendDelivered"), rejected: t("spendRejected") }[req.status];
+            const rewardName = req.reward?.name ?? t("rewardFallback");
             return (
               <div key={req.id} style={{ ...GLASS, padding: "13px 16px", display: "flex", alignItems: "center", gap: 12 }}>
                 <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0, overflow: "hidden" }}>
@@ -517,7 +698,7 @@ function SpendingHistory({ childId }: { childId: string }) {
                 </div>
                 <div style={{ textAlign: "right", flexShrink: 0 }}>
                   <p style={{ margin: 0, fontWeight: 900, color: "#ffffff", fontSize: 15 }}>−{req.coinsAmount} <CoinIcon size={13} /></p>
-                  <span style={{ display: "inline-block", marginTop: 4, fontSize: 10.5, padding: "3px 8px", borderRadius: 9999, fontWeight: 800, background: cfg.bg, color: "#ffffff" }}>{cfg.label}</span>
+                  <span style={{ display: "inline-block", marginTop: 4, fontSize: 10.5, padding: "3px 8px", borderRadius: 9999, fontWeight: 800, background: cfg.bg, color: "#ffffff" }}>{spendLabel}</span>
                 </div>
               </div>
             );
@@ -529,14 +710,16 @@ function SpendingHistory({ childId }: { childId: string }) {
 }
 
 const TABS = [
-  { key: "overview", label: "Обзор" },
-  { key: "expenses", label: "Расходы" },
-  { key: "sessions", label: "Сессии" },
+  { key: "overview" },
+  { key: "expenses" },
+  { key: "sessions" },
 ] as const;
 type TabKey = (typeof TABS)[number]["key"];
 
 /** Вкладки, чтобы не скроллить всю страницу ради истории расходов/сессий (задача 4). */
 function TabBar({ active, onChange }: { active: TabKey; onChange: (key: TabKey) => void }) {
+  const t = useT(dict);
+  const tabLabels = { overview: t("tabOverview"), expenses: t("tabExpenses"), sessions: t("tabSessions") };
   return (
     <div style={{ display: "flex", background: "rgba(0,0,0,0.2)", borderRadius: 9999, padding: 4, marginBottom: 20 }}>
       {TABS.map((tab) => {
@@ -560,7 +743,7 @@ function TabBar({ active, onChange }: { active: TabKey; onChange: (key: TabKey) 
               transition: "all 0.18s",
             }}
           >
-            {tab.label}
+            {tabLabels[tab.key]}
           </button>
         );
       })}
@@ -569,6 +752,7 @@ function TabBar({ active, onChange }: { active: TabKey; onChange: (key: TabKey) 
 }
 
 export default function ParentChildProgressPage() {
+  const t = useT(dict);
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const childId = params.id;
@@ -610,7 +794,7 @@ export default function ParentChildProgressPage() {
         onClick={() => router.push("/parent/cabinet")}
         style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.75)", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", marginBottom: 20, padding: 0 }}
       >
-        ← Назад
+        {t("back")}
       </button>
 
       {isLoading ? (
@@ -622,9 +806,9 @@ export default function ParentChildProgressPage() {
       ) : !child ? (
         <div style={{ textAlign: "center", padding: "64px 0" }}>
           <p style={{ fontSize: 40, margin: "0 0 12px" }}>🔍</p>
-          <p style={{ margin: "0 0 16px", fontWeight: 700, color: "#ffffff" }}>Ребёнок не найден</p>
+          <p style={{ margin: "0 0 16px", fontWeight: 700, color: "#ffffff" }}>{t("notFound")}</p>
           <button onClick={() => router.push("/parent/cabinet")} style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.75)", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}>
-            Вернуться в кабинет
+            {t("backToCabinet")}
           </button>
         </div>
       ) : (
@@ -640,8 +824,8 @@ export default function ParentChildProgressPage() {
             <div>
               <h1 style={{ margin: "0 0 4px", fontSize: 24, fontWeight: 900, color: "#ffffff" }}>{child.name}</h1>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <span style={{ fontSize: 13, color: "rgba(255,255,255,0.65)" }}>{child.age} лет</span>
-                <span style={{ fontSize: 13, fontWeight: 700, color: "#ffffff" }}>🔥 {child.streak} дней</span>
+                <span style={{ fontSize: 13, color: "rgba(255,255,255,0.65)" }}>{t("ageYears", { age: child.age })}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#ffffff" }}>{t("streakDays", { n: child.streak })}</span>
                 {balance != null && (
                   <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.85)" }}><CoinIcon size={13} /> {balance.balance ?? 0}</span>
                 )}
@@ -667,10 +851,10 @@ export default function ParentChildProgressPage() {
 
               {stats && (
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                  <StatCard emoji="🔥" value={stats.streak} label="Дней подряд" highlight />
-                  <StatCard emoji="📚" value={stats.totalSessions} label="Сессий" />
-                  <StatCard emoji={<CoinIcon size={22} />} value={stats.totalCoinsEarned} label="Монет заработано" />
-                  <StatCard emoji="📖" value={stats.activeEnrollments} label="Активных курсов" />
+                  <StatCard emoji="🔥" value={stats.streak} label={t("statStreak")} highlight />
+                  <StatCard emoji="📚" value={stats.totalSessions} label={t("statSessions")} />
+                  <StatCard emoji={<CoinIcon size={22} />} value={stats.totalCoinsEarned} label={t("statCoinsEarned")} />
+                  <StatCard emoji="📖" value={stats.activeEnrollments} label={t("statActiveCourses")} />
                 </div>
               )}
             </>
@@ -681,12 +865,12 @@ export default function ParentChildProgressPage() {
           {activeTab === "sessions" && (
             <div>
               {loadingSessions ? (
-                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.6)" }}>Загрузка...</p>
+                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.6)" }}>{t("loading")}</p>
               ) : sortedSessions.length === 0 ? (
                 <div style={{ background: "rgba(255,255,255,0.1)", borderRadius: 18, padding: "32px 16px", textAlign: "center" }}>
                   <p style={{ fontSize: 40, margin: "0 0 8px" }}>📭</p>
-                  <p style={{ margin: "0 0 4px", fontWeight: 700, color: "#ffffff" }}>Сессий пока нет</p>
-                  <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.6)" }}>Начните первый курс, чтобы увидеть прогресс</p>
+                  <p style={{ margin: "0 0 4px", fontWeight: 700, color: "#ffffff" }}>{t("noSessions")}</p>
+                  <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.6)" }}>{t("noSessionsHint")}</p>
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>

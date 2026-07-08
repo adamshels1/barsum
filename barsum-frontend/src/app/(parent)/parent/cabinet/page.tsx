@@ -14,13 +14,92 @@ import { paymentsApi } from "@/lib/api/payments";
 import { useAuthStore } from "@/stores/auth-store";
 import { CoinIcon } from "@/components/CoinIcon";
 import { Portal } from "@/components/Portal";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import type { Payment } from "@/types";
 import { childPhotoUrl } from "@/lib/media";
+import { useT, type Dict } from "@/i18n/useT";
 
-const PAYMENT_STATUS_LABEL: Record<Payment["status"], string> = {
-  confirmed: "Оплачено",
-  pending: "Ожидает",
-  rejected: "Отклонено",
+const dict: Dict = {
+  ru: {
+    paid: "Оплачено",
+    pending: "Ожидает",
+    rejected: "Отклонено",
+    min2: "Минимум 2 символа",
+    loginRule: "Только a-z, 0-9, _",
+    min4: "Минимум 4 символа",
+    photoFailed: "Не удалось загрузить фото, но профиль создан",
+    createError: "Ошибка создания профиля",
+    familyCabinet: "Семейный кабинет",
+    parentFallback: "Родитель",
+    langLabel: "Язык",
+    logout: "Выйти",
+    coinBalance: "Баланс монет",
+    rate: "1 ₸ = 10 монет",
+    catalog: "Каталог",
+    rewards: "Награды",
+    children: "Дети",
+    add: "+ Добавить",
+    loading: "Загрузка...",
+    noChildren: "Ещё нет детей",
+    childInfo: "{age} лет · 🔥 {streak} дней",
+    myPurchases: "Мои покупки",
+    challengeFallback: "Задание",
+    forChild: "Для {name} · {date}",
+    childFallback: "ребёнка",
+    noPurchases: "Покупок пока нет",
+    profileCreated: "Профиль создан!",
+    name: "Имя",
+    login: "Логин",
+    password: "Пароль",
+    done: "Готово",
+    newChild: "Новый ребёнок",
+    photoSelected: "Фото выбрано",
+    photoOptional: "Фото ребёнка (необязательно)",
+    agePlaceholder: "Возраст",
+    loginPlaceholder: "Логин (a-z, 0-9, _)",
+    creating: "Создаём...",
+    create: "Создать",
+  },
+  kk: {
+    paid: "Төленді",
+    pending: "Күтуде",
+    rejected: "Қабылданбады",
+    min2: "Кемінде 2 таңба",
+    loginRule: "Тек a-z, 0-9, _",
+    min4: "Кемінде 4 таңба",
+    photoFailed: "Фотоны жүктеу мүмкін болмады, бірақ профиль құрылды",
+    createError: "Профильді құру қатесі",
+    familyCabinet: "Отбасылық кабинет",
+    parentFallback: "Ата-ана",
+    langLabel: "Тіл",
+    logout: "Шығу",
+    coinBalance: "Монета балансы",
+    rate: "1 ₸ = 10 монета",
+    catalog: "Каталог",
+    rewards: "Сыйлықтар",
+    children: "Балалар",
+    add: "+ Қосу",
+    loading: "Жүктелуде...",
+    noChildren: "Әзірге балалар жоқ",
+    childInfo: "{age} жас · 🔥 {streak} күн",
+    myPurchases: "Менің сатып алуларым",
+    challengeFallback: "Тапсырма",
+    forChild: "{name} үшін · {date}",
+    childFallback: "бала",
+    noPurchases: "Әзірге сатып алулар жоқ",
+    profileCreated: "Профиль құрылды!",
+    name: "Аты",
+    login: "Логин",
+    password: "Құпиясөз",
+    done: "Дайын",
+    newChild: "Жаңа бала",
+    photoSelected: "Фото таңдалды",
+    photoOptional: "Бала фотосы (міндетті емес)",
+    agePlaceholder: "Жасы",
+    loginPlaceholder: "Логин (a-z, 0-9, _)",
+    creating: "Құрылуда...",
+    create: "Құру",
+  },
 };
 
 const PAYMENT_STATUS_COLOR: Record<Payment["status"], string> = {
@@ -33,15 +112,6 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("ru-RU", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-const childSchema = z.object({
-  name: z.string().min(2, "Минимум 2 символа"),
-  age: z.coerce.number().min(4).max(16),
-  login: z.string().min(3).regex(/^[a-z0-9_]+$/, "Только a-z, 0-9, _"),
-  password: z.string().min(4, "Минимум 4 символа"),
-});
-
-type ChildForm = z.infer<typeof childSchema>;
-
 const GLASS: React.CSSProperties = {
   background: "rgba(255,255,255,0.13)",
   backdropFilter: "blur(20px)",
@@ -51,10 +121,26 @@ const GLASS: React.CSSProperties = {
 };
 
 export default function ParentCabinetPage() {
+  const t = useT(dict);
   const router = useRouter();
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
   const clearAuth = useAuthStore((s) => s.clearAuth);
+
+  const PAYMENT_STATUS_LABEL: Record<Payment["status"], string> = {
+    confirmed: t("paid"),
+    pending: t("pending"),
+    rejected: t("rejected"),
+  };
+
+  const childSchema = z.object({
+    name: z.string().min(2, t("min2")),
+    age: z.coerce.number().min(4).max(16),
+    login: z.string().min(3).regex(/^[a-z0-9_]+$/, t("loginRule")),
+    password: z.string().min(4, t("min4")),
+  });
+  type ChildForm = z.infer<typeof childSchema>;
+
   const [showModal, setShowModal] = useState(false);
   const [newCreds, setNewCreds] = useState<{ login: string; password: string; name: string } | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
@@ -100,7 +186,7 @@ export default function ParentCabinetPage() {
         try {
           await childrenApi.uploadPhoto(created.id, photoFile);
         } catch {
-          toast.error("Не удалось загрузить фото, но профиль создан");
+          toast.error(t("photoFailed"));
         }
       }
       queryClient.invalidateQueries({ queryKey: ["children"] });
@@ -109,7 +195,7 @@ export default function ParentCabinetPage() {
       resetPhoto();
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.message || "Ошибка создания профиля");
+      toast.error(err.response?.data?.message || t("createError"));
     },
   });
 
@@ -127,35 +213,43 @@ export default function ParentCabinetPage() {
       >
         <div>
           <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.65)", textTransform: "uppercase", letterSpacing: "0.1em" }}>
-            Семейный кабинет
+            {t("familyCabinet")}
           </p>
           <h1 style={{ margin: "4px 0 0", fontSize: 24, fontWeight: 900, color: "#ffffff" }}>
-            {user?.name || "Родитель"} 👋
+            {user?.name || t("parentFallback")} 👋
           </h1>
         </div>
-        <button
-          onClick={handleLogout}
-          className="glass-chip"
-          style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", border: "none", cursor: "pointer", fontFamily: "inherit", color: "#ffffff", fontWeight: 700, fontSize: 13 }}
-        >
-          <LogOut size={14} strokeWidth={2.5} />
-          Выйти
-        </button>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
+            <span style={{ fontSize: 10, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              {t("langLabel")}
+            </span>
+            <LanguageSwitcher />
+          </div>
+          <button
+            onClick={handleLogout}
+            className="glass-chip"
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", border: "none", cursor: "pointer", fontFamily: "inherit", color: "#ffffff", fontWeight: 700, fontSize: 13 }}
+          >
+            <LogOut size={14} strokeWidth={2.5} />
+            {t("logout")}
+          </button>
+        </div>
       </div>
 
       <div style={{ padding: "20px 20px 0" }}>
         {/* Balance card */}
         <div style={{ ...GLASS, padding: "20px 20px", marginBottom: 16, background: "rgba(255,255,255,0.2)" }}>
-          <p style={{ margin: "0 0 4px", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)" }}>Баланс монет</p>
+          <p style={{ margin: "0 0 4px", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)" }}>{t("coinBalance")}</p>
           <p style={{ margin: 0, fontSize: 32, fontWeight: 900, color: "#ffffff" }}>{balance?.balance ?? "—"} <CoinIcon size={26} /></p>
-          <p style={{ margin: "4px 0 0", fontSize: 12, color: "rgba(255,255,255,0.55)" }}>1 ₸ = 10 монет</p>
+          <p style={{ margin: "4px 0 0", fontSize: 12, color: "rgba(255,255,255,0.55)" }}>{t("rate")}</p>
         </div>
 
         {/* Navigation */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
           {[
-            { label: "Каталог", Icon: BookOpen, href: "/parent/home" },
-            { label: "Награды", Icon: Gift, href: "/parent/rewards" },
+            { label: t("catalog"), Icon: BookOpen, href: "/parent/home" },
+            { label: t("rewards"), Icon: Gift, href: "/parent/rewards" },
           ].map((item) => (
             <button
               key={item.href}
@@ -171,22 +265,22 @@ export default function ParentCabinetPage() {
         {/* Children section */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
           <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-            Дети
+            {t("children")}
           </p>
           <button
             onClick={() => { setShowModal(true); setNewCreds(null); }}
             style={{ fontSize: 13, fontWeight: 700, padding: "6px 14px", borderRadius: 9999, border: "none", cursor: "pointer", fontFamily: "inherit", background: "rgba(255,255,255,0.9)", color: "#4776e6" }}
           >
-            + Добавить
+            {t("add")}
           </button>
         </div>
 
         {isLoading ? (
-          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.6)" }}>Загрузка...</p>
+          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.6)" }}>{t("loading")}</p>
         ) : children.length === 0 ? (
           <div style={{ ...GLASS, padding: 32, textAlign: "center" }}>
             <p style={{ fontSize: 40, margin: "0 0 8px" }}>👶</p>
-            <p style={{ margin: 0, color: "rgba(255,255,255,0.7)" }}>Ещё нет детей</p>
+            <p style={{ margin: 0, color: "rgba(255,255,255,0.7)" }}>{t("noChildren")}</p>
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -206,7 +300,7 @@ export default function ParentCabinetPage() {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ margin: 0, fontWeight: 800, color: "#ffffff", fontSize: 15 }}>{child.name}</p>
                   <p style={{ margin: "2px 0 0", fontSize: 13, color: "rgba(255,255,255,0.6)" }}>
-                    {child.age} лет · 🔥 {child.streak} дней
+                    {t("childInfo", { age: child.age, streak: child.streak })}
                   </p>
                 </div>
                 <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 20 }}>›</span>
@@ -218,14 +312,14 @@ export default function ParentCabinetPage() {
         {/* Purchases section */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "24px 0 12px" }}>
           <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-            Мои покупки
+            {t("myPurchases")}
           </p>
         </div>
 
         {payments.length === 0 ? (
           <div style={{ ...GLASS, padding: 28, textAlign: "center" }}>
             <ShoppingBag size={32} color="rgba(255,255,255,0.5)" strokeWidth={1.5} style={{ margin: "0 auto 8px" }} />
-            <p style={{ margin: 0, color: "rgba(255,255,255,0.7)", fontSize: 14 }}>Покупок пока нет</p>
+            <p style={{ margin: 0, color: "rgba(255,255,255,0.7)", fontSize: 14 }}>{t("noPurchases")}</p>
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -236,10 +330,10 @@ export default function ParentCabinetPage() {
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ margin: 0, fontWeight: 800, color: "#ffffff", fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {payment.challenge?.bookTitle || payment.challenge?.title || "Задание"}
+                    {payment.challenge?.bookTitle || payment.challenge?.title || t("challengeFallback")}
                   </p>
                   <p style={{ margin: "2px 0 0", fontSize: 12.5, color: "rgba(255,255,255,0.6)" }}>
-                    Для {payment.child?.name ?? "ребёнка"} · {formatDate(payment.createdAt)}
+                    {t("forChild", { name: payment.child?.name ?? t("childFallback"), date: formatDate(payment.createdAt) })}
                   </p>
                 </div>
                 <div style={{ textAlign: "right", flexShrink: 0 }}>
@@ -268,12 +362,12 @@ export default function ParentCabinetPage() {
             {newCreds ? (
               <div style={{ textAlign: "center" }}>
                 <div style={{ fontSize: 40, marginBottom: 12 }}>✅</div>
-                <h3 style={{ margin: "0 0 8px", fontSize: 20, fontWeight: 900, color: "#ffffff" }}>Профиль создан!</h3>
+                <h3 style={{ margin: "0 0 8px", fontSize: 20, fontWeight: 900, color: "#ffffff" }}>{t("profileCreated")}</h3>
                 <div style={{ background: "rgba(255,255,255,0.1)", borderRadius: 16, padding: "16px 16px", marginBottom: 16, textAlign: "left" }}>
                   {[
-                    { label: "Имя", value: newCreds.name, mono: false },
-                    { label: "Логин", value: newCreds.login, mono: true },
-                    { label: "Пароль", value: newCreds.password, mono: true },
+                    { label: t("name"), value: newCreds.name, mono: false },
+                    { label: t("login"), value: newCreds.login, mono: true },
+                    { label: t("password"), value: newCreds.password, mono: true },
                   ].map(({ label, value, mono }) => (
                     <div key={label} style={{ marginBottom: 10 }}>
                       <p style={{ margin: "0 0 2px", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.5)", textTransform: "uppercase" }}>{label}</p>
@@ -286,12 +380,12 @@ export default function ParentCabinetPage() {
                   className="btn-white"
                   style={{ color: "#4776e6" }}
                 >
-                  Готово
+                  {t("done")}
                 </button>
               </div>
             ) : (
               <>
-                <h3 style={{ margin: "0 0 20px", fontSize: 20, fontWeight: 900, color: "#ffffff" }}>Новый ребёнок</h3>
+                <h3 style={{ margin: "0 0 20px", fontSize: 20, fontWeight: 900, color: "#ffffff" }}>{t("newChild")}</h3>
                 <form onSubmit={handleSubmit((d) => createMutation.mutate(d))} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   <input
                     ref={fileInputRef}
@@ -308,13 +402,13 @@ export default function ParentCabinetPage() {
                     {!photoPreview && <Camera size={22} color="rgba(255,255,255,0.6)" strokeWidth={2} />}
                   </button>
                   <p style={{ margin: "-8px 0 4px", fontSize: 12, color: "rgba(255,255,255,0.5)", textAlign: "center" }}>
-                    {photoPreview ? "Фото выбрано" : "Фото ребёнка (необязательно)"}
+                    {photoPreview ? t("photoSelected") : t("photoOptional")}
                   </p>
                   {[
-                    { name: "name", placeholder: "Имя", type: "text" },
-                    { name: "age", placeholder: "Возраст", type: "number" },
-                    { name: "login", placeholder: "Логин (a-z, 0-9, _)", type: "text" },
-                    { name: "password", placeholder: "Пароль", type: "password" },
+                    { name: "name", placeholder: t("name"), type: "text" },
+                    { name: "age", placeholder: t("agePlaceholder"), type: "number" },
+                    { name: "login", placeholder: t("loginPlaceholder"), type: "text" },
+                    { name: "password", placeholder: t("password"), type: "password" },
                   ].map((f) => (
                     <div key={f.name}>
                       <input
@@ -336,7 +430,7 @@ export default function ParentCabinetPage() {
                     className="btn-white"
                     style={{ marginTop: 4, color: "#4776e6" }}
                   >
-                    {createMutation.isPending ? "Создаём..." : "Создать"}
+                    {createMutation.isPending ? t("creating") : t("create")}
                   </button>
                 </form>
               </>

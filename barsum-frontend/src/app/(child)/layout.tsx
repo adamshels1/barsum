@@ -7,17 +7,32 @@ import { useAuthStore } from "@/stores/auth-store";
 import { useQuery } from "@tanstack/react-query";
 import { coinsApi } from "@/lib/api/coins";
 import { CoinIcon } from "@/components/CoinIcon";
+import { useT, type Dict } from "@/i18n/useT";
 
 const BG = "linear-gradient(135deg, #4776e6 0%, #6a3de8 60%, #8e54e9 100%)";
 
+const dict: Dict = {
+  ru: {
+    tasks: "Задания",
+    shop: "Магазин",
+    reader: "Читатель",
+  },
+  kk: {
+    tasks: "Тапсырмалар",
+    shop: "Дүкен",
+    reader: "Оқырман",
+  },
+};
+
 const tabs = [
-  { label: "Задания", Icon: BookOpen, href: "/child/home", match: "/child/home" },
-  { label: "Магазин", Icon: ShoppingBag, href: "/child/shop", match: "/child/shop" },
-];
+  { labelKey: "tasks", Icon: BookOpen, href: "/child/home", match: "/child/home" },
+  { labelKey: "shop", Icon: ShoppingBag, href: "/child/shop", match: "/child/shop" },
+] as const;
 
 function ChildLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const t = useT(dict);
   const user = useAuthStore((s) => s.user);
   const isSession = pathname?.includes("/child/session");
 
@@ -57,7 +72,7 @@ function ChildLayoutInner({ children }: { children: React.ReactNode }) {
           }}
         >
           <p style={{ fontWeight: 900, fontSize: 16, color: "#ffffff", margin: 0 }}>
-            {user?.name?.split(" ")[0] || "Читатель"} 👋
+            {user?.name?.split(" ")[0] || t("reader")} 👋
           </p>
           <div className="glass-chip" style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px" }}>
             <CoinIcon size={16} />
@@ -107,7 +122,7 @@ function ChildLayoutInner({ children }: { children: React.ReactNode }) {
                   cursor: "pointer",
                   padding: 4,
                 }}
-                aria-label={tab.label}
+                aria-label={t(tab.labelKey)}
               >
                 <div
                   style={{
@@ -124,7 +139,7 @@ function ChildLayoutInner({ children }: { children: React.ReactNode }) {
                   <Icon size={20} strokeWidth={isActive ? 2.5 : 2} color={isActive ? "#ffffff" : "rgba(255,255,255,0.5)"} />
                 </div>
                 <span style={{ fontSize: 11, fontWeight: isActive ? 800 : 600, color: isActive ? "#ffffff" : "rgba(255,255,255,0.5)", transition: "all 0.15s" }}>
-                  {tab.label}
+                  {t(tab.labelKey)}
                 </span>
               </button>
             );

@@ -7,6 +7,54 @@ import { useState } from "react";
 import { adminApi } from "@/lib/api/admin";
 import { apiClient } from "@/lib/api/client";
 import { CoinIcon } from "@/components/CoinIcon";
+import { useT, type Dict } from "@/i18n/useT";
+
+const dict: Dict = {
+  ru: {
+    tabModeration: "На модерации",
+    tabPublished: "Опубликованы",
+    tabRejected: "Отклонены",
+    statusModeration: "На модерации",
+    statusPublished: "Опубликовано",
+    statusRejected: "Отклонено",
+    back: "Назад",
+    title: "Модерация заданий",
+    loadError: "Ошибка загрузки. Попробуйте ещё раз.",
+    empty: "Нет заданий",
+    years: "лет",
+    parts: "{n} частей",
+    price: "Цена",
+    reward: "Награда",
+    publish: "Опубликовать",
+    reject: "Отклонить",
+    rejectPlaceholder: "Причина отклонения (необязательно)",
+    rejecting: "Отклоняем...",
+    confirmReject: "Подтвердить отклонение",
+    cancel: "Отмена",
+  },
+  kk: {
+    tabModeration: "Модерацияда",
+    tabPublished: "Жарияланған",
+    tabRejected: "Қабылданбаған",
+    statusModeration: "Модерацияда",
+    statusPublished: "Жарияланды",
+    statusRejected: "Қабылданбады",
+    back: "Артқа",
+    title: "Тапсырмаларды модерациялау",
+    loadError: "Жүктеу қатесі. Қайта көріңіз.",
+    empty: "Тапсырмалар жоқ",
+    years: "жас",
+    parts: "{n} бөлім",
+    price: "Баға",
+    reward: "Сыйлық",
+    publish: "Жариялау",
+    reject: "Қабылдамау",
+    rejectPlaceholder: "Қабылдамау себебі (міндетті емес)",
+    rejecting: "Қабылданбауда...",
+    confirmReject: "Қабылдамауды растау",
+    cancel: "Бас тарту",
+  },
+};
 
 type ChallengeFilter = "moderation" | "published" | "rejected";
 
@@ -26,23 +74,10 @@ interface Challenge {
   ageMax?: number;
 }
 
-const TABS: { key: ChallengeFilter; label: string }[] = [
-  { key: "moderation", label: "На модерации" },
-  { key: "published", label: "Опубликованы" },
-  { key: "rejected", label: "Отклонены" },
-];
-
 function statusBadgeStyle(status: string): React.CSSProperties {
   if (status === "moderation") return { background: "rgba(255,180,0,0.25)", color: "#ffd200", borderRadius: 9999, padding: "4px 12px", fontSize: 12, fontWeight: 700 };
   if (status === "published") return { background: "rgba(0,200,100,0.25)", color: "#aaffcc", borderRadius: 9999, padding: "4px 12px", fontSize: 12, fontWeight: 700 };
   return { background: "rgba(220,0,0,0.25)", color: "#ffaaaa", borderRadius: 9999, padding: "4px 12px", fontSize: 12, fontWeight: 700 };
-}
-
-function statusLabel(status: string): string {
-  if (status === "moderation") return "На модерации";
-  if (status === "published") return "Опубликовано";
-  if (status === "rejected") return "Отклонено";
-  return status;
 }
 
 function SkeletonCard() {
@@ -57,10 +92,24 @@ function SkeletonCard() {
 
 export default function AdminChallengesPage() {
   const router = useRouter();
+  const t = useT(dict);
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<ChallengeFilter>("moderation");
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
+
+  const TABS: { key: ChallengeFilter; label: string }[] = [
+    { key: "moderation", label: t("tabModeration") },
+    { key: "published", label: t("tabPublished") },
+    { key: "rejected", label: t("tabRejected") },
+  ];
+
+  const statusLabel = (status: string): string => {
+    if (status === "moderation") return t("statusModeration");
+    if (status === "published") return t("statusPublished");
+    if (status === "rejected") return t("statusRejected");
+    return status;
+  };
 
   const { data, isLoading, isError } = useQuery<Challenge[]>({
     queryKey: ["admin-challenges", activeTab],
@@ -93,13 +142,13 @@ export default function AdminChallengesPage() {
           onClick={() => router.push("/admin")}
           className="glass-chip"
           style={{ display: "flex", alignItems: "center", gap: 4, padding: "8px 14px", border: "none", cursor: "pointer", fontFamily: "inherit", color: "#ffffff", fontWeight: 700, fontSize: 14 }}
-          aria-label="Назад"
+          aria-label={t("back")}
         >
           <ChevronLeft size={16} strokeWidth={2.5} />
-          Назад
+          {t("back")}
         </button>
         <h1 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: "#ffffff" }}>
-          Модерация заданий
+          {t("title")}
         </h1>
       </div>
 
@@ -136,14 +185,14 @@ export default function AdminChallengesPage() {
           </div>
         ) : isError ? (
           <div className="glass" style={{ padding: 20, textAlign: "center", color: "#ffaaaa" }}>
-            Ошибка загрузки. Попробуйте ещё раз.
+            {t("loadError")}
           </div>
         ) : !data || data.length === 0 ? (
           <div className="glass" style={{ padding: 40, textAlign: "center" }}>
             <div style={{ width: 56, height: 56, borderRadius: 18, background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
               <BookOpen size={28} color="#ffffff" strokeWidth={2} />
             </div>
-            <p style={{ margin: 0, fontWeight: 900, color: "#ffffff" }}>Нет заданий</p>
+            <p style={{ margin: 0, fontWeight: 900, color: "#ffffff" }}>{t("empty")}</p>
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -171,22 +220,22 @@ export default function AdminChallengesPage() {
                   )}
                   {(challenge.ageMin != null || challenge.ageMax != null) && (
                     <span className="glass-chip" style={{ padding: "3px 10px", fontSize: 12, fontWeight: 600, color: "#ffffff" }}>
-                      {challenge.ageMin ?? "?"}–{challenge.ageMax ?? "?"} лет
+                      {challenge.ageMin ?? "?"}–{challenge.ageMax ?? "?"} {t("years")}
                     </span>
                   )}
                   <span className="glass-chip" style={{ padding: "3px 10px", fontSize: 12, fontWeight: 600, color: "#ffffff" }}>
-                    {challenge.totalParts} частей
+                    {t("parts", { n: challenge.totalParts })}
                   </span>
                 </div>
 
                 {/* Price / coins row */}
                 <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 10 }}>
                   <div>
-                    <p style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.55)" }}>Цена</p>
+                    <p style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.55)" }}>{t("price")}</p>
                     <p style={{ margin: 0, fontSize: 15, fontWeight: 900, color: "#ffffff" }}>{challenge.price} ₸</p>
                   </div>
                   <div>
-                    <p style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.55)" }}>Награда</p>
+                    <p style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.55)" }}>{t("reward")}</p>
                     <p style={{ margin: 0, fontSize: 15, fontWeight: 900, color: "rgba(255,255,255,0.85)" }}>{challenge.coinsReward} <CoinIcon size={13} /></p>
                   </div>
                 </div>
@@ -206,13 +255,13 @@ export default function AdminChallengesPage() {
                       disabled={approveMutation.isPending}
                       style={{ flex: 1, padding: "10px 0", borderRadius: 9999, border: "1px solid rgba(100,255,150,0.35)", background: "rgba(0,200,100,0.25)", color: "#ffffff", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit", opacity: approveMutation.isPending ? 0.5 : 1 }}
                     >
-                      Опубликовать
+                      {t("publish")}
                     </button>
                     <button
                       onClick={() => { setRejectingId(challenge.id); setRejectReason(""); }}
                       style={{ flex: 1, padding: "10px 0", borderRadius: 9999, border: "1px solid rgba(255,100,100,0.35)", background: "rgba(220,0,0,0.25)", color: "#ffffff", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}
                     >
-                      Отклонить
+                      {t("reject")}
                     </button>
                   </div>
                 )}
@@ -222,7 +271,7 @@ export default function AdminChallengesPage() {
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                     <input
                       type="text"
-                      placeholder="Причина отклонения (необязательно)"
+                      placeholder={t("rejectPlaceholder")}
                       value={rejectReason}
                       onChange={(e) => setRejectReason(e.target.value)}
                       className="glass-input"
@@ -233,14 +282,14 @@ export default function AdminChallengesPage() {
                         disabled={rejectMutation.isPending}
                         style={{ flex: 1, padding: "10px 0", borderRadius: 9999, border: "1px solid rgba(255,100,100,0.35)", background: "rgba(220,0,0,0.25)", color: "#ffffff", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit", opacity: rejectMutation.isPending ? 0.5 : 1 }}
                       >
-                        {rejectMutation.isPending ? "Отклоняем..." : "Подтвердить отклонение"}
+                        {rejectMutation.isPending ? t("rejecting") : t("confirmReject")}
                       </button>
                       <button
                         onClick={() => { setRejectingId(null); setRejectReason(""); }}
                         className="glass-chip"
                         style={{ padding: "10px 16px", border: "none", cursor: "pointer", fontFamily: "inherit", color: "#ffffff", fontWeight: 700, fontSize: 13 }}
                       >
-                        Отмена
+                        {t("cancel")}
                       </button>
                     </div>
                   </div>

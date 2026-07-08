@@ -6,6 +6,64 @@ import { ChevronLeft, Home, Mic, MicOff, Send, RotateCcw, Bot } from "lucide-rea
 import { useRef, useState } from "react";
 import { sessionsApi } from "@/lib/api/sessions";
 import { CoinIcon } from "@/components/CoinIcon";
+import { useT, type Dict } from "@/i18n/useT";
+
+const dict: Dict = {
+  ru: {
+    recordFail: "Сбой записи. Попробуй ещё раз.",
+    noMic: "Нет доступа к микрофону",
+    uploadFail: "Ошибка загрузки. Попробуй ещё раз.",
+    startReading: "Начать читать вслух",
+    readingNow: "Читаю вслух...",
+    doneReading: "Закончил читать",
+    recordReady: "Запись готова! ({time})",
+    sending: "Отправляем...",
+    sendRecording: "Отправить запись",
+    readAgain: "Прочитать заново",
+    part: "Часть {n}",
+    readThisPart: "Читай вслух эту часть книги",
+    aiChecking: "AI проверяет...",
+    processing: "Обрабатываем запись, подожди немного",
+    great: "Отлично!",
+    partReadDone: "Часть прочитана — молодец!",
+    coinsAdded: "+{coins} монет начислено!",
+    partCounted: "Часть засчитана! 🎉",
+    streakGoes: "Серия продолжается — так держать!",
+    almostDone: "Почти готово!",
+    sentToParent: "Результат отправлен на проверку родителю",
+    expertWillCheck: "Эксперт проверит и начислит монеты",
+    toHome: "На главную",
+    back: "Назад",
+    readingAloud: "Чтение вслух",
+  },
+  kk: {
+    recordFail: "Жазу қатесі. Қайта байқап көр.",
+    noMic: "Микрофонға рұқсат жоқ",
+    uploadFail: "Жүктеу қатесі. Қайта байқап көр.",
+    startReading: "Дауыстап оқуды бастау",
+    readingNow: "Дауыстап оқып жатырмын...",
+    doneReading: "Оқып болдым",
+    recordReady: "Жазба дайын! ({time})",
+    sending: "Жіберілуде...",
+    sendRecording: "Жазбаны жіберу",
+    readAgain: "Қайта оқу",
+    part: "{n}-бөлім",
+    readThisPart: "Кітаптың осы бөлімін дауыстап оқы",
+    aiChecking: "AI тексеруде...",
+    processing: "Жазба өңделуде, сәл күте тұр",
+    great: "Керемет!",
+    partReadDone: "Бөлім оқылды — жарайсың!",
+    coinsAdded: "+{coins} монета есептелді!",
+    partCounted: "Бөлім есептелді! 🎉",
+    streakGoes: "Серия жалғасуда — осылай ұста!",
+    almostDone: "Дерлік дайын!",
+    sentToParent: "Нәтиже ата-ананың тексеруіне жіберілді",
+    expertWillCheck: "Сарапшы тексеріп, монета есептейді",
+    toHome: "Басты бетке",
+    back: "Артқа",
+    readingAloud: "Дауыстап оқу",
+  },
+};
 
 interface Session {
   id: string;
@@ -72,6 +130,7 @@ function PhaseRead({
   dayText: string | null;
   onUploaded: () => void;
 }) {
+  const t = useT(dict);
   const [stage, setStage] = useState<"before" | "recording" | "recorded">("before");
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
@@ -109,7 +168,7 @@ function PhaseRead({
       mimeRef.current = (mr.mimeType || preferred || "audio/webm").split(";")[0];
       chunksRef.current = [];
       mr.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
-      mr.onerror = () => { setError("Сбой записи. Попробуй ещё раз."); stopRecording(); };
+      mr.onerror = () => { setError(t("recordFail")); stopRecording(); };
       mr.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: mimeRef.current });
         setAudioBlob(blob);
@@ -130,7 +189,7 @@ function PhaseRead({
         });
       }, 1000);
     } catch {
-      setError("Нет доступа к микрофону");
+      setError(t("noMic"));
     }
   };
 
@@ -155,7 +214,7 @@ function PhaseRead({
       await sessionsApi.uploadAudio(session.id, file, recordingTime);
       onUploaded();
     } catch {
-      setError("Ошибка загрузки. Попробуй ещё раз.");
+      setError(t("uploadFail"));
     } finally {
       setUploading(false);
     }
@@ -196,7 +255,7 @@ function PhaseRead({
             }}
           >
             <Mic size={20} strokeWidth={2.5} />
-            Начать читать вслух
+            {t("startReading")}
           </button>
         </>
       )}
@@ -220,7 +279,7 @@ function PhaseRead({
             <span style={{ fontSize: 22, fontWeight: 900, fontVariantNumeric: "tabular-nums", color: "#ffaaaa" }}>
               ● {formatTime(recordingTime)}
             </span>
-            <span style={{ fontSize: 14, color: "#ffbbbb" }}>Читаю вслух...</span>
+            <span style={{ fontSize: 14, color: "#ffbbbb" }}>{t("readingNow")}</span>
           </div>
           <button
             onClick={stopRecording}
@@ -242,7 +301,7 @@ function PhaseRead({
             }}
           >
             <MicOff size={20} strokeWidth={2.5} />
-            Закончил читать
+            {t("doneReading")}
           </button>
         </div>
       )}
@@ -254,7 +313,7 @@ function PhaseRead({
             style={{ padding: 16, borderRadius: 20, textAlign: "center", background: "rgba(0,200,100,0.2)", border: "1px solid rgba(100,255,150,0.3)" }}
           >
             <p style={{ fontSize: 14, fontWeight: 700, color: "#aaffcc", margin: 0 }}>
-              Запись готова! ({formatTime(recordingTime)})
+              {t("recordReady", { time: formatTime(recordingTime) })}
             </p>
           </div>
           <button
@@ -280,7 +339,7 @@ function PhaseRead({
             }}
           >
             <Send size={18} strokeWidth={2.5} />
-            {uploading ? "Отправляем..." : "Отправить запись"}
+            {uploading ? t("sending") : t("sendRecording")}
           </button>
           <button
             onClick={() => { setAudioBlob(null); setStage("before"); setRecordingTime(0); }}
@@ -301,7 +360,7 @@ function PhaseRead({
             }}
           >
             <RotateCcw size={15} strokeWidth={2.5} />
-            Прочитать заново
+            {t("readAgain")}
           </button>
         </div>
       )}
@@ -315,7 +374,7 @@ function PhaseRead({
       {/* Text block */}
       <div className="glass" style={{ padding: 20, borderRadius: 20 }}>
         <p style={{ fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12, margin: "0 0 12px" }}>
-          Часть {session.partNumber}
+          {t("part", { n: session.partNumber })}
         </p>
         {dayText ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -338,7 +397,7 @@ function PhaseRead({
           </div>
         ) : (
           <p style={{ fontSize: 14, fontStyle: "italic", color: "rgba(255,255,255,0.55)", margin: 0 }}>
-            Читай вслух эту часть книги
+            {t("readThisPart")}
           </p>
         )}
       </div>
@@ -348,6 +407,7 @@ function PhaseRead({
 
 // ─── Phase: processing (transcribing / analyzing) ─────────────────────────────
 function PhaseProcessing() {
+  const t = useT(dict);
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 24, padding: "16px 0" }}>
       <div className="glass" style={{ width: 80, height: 80, borderRadius: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -355,10 +415,10 @@ function PhaseProcessing() {
       </div>
       <div style={{ textAlign: "center" }}>
         <h2 style={{ fontSize: 24, fontWeight: 900, color: "#ffffff", margin: "0 0 6px" }}>
-          AI проверяет...
+          {t("aiChecking")}
         </h2>
         <p style={{ fontSize: 14, color: "rgba(255,255,255,0.65)", margin: 0 }}>
-          Обрабатываем запись, подожди немного
+          {t("processing")}
         </p>
       </div>
       <PulsingDots />
@@ -411,6 +471,7 @@ function Confetti() {
 function PhaseDone({ session, coinsPerPart }: { session: Session; coinsPerPart: number }) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const t = useT(dict);
   const isCompleted = session.status === "completed";
 
   return (
@@ -420,20 +481,20 @@ function PhaseDone({ session, coinsPerPart }: { session: Session; coinsPerPart: 
         <>
           <div style={{ fontSize: 72, animation: "coinPop 0.5s ease both" }}>🏆</div>
           <div>
-            <h2 style={{ fontSize: 28, fontWeight: 900, color: "#ffffff", margin: "0 0 6px" }}>Отлично!</h2>
+            <h2 style={{ fontSize: 28, fontWeight: 900, color: "#ffffff", margin: "0 0 6px" }}>{t("great")}</h2>
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.65)", margin: 0 }}>
-              Часть прочитана — молодец!
+              {t("partReadDone")}
             </p>
           </div>
           <div className="glass" style={{ width: "100%", padding: 24, borderRadius: 20, display: "flex", flexDirection: "column", gap: 8, alignItems: "center" }}>
             <p style={{ fontSize: 48, margin: 0, animation: "streakPulse 0.8s ease 0.5s both" }}>🔥</p>
             <div style={{ animation: "coinPop 0.6s ease 0.3s both" }}>
               <p style={{ fontSize: 24, fontWeight: 900, color: "#ffffff", margin: 0 }}>
-                {coinsPerPart > 0 ? <>+{coinsPerPart} монет начислено! <CoinIcon size={20} /></> : "Часть засчитана! 🎉"}
+                {coinsPerPart > 0 ? <>{t("coinsAdded", { coins: coinsPerPart })} <CoinIcon size={20} /></> : t("partCounted")}
               </p>
             </div>
             <p style={{ fontSize: 13, color: "rgba(255,255,255,0.65)", margin: 0 }}>
-              Серия продолжается — так держать!
+              {t("streakGoes")}
             </p>
           </div>
         </>
@@ -443,9 +504,9 @@ function PhaseDone({ session, coinsPerPart }: { session: Session; coinsPerPart: 
             <span style={{ fontSize: 40 }}>📋</span>
           </div>
           <div>
-            <h2 style={{ fontSize: 24, fontWeight: 900, color: "#ffffff", margin: "0 0 6px" }}>Почти готово!</h2>
+            <h2 style={{ fontSize: 24, fontWeight: 900, color: "#ffffff", margin: "0 0 6px" }}>{t("almostDone")}</h2>
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.65)", margin: 0 }}>
-              Результат отправлен на проверку родителю
+              {t("sentToParent")}
             </p>
           </div>
           <div
@@ -453,7 +514,7 @@ function PhaseDone({ session, coinsPerPart }: { session: Session; coinsPerPart: 
             style={{ width: "100%", padding: 16, borderRadius: 16, background: "rgba(255,180,0,0.15)", border: "1px solid rgba(255,200,0,0.25)" }}
           >
             <p style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,220,100,0.9)", margin: 0 }}>
-              Эксперт проверит и начислит монеты
+              {t("expertWillCheck")}
             </p>
           </div>
         </>
@@ -468,7 +529,7 @@ function PhaseDone({ session, coinsPerPart }: { session: Session; coinsPerPart: 
         style={{ color: "#4776e6", display: "flex", alignItems: "center", gap: 10 }}
       >
         <Home size={18} strokeWidth={2.5} />
-        На главную
+        {t("toHome")}
       </button>
     </div>
   );
@@ -479,6 +540,7 @@ export default function SessionPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const t = useT(dict);
 
   const isPolling = (data: Session | undefined) =>
     data?.phase === "transcribing" || data?.phase === "analyzing";
@@ -516,7 +578,7 @@ export default function SessionPage() {
           style={{ display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.65)", fontSize: 14, fontWeight: 700, fontFamily: "inherit", marginBottom: 20, padding: 0 }}
         >
           <ChevronLeft size={18} strokeWidth={2.5} />
-          Назад
+          {t("back")}
         </button>
       )}
 
@@ -540,10 +602,10 @@ export default function SessionPage() {
         </div>
         <div style={{ flex: 1 }}>
           <p style={{ fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em", margin: 0 }}>
-            Часть {session.partNumber}
+            {t("part", { n: session.partNumber })}
           </p>
           <p style={{ fontWeight: 900, fontSize: 16, color: "#ffffff", margin: "2px 0 0" }}>
-            Чтение вслух
+            {t("readingAloud")}
           </p>
         </div>
         {session.coinsPerPart > 0 && (

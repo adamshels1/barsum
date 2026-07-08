@@ -6,6 +6,50 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { challengesApi } from "@/lib/api/challenges";
+import { useT, type Dict } from "@/i18n/useT";
+
+const dict: Dict = {
+  ru: {
+    filterAll: "Все",
+    statusDraft: "Черновик",
+    statusModeration: "На модерации",
+    statusPublished: "Опубликован",
+    statusRejected: "Отклонён",
+    back: "Назад",
+    myTasks: "Мои задания",
+    create: "Создать",
+    sentToModeration: "Задание отправлено на модерацию!",
+    sendError: "Ошибка отправки",
+    noTasks: "Нет заданий",
+    noTasksInCategory: "Нет заданий в этой категории",
+    createFirst: "Создайте первое задание",
+    partsCount: "{n} частей",
+    rejectReason: "Причина отклонения: ",
+    edit: "Редактировать",
+    sending: "Отправка...",
+    toModeration: "На модерацию",
+  },
+  kk: {
+    filterAll: "Барлығы",
+    statusDraft: "Қаралама",
+    statusModeration: "Модерацияда",
+    statusPublished: "Жарияланды",
+    statusRejected: "Қабылданбады",
+    back: "Артқа",
+    myTasks: "Менің тапсырмаларым",
+    create: "Құру",
+    sentToModeration: "Тапсырма модерацияға жіберілді!",
+    sendError: "Жіберу қатесі",
+    noTasks: "Тапсырмалар жоқ",
+    noTasksInCategory: "Бұл санатта тапсырмалар жоқ",
+    createFirst: "Алғашқы тапсырманы құрыңыз",
+    partsCount: "{n} бөлім",
+    rejectReason: "Қабылдамау себебі: ",
+    edit: "Өңдеу",
+    sending: "Жіберілуде...",
+    toModeration: "Модерацияға",
+  },
+};
 
 interface Challenge {
   id: string;
@@ -25,12 +69,12 @@ interface Challenge {
 
 type FilterStatus = "all" | "draft" | "moderation" | "published" | "rejected";
 
-const FILTERS: { key: FilterStatus; label: string }[] = [
-  { key: "all", label: "Все" },
-  { key: "draft", label: "Черновик" },
-  { key: "moderation", label: "На модерации" },
-  { key: "published", label: "Опубликован" },
-  { key: "rejected", label: "Отклонён" },
+const FILTERS: { key: FilterStatus; labelKey: string }[] = [
+  { key: "all", labelKey: "filterAll" },
+  { key: "draft", labelKey: "statusDraft" },
+  { key: "moderation", labelKey: "statusModeration" },
+  { key: "published", labelKey: "statusPublished" },
+  { key: "rejected", labelKey: "statusRejected" },
 ];
 
 function statusBadgeStyle(status: string): React.CSSProperties {
@@ -40,16 +84,17 @@ function statusBadgeStyle(status: string): React.CSSProperties {
   return { background: "rgba(255,255,255,0.16)", color: "#ffffff", borderRadius: 9999, padding: "4px 10px", fontSize: 11, fontWeight: 700, border: "1px solid rgba(255,255,255,0.26)" };
 }
 
-function statusBadgeLabel(status: string): string {
-  if (status === "draft") return "Черновик";
-  if (status === "moderation") return "На модерации";
-  if (status === "published") return "Опубликован";
-  if (status === "rejected") return "Отклонён";
+function statusBadgeLabel(status: string, t: (key: string) => string): string {
+  if (status === "draft") return t("statusDraft");
+  if (status === "moderation") return t("statusModeration");
+  if (status === "published") return t("statusPublished");
+  if (status === "rejected") return t("statusRejected");
   return status;
 }
 
 export default function ExpertBooksPage() {
   const router = useRouter();
+  const t = useT(dict);
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<FilterStatus>("all");
 
@@ -61,12 +106,12 @@ export default function ExpertBooksPage() {
   const submitMutation = useMutation({
     mutationFn: (id: string) => challengesApi.submit(id),
     onSuccess: () => {
-      toast.success("Задание отправлено на модерацию!");
+      toast.success(t("sentToModeration"));
       queryClient.invalidateQueries({ queryKey: ["my-challenges"] });
       queryClient.invalidateQueries({ queryKey: ["challenges-list"] });
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.message || "Ошибка отправки");
+      toast.error(err.response?.data?.message || t("sendError"));
     },
   });
 
@@ -84,9 +129,9 @@ export default function ExpertBooksPage() {
             style={{ display: "flex", alignItems: "center", gap: 4, padding: "8px 14px", border: "none", cursor: "pointer", fontFamily: "inherit", color: "#ffffff", fontWeight: 700, fontSize: 14 }}
           >
             <ChevronLeft size={16} strokeWidth={2.5} />
-            Назад
+            {t("back")}
           </button>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: "#ffffff" }}>Мои задания</h1>
+          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: "#ffffff" }}>{t("myTasks")}</h1>
         </div>
         <button
           onClick={() => router.push("/expert/create")}
@@ -94,7 +139,7 @@ export default function ExpertBooksPage() {
           style={{ color: "#4776e6", padding: "10px 18px", width: "auto", fontSize: 14, gap: 6, display: "flex", alignItems: "center" }}
         >
           <Plus size={16} strokeWidth={3} />
-          Создать
+          {t("create")}
         </button>
       </div>
 
@@ -122,7 +167,7 @@ export default function ExpertBooksPage() {
                   transition: "all 0.15s",
                 }}
               >
-                {f.label}
+                {t(f.labelKey)}
                 {count > 0 && (
                   <span style={{ marginLeft: 6, fontSize: 12, opacity: 0.8 }}>{count}</span>
                 )}
@@ -144,10 +189,10 @@ export default function ExpertBooksPage() {
               <BookMarked size={28} color="#ffffff" strokeWidth={2} />
             </div>
             <p style={{ margin: 0, fontWeight: 900, color: "#ffffff" }}>
-              {filter === "all" ? "Нет заданий" : "Нет заданий в этой категории"}
+              {filter === "all" ? t("noTasks") : t("noTasksInCategory")}
             </p>
             {filter === "all" && (
-              <p style={{ margin: "8px 0 0", fontSize: 13, color: "rgba(255,255,255,0.6)" }}>Создайте первое задание</p>
+              <p style={{ margin: "8px 0 0", fontSize: 13, color: "rgba(255,255,255,0.6)" }}>{t("createFirst")}</p>
             )}
           </div>
         ) : (
@@ -164,12 +209,12 @@ export default function ExpertBooksPage() {
                       {challenge.bookTitle}{challenge.bookAuthor ? ` · ${challenge.bookAuthor}` : ""}
                     </p>
                   </div>
-                  <span style={statusBadgeStyle(challenge.status)}>{statusBadgeLabel(challenge.status)}</span>
+                  <span style={statusBadgeStyle(challenge.status)}>{statusBadgeLabel(challenge.status, t)}</span>
                 </div>
 
                 {/* Meta row */}
                 <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 12, color: "rgba(255,255,255,0.6)", marginBottom: 10 }}>
-                  <span>📚 {challenge.totalParts} частей</span>
+                  <span>📚 {t("partsCount", { n: challenge.totalParts })}</span>
                   <span>💰 {challenge.price.toLocaleString("ru-RU")} ₸</span>
                   <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
                     <Users2 size={12} /> {challenge.membersCount}
@@ -179,7 +224,7 @@ export default function ExpertBooksPage() {
                 {/* Rejected reason */}
                 {challenge.status === "rejected" && challenge.rejectedReason && (
                   <div style={{ background: "rgba(220,0,0,0.2)", color: "rgba(255,160,160,0.9)", borderRadius: 12, padding: "10px 14px", marginBottom: 10, fontSize: 12 }}>
-                    <span style={{ fontWeight: 700 }}>Причина отклонения: </span>
+                    <span style={{ fontWeight: 700 }}>{t("rejectReason")}</span>
                     {challenge.rejectedReason}
                   </div>
                 )}
@@ -192,7 +237,7 @@ export default function ExpertBooksPage() {
                       className="glass-chip"
                       style={{ flex: 1, padding: "10px 0", border: "none", cursor: "pointer", fontFamily: "inherit", color: "#ffffff", fontWeight: 700, fontSize: 13 }}
                     >
-                      Редактировать
+                      {t("edit")}
                     </button>
                     {challenge.status === "draft" && (
                       <button
@@ -200,7 +245,7 @@ export default function ExpertBooksPage() {
                         disabled={submitMutation.isPending}
                         style={{ flex: 1, padding: "10px 0", borderRadius: 9999, border: "1px solid rgba(100,255,150,0.35)", background: "rgba(0,200,100,0.25)", color: "#ffffff", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit", opacity: submitMutation.isPending ? 0.6 : 1 }}
                       >
-                        {submitMutation.isPending ? "Отправка..." : "На модерацию"}
+                        {submitMutation.isPending ? t("sending") : t("toModeration")}
                       </button>
                     )}
                   </div>

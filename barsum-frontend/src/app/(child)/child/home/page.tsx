@@ -11,6 +11,61 @@ import { sessionsApi } from "@/lib/api/sessions";
 import { useAuthStore } from "@/stores/auth-store";
 import { CoinIcon } from "@/components/CoinIcon";
 import { dreamPhotoUrl } from "@/lib/media";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useT, type Dict } from "@/i18n/useT";
+
+const dict: Dict = {
+  ru: {
+    greeting: "Привет, {name}! 👋",
+    coinsOnAccount: "монет на счету",
+    purchaseHistory: "История покупок",
+    days: "дней",
+    awaitingApproval: "Ждёт одобрения родителя",
+    dreamRejected: "Мечта отклонена",
+    myDream: "Моя мечта",
+    saved: "накоплено",
+    goal: "цель:",
+    coinsToDream: "Монет в мечту...",
+    deposit: "Внести",
+    insufficient: "Не хватает монет — доступно {n}",
+    coinsAdded: "Монеты добавлены к мечте!",
+    sendFailed: "Не удалось отправить монеты",
+    reader: "Читатель",
+    addDream: "Добавь свою мечту!",
+    parentsHelp: "Родители помогут её осуществить",
+    myTasks: "Мои задания",
+    noActiveTasks: "Нет активных заданий",
+    askParents: "Попроси родителей записать тебя на курс",
+    task: "Задание",
+    parts: "частей",
+    logout: "Выйти из аккаунта",
+  },
+  kk: {
+    greeting: "Сәлем, {name}! 👋",
+    coinsOnAccount: "шоттағы монета",
+    purchaseHistory: "Сатып алулар тарихы",
+    days: "күн",
+    awaitingApproval: "Ата-ананың мақұлдауын күтуде",
+    dreamRejected: "Арман қабылданбады",
+    myDream: "Менің арманым",
+    saved: "жиналды",
+    goal: "мақсат:",
+    coinsToDream: "Арманға монета...",
+    deposit: "Салу",
+    insufficient: "Монета жетпейді — қолжетімді {n}",
+    coinsAdded: "Монеталар арманға қосылды!",
+    sendFailed: "Монеталарды жіберу мүмкін болмады",
+    reader: "Оқырман",
+    addDream: "Арманыңды қос!",
+    parentsHelp: "Ата-анаң оны орындауға көмектеседі",
+    myTasks: "Менің тапсырмаларым",
+    noActiveTasks: "Белсенді тапсырмалар жоқ",
+    askParents: "Ата-анаңнан курсқа жазуын өтін",
+    task: "Тапсырма",
+    parts: "бөлім",
+    logout: "Аккаунттан шығу",
+  },
+};
 
 const CARD_COLORS = [
   "linear-gradient(135deg, #667eea, #764ba2)",
@@ -21,27 +76,28 @@ const CARD_COLORS = [
 ];
 
 function HeroCard({ name, balance, streak, onHistory }: { name: string; balance: number; streak: number; onHistory: () => void }) {
+  const t = useT(dict);
   return (
     <div className="glass" style={{ padding: "18px 20px", marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
       <div>
-        <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.6)" }}>Привет, {name}! 👋</p>
+        <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.6)" }}>{t("greeting", { name })}</p>
         <p style={{ margin: "6px 0 0", fontSize: 32, fontWeight: 900, color: "#ffffff", lineHeight: 1 }}>
           <CoinIcon size={30} /> {balance.toLocaleString("ru-RU")}
         </p>
-        <p style={{ margin: "4px 0 0", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.5)" }}>монет на счету</p>
+        <p style={{ margin: "4px 0 0", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.5)" }}>{t("coinsOnAccount")}</p>
         <button
           onClick={onHistory}
           style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 8, background: "transparent", border: "none", cursor: "pointer", padding: 0, fontFamily: "inherit", color: "rgba(255,255,255,0.6)", fontSize: 11, fontWeight: 700 }}
         >
           <History size={13} strokeWidth={2.5} />
-          История покупок
+          {t("purchaseHistory")}
         </button>
       </div>
       {streak > 0 && (
         <div className="glass-chip" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "10px 14px" }}>
           <span style={{ fontSize: 22 }}>🔥</span>
           <span style={{ fontWeight: 900, fontSize: 16, color: "#ffd200", lineHeight: 1 }}>{streak}</span>
-          <span style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.5)" }}>дней</span>
+          <span style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.5)" }}>{t("days")}</span>
         </div>
       )}
     </div>
@@ -52,6 +108,7 @@ function DreamCard({ dream, currentBalance, onSend, isSending }: {
   dream: any; currentBalance: number;
   onSend: (amount: number) => void; isSending: boolean;
 }) {
+  const t = useT(dict);
   const [sendAmount, setSendAmount] = useState("");
   const progress = dream.status === "active" && dream.targetCoins > 0
     ? Math.min((dream.savedCoins / dream.targetCoins) * 100, 100) : 0;
@@ -62,7 +119,7 @@ function DreamCard({ dream, currentBalance, onSend, isSending }: {
         <span style={{ fontSize: 28 }}>⏳</span>
         <div>
           <p style={{ margin: 0, fontWeight: 900, fontSize: 15, color: "#ffffff" }}>{dream.name}</p>
-          <p style={{ margin: "4px 0 0", fontSize: 12, fontWeight: 600, color: "#ffd200" }}>Ждёт одобрения родителя</p>
+          <p style={{ margin: "4px 0 0", fontSize: 12, fontWeight: 600, color: "#ffd200" }}>{t("awaitingApproval")}</p>
         </div>
       </div>
     );
@@ -72,7 +129,7 @@ function DreamCard({ dream, currentBalance, onSend, isSending }: {
       <div className="glass" style={{ padding: 16, marginBottom: 12, border: "1px solid rgba(255,120,100,0.4)" }}>
         <p style={{ margin: 0, fontWeight: 900, fontSize: 15, color: "#ffffff" }}>{dream.name}</p>
         <p style={{ margin: "4px 0 0", fontSize: 12, fontWeight: 600, color: "#ffb3b3" }}>
-          Мечта отклонена{dream.rejectedReason ? `: ${dream.rejectedReason}` : ""}
+          {t("dreamRejected")}{dream.rejectedReason ? `: ${dream.rejectedReason}` : ""}
         </p>
       </div>
     );
@@ -97,7 +154,7 @@ function DreamCard({ dream, currentBalance, onSend, isSending }: {
       <div style={{ position: "relative", padding: 16 }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
           <div>
-            <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.7)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Моя мечта</p>
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.7)", textTransform: "uppercase", letterSpacing: "0.08em" }}>{t("myDream")}</p>
             <p style={{ margin: "4px 0 0", fontWeight: 900, fontSize: 16, color: "#ffffff" }}>{dream.name}</p>
           </div>
           <span className="glass-chip" style={{ padding: "4px 10px", fontSize: 13, fontWeight: 900, color: "#ffffff" }}>
@@ -108,8 +165,8 @@ function DreamCard({ dream, currentBalance, onSend, isSending }: {
           <div style={{ height: "100%", width: `${progress}%`, background: "rgba(255,255,255,0.9)", borderRadius: 9999, transition: "width 0.7s ease" }} />
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.6)", marginBottom: 12 }}>
-          <span><CoinIcon size={13} /> {dream.savedCoins.toLocaleString()} накоплено</span>
-          <span>цель: {dream.targetCoins.toLocaleString()}</span>
+          <span><CoinIcon size={13} /> {dream.savedCoins.toLocaleString()} {t("saved")}</span>
+          <span>{t("goal")} {dream.targetCoins.toLocaleString()}</span>
         </div>
         {currentBalance > 0 && (
           <>
@@ -120,7 +177,7 @@ function DreamCard({ dream, currentBalance, onSend, isSending }: {
                 max={currentBalance}
                 value={sendAmount}
                 onChange={(e) => setSendAmount(e.target.value)}
-                placeholder="Монет в мечту..."
+                placeholder={t("coinsToDream")}
                 className="glass-input"
                 style={{ flex: 1, padding: "10px 14px", fontSize: 14, borderRadius: 12 }}
               />
@@ -144,12 +201,12 @@ function DreamCard({ dream, currentBalance, onSend, isSending }: {
                   opacity: (!sendAmount || Number(sendAmount) < 1 || Number(sendAmount) > currentBalance || isSending) ? 0.4 : 1,
                 }}
               >
-                Внести
+                {t("deposit")}
               </button>
             </div>
             {sendAmount !== "" && Number(sendAmount) > currentBalance && (
               <p style={{ margin: "8px 0 0", fontSize: 12, fontWeight: 700, color: "#ffd0d0" }}>
-                Не хватает монет — доступно {currentBalance.toLocaleString()}
+                {t("insufficient", { n: currentBalance.toLocaleString() })}
               </p>
             )}
           </>
@@ -161,6 +218,7 @@ function DreamCard({ dream, currentBalance, onSend, isSending }: {
 
 export default function ChildHomePage() {
   const router = useRouter();
+  const t = useT(dict);
   const user = useAuthStore((s) => s.user);
   const clearAuth = useAuthStore((s) => s.clearAuth);
   const queryClient = useQueryClient();
@@ -190,15 +248,15 @@ export default function ChildHomePage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["dream-my"] });
       queryClient.invalidateQueries({ queryKey: ["child-balance", user?.id] });
-      toast.success("Монеты добавлены к мечте!");
+      toast.success(t("coinsAdded"));
     },
     onError: (err: any) =>
-      toast.error(err?.response?.data?.message || "Не удалось отправить монеты"),
+      toast.error(err?.response?.data?.message || t("sendFailed")),
   });
 
   return (
     <main style={{ padding: "20px 20px 8px", maxWidth: 480, margin: "0 auto" }}>
-      <HeroCard name={user?.name || "Читатель"} balance={currentBalance} streak={streak} onHistory={() => router.push("/child/purchases")} />
+      <HeroCard name={user?.name || t("reader")} balance={currentBalance} streak={streak} onHistory={() => router.push("/child/purchases")} />
 
       {dream ? (
         <DreamCard dream={dream} currentBalance={currentBalance} onSend={(amt) => sendMutation.mutate(amt)} isSending={sendMutation.isPending} />
@@ -212,8 +270,8 @@ export default function ChildHomePage() {
             <Sparkles size={22} color="#ffffff" strokeWidth={2.5} />
           </div>
           <div style={{ flex: 1 }}>
-            <p style={{ margin: 0, fontWeight: 900, fontSize: 15, color: "#ffffff" }}>Добавь свою мечту!</p>
-            <p style={{ margin: "3px 0 0", fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.55)" }}>Родители помогут её осуществить</p>
+            <p style={{ margin: 0, fontWeight: 900, fontSize: 15, color: "#ffffff" }}>{t("addDream")}</p>
+            <p style={{ margin: "3px 0 0", fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.55)" }}>{t("parentsHelp")}</p>
           </div>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="9 18 15 12 9 6" />
@@ -221,7 +279,7 @@ export default function ChildHomePage() {
         </button>
       )}
 
-      <p style={{ fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>Мои задания</p>
+      <p style={{ fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>{t("myTasks")}</p>
 
       {isLoading ? (
         <div style={{ display: "flex", gap: 12, overflowX: "auto" }}>
@@ -234,8 +292,8 @@ export default function ChildHomePage() {
           <div style={{ width: 56, height: 56, borderRadius: 18, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
             <BookOpen size={26} color="#ffffff" strokeWidth={2} />
           </div>
-          <p style={{ margin: 0, fontWeight: 900, fontSize: 16, color: "#ffffff" }}>Нет активных заданий</p>
-          <p style={{ margin: "6px 0 0", fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.55)" }}>Попроси родителей записать тебя на курс</p>
+          <p style={{ margin: 0, fontWeight: 900, fontSize: 16, color: "#ffffff" }}>{t("noActiveTasks")}</p>
+          <p style={{ margin: "6px 0 0", fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.55)" }}>{t("askParents")}</p>
         </div>
       ) : (
         <div className="scrollbar-hide" style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 8, marginLeft: -4, paddingLeft: 4 }}>
@@ -280,7 +338,7 @@ export default function ChildHomePage() {
                   {!ch?.coverImage && (
                     <>
                       <p style={{ color: "#ffffff", fontWeight: 900, textAlign: "center", lineHeight: 1.3, fontSize: 12, margin: 0, textShadow: "0 1px 4px rgba(0,0,0,0.6)", WebkitLineClamp: 3, overflow: "hidden", display: "-webkit-box", WebkitBoxOrient: "vertical" }}>
-                        {ch?.bookTitle || ch?.title || "Задание"}
+                        {ch?.bookTitle || ch?.title || t("task")}
                       </p>
                       {ch?.bookAuthor && (
                         <p style={{ color: "rgba(255,255,255,0.85)", fontSize: 10, margin: "4px 0 0", textAlign: "center", textShadow: "0 1px 4px rgba(0,0,0,0.6)" }}>{ch.bookAuthor}</p>
@@ -289,13 +347,13 @@ export default function ChildHomePage() {
                   )}
                 </div>
                 <div style={{ padding: 12 }}>
-                  <p style={{ fontWeight: 900, fontSize: 13, color: "#ffffff", margin: "0 0 8px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ch?.title || "Задание"}</p>
+                  <p style={{ fontWeight: 900, fontSize: 13, color: "#ffffff", margin: "0 0 8px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ch?.title || t("task")}</p>
                   <div style={{ height: 4, borderRadius: 9999, background: "rgba(255,255,255,0.2)", overflow: "hidden", marginBottom: 8 }}>
                     <div style={{ height: "100%", width: `${progress}%`, background: "rgba(255,255,255,0.85)", borderRadius: 9999 }} />
                   </div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.55)" }}>
-                      {completedParts}/{totalParts} частей
+                      {completedParts}/{totalParts} {t("parts")}
                     </span>
                     <span style={{ fontSize: 11, fontWeight: 900, color: "#ffd200" }}><CoinIcon size={12} /> +{(ch?.coinsReward ?? 0).toLocaleString()}</span>
                   </div>
@@ -306,12 +364,16 @@ export default function ChildHomePage() {
         </div>
       )}
 
+      <div style={{ display: "flex", justifyContent: "center", marginTop: 32 }}>
+        <LanguageSwitcher />
+      </div>
+
       <button
         onClick={() => { clearAuth(); router.push("/auth/child"); }}
-        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 32, width: "100%", background: "transparent", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.35)", fontFamily: "inherit" }}
+        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 16, width: "100%", background: "transparent", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.35)", fontFamily: "inherit" }}
       >
         <LogOut size={12} />
-        Выйти из аккаунта
+        {t("logout")}
       </button>
     </main>
   );

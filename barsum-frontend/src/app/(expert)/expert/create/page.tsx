@@ -7,6 +7,146 @@ import { Suspense, useState } from "react";
 import { toast } from "sonner";
 import { challengesApi } from "@/lib/api/challenges";
 import { apiClient } from "@/lib/api/client";
+import { useT, type Dict } from "@/i18n/useT";
+
+const dict: Dict = {
+  ru: {
+    stepBook: "Книга",
+    stepParams: "Параметры",
+    stepPrice: "Цена",
+    stepPublish: "Публикация",
+    stepOf: "Шаг {a} из {b} — {label}",
+    taskName: "Название задания",
+    taskNamePlaceholder: "Например: Летнее чтение",
+    category: "Категория",
+    catReading: "📖 Чтение",
+    catMusic: "🎵 Музыка",
+    catDrawing: "🎨 Рисование",
+    catMath: "🔢 Математика",
+    soon: "скоро",
+    selectBook: "Выберите книгу",
+    pagesWord: "стр",
+    yearsWord: "лет",
+    change: "Изменить",
+    bookSearchPlaceholder: "Поиск по названию или автору...",
+    loadingBooks: "Загрузка книг...",
+    nothingFound: "Ничего не найдено",
+    description: "Описание",
+    optional: "(необязательно)",
+    descriptionPlaceholder: "Расскажи, о чём это задание...",
+    next: "Далее →",
+    partsField: "Количество частей",
+    totalPagesField: "Всего страниц в книге",
+    pagesPerPartField: "Страниц в одной части",
+    auto: "авто",
+    pagesPerPartAuto: "≈ {n} стр/часть",
+    customPlaceholder: "Своё",
+    autoFormula: "Авто = {total} ÷ {parts} = {ppp}. Можно задать своё значение справа.",
+    preview: "👀 Предпросмотр",
+    previewPrefix: "Книга разбита на ",
+    previewParts: "{n} частей",
+    previewMiddle: ", по ",
+    previewPages: "{n} страниц",
+    previewSuffix: " в каждой",
+    back: "← Назад",
+    priceField: "Стоимость задания для родителя",
+    yourEarning: "Ваш заработок",
+    percentOfPrice: "15% от стоимости",
+    cardPreview: "Предпросмотр карточки",
+    bookTitleFallback: "Название книги",
+    taskNameFallback: "Название задания",
+    partsCount: "{n} частей",
+    cardAge: "Возраст {a}–{b} лет · {c} стр/часть",
+    taskSent: "Задание отправлено!",
+    taskSentText: "Задание отправлено на модерацию! Вы получите уведомление после проверки.",
+    toMyTasks: "К моим заданиям 📋",
+    finalPreview: "Финальный предпросмотр",
+    sumCategory: "Категория",
+    sumBook: "Книга",
+    sumAge: "Возраст",
+    sumPartsInBook: "Частей в книге",
+    sumTotalPages: "Всего страниц",
+    sumPagesPerPart: "Страниц в части",
+    sumPrice: "Цена",
+    sumEarning: "Ваш заработок (15%)",
+    ageRange: "{a}–{b} лет",
+    moderationNote: "После отправки задание попадёт на модерацию. Обычно это занимает 1–2 дня.",
+    sending: "Отправка...",
+    publishTask: "Опубликовать задание 🚀",
+    editTask: "Редактировать задание",
+    createTask: "Создать задание",
+    publishError: "Ошибка публикации",
+    loading: "Загрузка...",
+  },
+  kk: {
+    stepBook: "Кітап",
+    stepParams: "Параметрлер",
+    stepPrice: "Баға",
+    stepPublish: "Жариялау",
+    stepOf: "Қадам {a} / {b} — {label}",
+    taskName: "Тапсырма атауы",
+    taskNamePlaceholder: "Мысалы: Жазғы оқу",
+    category: "Санат",
+    catReading: "📖 Оқу",
+    catMusic: "🎵 Музыка",
+    catDrawing: "🎨 Сурет салу",
+    catMath: "🔢 Математика",
+    soon: "жақында",
+    selectBook: "Кітапты таңдаңыз",
+    pagesWord: "бет",
+    yearsWord: "жаста",
+    change: "Өзгерту",
+    bookSearchPlaceholder: "Атауы немесе авторы бойынша іздеу...",
+    loadingBooks: "Кітаптар жүктелуде...",
+    nothingFound: "Ештеңе табылмады",
+    description: "Сипаттама",
+    optional: "(міндетті емес)",
+    descriptionPlaceholder: "Бұл тапсырма не туралы екенін айт...",
+    next: "Әрі қарай →",
+    partsField: "Бөлімдер саны",
+    totalPagesField: "Кітаптағы барлық беттер",
+    pagesPerPartField: "Бір бөлімдегі беттер",
+    auto: "авто",
+    pagesPerPartAuto: "≈ {n} бет/бөлім",
+    customPlaceholder: "Өз",
+    autoFormula: "Авто = {total} ÷ {parts} = {ppp}. Оң жақта өз мәніңізді қоюға болады.",
+    preview: "👀 Алдын ала қарау",
+    previewPrefix: "Кітап ",
+    previewParts: "{n} бөлімге",
+    previewMiddle: " бөлінген, әрқайсысында ",
+    previewPages: "{n} беттен",
+    previewSuffix: "",
+    back: "← Артқа",
+    priceField: "Ата-ана үшін тапсырма құны",
+    yourEarning: "Сіздің табысыңыз",
+    percentOfPrice: "Құнның 15%",
+    cardPreview: "Карточканы алдын ала қарау",
+    bookTitleFallback: "Кітап атауы",
+    taskNameFallback: "Тапсырма атауы",
+    partsCount: "{n} бөлім",
+    cardAge: "Жасы {a}–{b} · {c} бет/бөлім",
+    taskSent: "Тапсырма жіберілді!",
+    taskSentText: "Тапсырма модерацияға жіберілді! Тексерістен кейін хабарлама аласыз.",
+    toMyTasks: "Менің тапсырмаларыма 📋",
+    finalPreview: "Соңғы алдын ала қарау",
+    sumCategory: "Санат",
+    sumBook: "Кітап",
+    sumAge: "Жасы",
+    sumPartsInBook: "Кітаптағы бөлімдер",
+    sumTotalPages: "Барлық беттер",
+    sumPagesPerPart: "Бөлімдегі беттер",
+    sumPrice: "Баға",
+    sumEarning: "Сіздің табысыңыз (15%)",
+    ageRange: "{a}–{b} жаста",
+    moderationNote: "Жіберілгеннен кейін тапсырма модерацияға түседі. Әдетте бұл 1–2 күн алады.",
+    sending: "Жіберілуде...",
+    publishTask: "Тапсырманы жариялау 🚀",
+    editTask: "Тапсырманы өңдеу",
+    createTask: "Тапсырма құру",
+    publishError: "Жариялау қатесі",
+    loading: "Жүктелуде...",
+  },
+};
 
 /* ─── Book catalog ───────────────────────────────────── */
 interface BookOption {
@@ -49,17 +189,18 @@ const DEFAULT: FormData = {
   price: 2990,
 };
 
-const INACTIVE_CATEGORIES = ["🎵 Музыка", "🎨 Рисование", "🔢 Математика"];
+const INACTIVE_CATEGORIES = ["catMusic", "catDrawing", "catMath"];
 
-const STEPS = ["Книга", "Параметры", "Цена", "Публикация"];
+const STEP_KEYS = ["stepBook", "stepParams", "stepPrice", "stepPublish"];
 
 /* ─── Step components ──────────────────────────────── */
 
 function ProgressBar({ step }: { step: number }) {
+  const t = useT(dict);
   return (
     <div style={{ marginBottom: 28 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-        {STEPS.map((label, i) => (
+        {STEP_KEYS.map((labelKey, i) => (
           <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1 }}>
             <div
               style={{
@@ -88,7 +229,7 @@ function ProgressBar({ step }: { step: number }) {
               }}
               className="hidden sm:block"
             >
-              {label}
+              {t(labelKey)}
             </span>
           </div>
         ))}
@@ -102,13 +243,13 @@ function ProgressBar({ step }: { step: number }) {
             height: "100%",
             borderRadius: 9999,
             transition: "width 0.3s",
-            width: `${(step / (STEPS.length - 1)) * 100}%`,
+            width: `${(step / (STEP_KEYS.length - 1)) * 100}%`,
             background: "rgba(255,255,255,0.85)",
           }}
         />
       </div>
       <p style={{ textAlign: "center", fontSize: 12, marginTop: 8, color: "rgba(255,255,255,0.6)" }}>
-        Шаг {step + 1} из {STEPS.length} — {STEPS[step]}
+        {t("stepOf", { a: step + 1, b: STEP_KEYS.length, label: t(STEP_KEYS[step]) })}
       </p>
     </div>
   );
@@ -214,6 +355,7 @@ function Step1({
   bookCatalog: BookOption[];
   catalogLoading: boolean;
 }) {
+  const t = useT(dict);
   const [search, setSearch] = useState("");
   const [showList, setShowList] = useState(false);
 
@@ -243,16 +385,16 @@ function Step1({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <InputField
-        label="Название задания"
+        label={t("taskName")}
         value={data.title}
         onChange={(v) => update({ title: v })}
-        placeholder="Например: Летнее чтение"
+        placeholder={t("taskNamePlaceholder")}
         required
       />
 
       <div>
         <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-          Категория
+          {t("category")}
         </label>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button
@@ -269,11 +411,11 @@ function Step1({
               fontFamily: "inherit",
             }}
           >
-            📖 Чтение
+            {t("catReading")}
           </button>
-          {INACTIVE_CATEGORIES.map((label) => (
+          {INACTIVE_CATEGORIES.map((labelKey) => (
             <button
-              key={label}
+              key={labelKey}
               type="button"
               disabled
               className="glass-chip"
@@ -291,9 +433,9 @@ function Step1({
                 fontFamily: "inherit",
               }}
             >
-              {label}
+              {t(labelKey)}
               <span style={{ background: "rgba(255,180,0,0.25)", color: "#ffd200", borderRadius: 9999, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>
-                скоро
+                {t("soon")}
               </span>
             </button>
           ))}
@@ -303,7 +445,7 @@ function Step1({
       {/* Book picker */}
       <div>
         <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-          Выберите книгу <span style={{ color: "rgba(255,255,255,0.9)" }}>*</span>
+          {t("selectBook")} <span style={{ color: "rgba(255,255,255,0.9)" }}>*</span>
         </label>
 
         {selectedBook && !showList ? (
@@ -313,7 +455,7 @@ function Step1({
                 {selectedBook.title}
               </p>
               <p style={{ fontSize: 12, marginTop: 2, color: "rgba(255,255,255,0.65)", margin: "2px 0 0" }}>
-                {selectedBook.author} · {selectedBook.pages} стр · {selectedBook.ageMin}–{selectedBook.ageMax} лет
+                {selectedBook.author} · {selectedBook.pages} {t("pagesWord")} · {selectedBook.ageMin}–{selectedBook.ageMax} {t("yearsWord")}
               </p>
             </div>
             <button
@@ -322,7 +464,7 @@ function Step1({
               className="glass-chip"
               style={{ padding: "6px 12px", fontSize: 12, fontWeight: 600, border: "none", cursor: "pointer", color: "#ffffff", flexShrink: 0, fontFamily: "inherit" }}
             >
-              Изменить
+              {t("change")}
             </button>
           </div>
         ) : (
@@ -332,7 +474,7 @@ function Step1({
               value={search}
               onChange={(e) => { setSearch(e.target.value); setShowList(true); }}
               onFocus={() => setShowList(true)}
-              placeholder="Поиск по названию или автору..."
+              placeholder={t("bookSearchPlaceholder")}
               className="glass-input"
             />
             {showList && (
@@ -356,11 +498,11 @@ function Step1({
               >
                 {catalogLoading ? (
                   <p style={{ padding: "12px 16px", fontSize: 14, color: "rgba(255,255,255,0.6)", margin: 0 }}>
-                    Загрузка книг...
+                    {t("loadingBooks")}
                   </p>
                 ) : filtered.length === 0 ? (
                   <p style={{ padding: "12px 16px", fontSize: 14, color: "rgba(255,255,255,0.6)", margin: 0 }}>
-                    Ничего не найдено
+                    {t("nothingFound")}
                   </p>
                 ) : (
                   filtered.map((book) => (
@@ -385,7 +527,7 @@ function Step1({
                         {book.title}
                       </p>
                       <p style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", margin: "2px 0 0" }}>
-                        {book.author} · {book.pages} стр · {book.ageMin}–{book.ageMax} лет
+                        {book.author} · {book.pages} {t("pagesWord")} · {book.ageMin}–{book.ageMax} {t("yearsWord")}
                       </p>
                     </button>
                   ))
@@ -398,13 +540,13 @@ function Step1({
 
       <div>
         <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-          Описание <span style={{ fontWeight: 400 }}>(необязательно)</span>
+          {t("description")} <span style={{ fontWeight: 400 }}>{t("optional")}</span>
         </label>
         <div style={{ position: "relative" }}>
           <textarea
             value={data.description}
             onChange={(e) => update({ description: e.target.value })}
-            placeholder="Расскажи, о чём это задание..."
+            placeholder={t("descriptionPlaceholder")}
             rows={3}
             maxLength={500}
             className="glass-input"
@@ -422,7 +564,7 @@ function Step1({
         className="btn-white"
         style={{ color: "#4776e6", marginTop: 4, opacity: valid ? 1 : 0.4 }}
       >
-        Далее →
+        {t("next")}
       </button>
     </div>
   );
@@ -440,6 +582,7 @@ function Step2({
   onNext: () => void;
   onBack: () => void;
 }) {
+  const t = useT(dict);
   const autoPPP = data.totalParts > 0 ? Math.ceil(data.pagesTotal / data.totalParts) : 0;
 
   const handleParts = (v: number) => {
@@ -455,7 +598,7 @@ function Step2({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <NumberStepper
-        label="Количество частей"
+        label={t("partsField")}
         value={data.totalParts}
         onChange={handleParts}
         step={1}
@@ -464,7 +607,7 @@ function Step2({
 
       <div>
         <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-          Всего страниц в книге
+          {t("totalPagesField")}
         </label>
         <input
           type="number"
@@ -479,15 +622,15 @@ function Step2({
       <div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
           <label style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-            Страниц в одной части
+            {t("pagesPerPartField")}
           </label>
           <span className="glass-chip" style={{ padding: "3px 10px", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.7)" }}>
-            авто
+            {t("auto")}
           </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <div className="glass-sm" style={{ flex: 1, padding: "14px 16px", borderRadius: 14, textAlign: "center", fontWeight: 700, color: "#ffffff" }}>
-            ≈ {autoPPP} стр/часть
+            {t("pagesPerPartAuto", { n: autoPPP })}
           </div>
           <input
             type="number"
@@ -495,31 +638,31 @@ function Step2({
             onChange={(e) => update({ pagesPerPart: Math.max(1, Number(e.target.value)) })}
             className="glass-input"
             style={{ width: 96, textAlign: "center", fontWeight: 700 }}
-            placeholder="Своё"
+            placeholder={t("customPlaceholder")}
           />
         </div>
         <p style={{ fontSize: 12, marginTop: 6, color: "rgba(255,255,255,0.55)" }}>
-          Авто = {data.pagesTotal} ÷ {data.totalParts} = {autoPPP}. Можно задать своё значение справа.
+          {t("autoFormula", { total: data.pagesTotal, parts: data.totalParts, ppp: autoPPP })}
         </p>
       </div>
 
       <div className="glass-sm" style={{ padding: 16, borderRadius: 16 }}>
         <p style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-          👀 Предпросмотр
+          {t("preview")}
         </p>
         <p style={{ fontSize: 14, color: "rgba(255,255,255,0.85)", margin: 0 }}>
-          Книга разбита на{" "}
-          <span style={{ fontWeight: 700, color: "#ffffff" }}>{data.totalParts} частей</span>,
-          по <span style={{ fontWeight: 700, color: "#ffffff" }}>{data.pagesPerPart} страниц</span> в каждой
+          {t("previewPrefix")}
+          <span style={{ fontWeight: 700, color: "#ffffff" }}>{t("previewParts", { n: data.totalParts })}</span>
+          {t("previewMiddle")}<span style={{ fontWeight: 700, color: "#ffffff" }}>{t("previewPages", { n: data.pagesPerPart })}</span>{t("previewSuffix")}
         </p>
       </div>
 
       <div style={{ display: "flex", gap: 12, paddingTop: 8 }}>
         <button onClick={onBack} className="btn-glass" style={{ flex: 1 }}>
-          ← Назад
+          {t("back")}
         </button>
         <button onClick={onNext} className="btn-white" style={{ flex: 1, color: "#4776e6" }}>
-          Далее →
+          {t("next")}
         </button>
       </div>
     </div>
@@ -539,11 +682,12 @@ function Step3({
   onBack: () => void;
 }) {
   const earning = Math.round(data.price * 0.15);
+  const t = useT(dict);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <NumberStepper
-        label="Стоимость задания для родителя"
+        label={t("priceField")}
         sublabel="(₸)"
         value={data.price}
         onChange={(v) => update({ price: Math.max(0, v) })}
@@ -554,10 +698,10 @@ function Step3({
       <div style={{ background: "rgba(0,200,100,0.15)", border: "1px solid rgba(100,255,150,0.2)", borderRadius: 16, padding: 16, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div>
           <p style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.75)", margin: 0 }}>
-            Ваш заработок
+            {t("yourEarning")}
           </p>
           <p style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", margin: "2px 0 0" }}>
-            15% от стоимости
+            {t("percentOfPrice")}
           </p>
         </div>
         <p style={{ fontSize: 26, fontWeight: 900, color: "#ffffff", margin: 0 }}>
@@ -567,17 +711,17 @@ function Step3({
 
       <div>
         <p style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.6)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-          Предпросмотр карточки
+          {t("cardPreview")}
         </p>
         <ChallengeCard data={data} />
       </div>
 
       <div style={{ display: "flex", gap: 12, paddingTop: 8 }}>
         <button onClick={onBack} className="btn-glass" style={{ flex: 1 }}>
-          ← Назад
+          {t("back")}
         </button>
         <button onClick={onNext} className="btn-white" style={{ flex: 1, color: "#4776e6" }}>
-          Далее →
+          {t("next")}
         </button>
       </div>
     </div>
@@ -589,6 +733,7 @@ function ChallengeCard({ data }: { data: FormData }) {
   const colors = ["#7B61FF", "#1FA463", "#EA8C2D", "#E879A0", "#38BDF8"];
   const colorIdx = data.title ? data.title.charCodeAt(0) % colors.length : 0;
   const bg = colors[colorIdx];
+  const t = useT(dict);
 
   return (
     <div className="glass-sm" style={{ borderRadius: 20, overflow: "hidden" }}>
@@ -596,7 +741,7 @@ function ChallengeCard({ data }: { data: FormData }) {
         style={{ height: 96, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "12px 16px", background: bg }}
       >
         <p style={{ color: "#ffffff", fontWeight: 800, textAlign: "center", fontSize: 14, lineHeight: 1.3, margin: 0, WebkitLineClamp: 2, overflow: "hidden", textOverflow: "ellipsis", textShadow: "0 1px 3px rgba(0,0,0,0.3)" }}>
-          {data.bookTitle || "Название книги"}
+          {data.bookTitle || t("bookTitleFallback")}
         </p>
         {data.bookAuthor && (
           <p style={{ color: "#ffffff", fontSize: 12, marginTop: 4, opacity: 0.8, textAlign: "center", margin: "4px 0 0" }}>
@@ -606,18 +751,18 @@ function ChallengeCard({ data }: { data: FormData }) {
       </div>
       <div style={{ padding: 14 }}>
         <p style={{ fontWeight: 700, color: "#ffffff", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {data.title || "Название задания"}
+          {data.title || t("taskNameFallback")}
         </p>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
           <span className="glass-chip" style={{ padding: "3px 8px", fontSize: 11, fontWeight: 700, color: "#ffffff" }}>
-            📚 {data.totalParts} частей
+            📚 {t("partsCount", { n: data.totalParts })}
           </span>
           <span style={{ background: "rgba(255,255,255,0.88)", color: "#4776e6", borderRadius: 9999, padding: "3px 8px", fontSize: 12, fontWeight: 800 }}>
             {data.price.toLocaleString("ru-RU")} ₸
           </span>
         </div>
         <div style={{ marginTop: 6, fontSize: 12, color: "rgba(255,255,255,0.6)" }}>
-          Возраст {data.ageMin}–{data.ageMax} лет · {data.pagesPerPart} стр/часть
+          {t("cardAge", { a: data.ageMin, b: data.ageMax, c: data.pagesPerPart })}
         </div>
       </div>
     </div>
@@ -640,6 +785,7 @@ function Step4({
   isSuccess: boolean;
   onGoToBooks: () => void;
 }) {
+  const t = useT(dict);
   if (isSuccess) {
     return (
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: "24px 0", gap: 20 }}>
@@ -648,14 +794,14 @@ function Step4({
         </div>
         <div>
           <h2 style={{ fontSize: 22, fontWeight: 900, color: "#ffffff", margin: 0 }}>
-            Задание отправлено!
+            {t("taskSent")}
           </h2>
           <p style={{ fontSize: 14, marginTop: 8, color: "rgba(255,255,255,0.7)", maxWidth: 280, margin: "8px auto 0", lineHeight: 1.5 }}>
-            Задание отправлено на модерацию! Вы получите уведомление после проверки.
+            {t("taskSentText")}
           </p>
         </div>
         <button onClick={onGoToBooks} type="button" className="btn-white" style={{ color: "#4776e6", width: "100%" }}>
-          К моим заданиям 📋
+          {t("toMyTasks")}
         </button>
       </div>
     );
@@ -665,21 +811,21 @@ function Step4({
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div>
         <p style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.6)", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-          Финальный предпросмотр
+          {t("finalPreview")}
         </p>
         <ChallengeCard data={data} />
       </div>
 
       <div className="glass-sm" style={{ padding: 16, borderRadius: 16 }}>
         {[
-          ["Категория", data.category === "reading" ? "📖 Чтение" : data.category],
-          ["Книга", `${data.bookTitle}${data.bookAuthor ? ` (${data.bookAuthor})` : ""}`],
-          ["Возраст", `${data.ageMin}–${data.ageMax} лет`],
-          ["Частей в книге", `${data.totalParts}`],
-          ["Всего страниц", `${data.pagesTotal}`],
-          ["Страниц в части", `${data.pagesPerPart}`],
-          ["Цена", `${data.price.toLocaleString("ru-RU")} ₸`],
-          ["Ваш заработок (15%)", `${Math.round(data.price * 0.15).toLocaleString("ru-RU")} ₸`],
+          [t("sumCategory"), data.category === "reading" ? t("catReading") : data.category],
+          [t("sumBook"), `${data.bookTitle}${data.bookAuthor ? ` (${data.bookAuthor})` : ""}`],
+          [t("sumAge"), t("ageRange", { a: data.ageMin, b: data.ageMax })],
+          [t("sumPartsInBook"), `${data.totalParts}`],
+          [t("sumTotalPages"), `${data.pagesTotal}`],
+          [t("sumPagesPerPart"), `${data.pagesPerPart}`],
+          [t("sumPrice"), `${data.price.toLocaleString("ru-RU")} ₸`],
+          [t("sumEarning"), `${Math.round(data.price * 0.15).toLocaleString("ru-RU")} ₸`],
         ].map(([key, val]) => (
           <div
             key={key}
@@ -692,12 +838,12 @@ function Step4({
       </div>
 
       <div style={{ background: "rgba(255,160,0,0.15)", border: "1px solid rgba(255,200,0,0.25)", borderRadius: 12, padding: 12, color: "rgba(255,200,100,0.9)", fontSize: 12 }}>
-        После отправки задание попадёт на модерацию. Обычно это занимает 1–2 дня.
+        {t("moderationNote")}
       </div>
 
       <div style={{ display: "flex", gap: 12, paddingTop: 8 }}>
         <button onClick={onBack} disabled={isLoading} type="button" className="btn-glass" style={{ flex: 1, opacity: isLoading ? 0.4 : 1 }}>
-          ← Назад
+          {t("back")}
         </button>
         <button
           onClick={onPublish}
@@ -709,10 +855,10 @@ function Step4({
           {isLoading ? (
             <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
               <span style={{ width: 16, height: 16, border: "2px solid rgba(71,118,230,0.3)", borderTop: "2px solid #4776e6", borderRadius: "50%", display: "inline-block", animation: "spin 0.8s linear infinite" }} />
-              Отправка...
+              {t("sending")}
             </span>
           ) : (
-            "Опубликовать задание 🚀"
+            t("publishTask")
           )}
         </button>
       </div>
@@ -725,6 +871,7 @@ function ExpertCreateInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const editId = searchParams.get("edit");
+  const t = useT(dict);
 
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<FormData>(DEFAULT);
@@ -781,7 +928,7 @@ function ExpertCreateInner() {
       setTimeout(() => router.push("/expert/books"), 2000);
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.message || "Ошибка публикации");
+      toast.error(err.response?.data?.message || t("publishError"));
     },
   });
 
@@ -797,7 +944,7 @@ function ExpertCreateInner() {
           <ChevronLeft size={20} color="#ffffff" strokeWidth={2.5} />
         </button>
         <h1 style={{ fontSize: 20, fontWeight: 900, color: "#ffffff", margin: 0 }}>
-          {editId ? "Редактировать задание" : "Создать задание"}
+          {editId ? t("editTask") : t("createTask")}
         </h1>
       </div>
 
@@ -849,11 +996,12 @@ function ExpertCreateInner() {
 }
 
 export default function ExpertCreatePage() {
+  const t = useT(dict);
   return (
     <Suspense
       fallback={
         <main style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <p style={{ color: "rgba(255,255,255,0.6)" }}>Загрузка...</p>
+          <p style={{ color: "rgba(255,255,255,0.6)" }}>{t("loading")}</p>
         </main>
       }
     >

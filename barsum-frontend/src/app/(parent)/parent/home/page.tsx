@@ -12,6 +12,70 @@ import type { Challenge, Child, Payment, RewardRequest } from "@/types/index";
 import { CoinIcon } from "@/components/CoinIcon";
 import { RewardRequestCard } from "@/components/RewardRequestCard";
 import { Portal } from "@/components/Portal";
+import { useT, type Dict } from "@/i18n/useT";
+
+const dict: Dict = {
+  ru: {
+    parts: "{n} частей",
+    buyBtn: "Купить",
+    back: "← Назад",
+    toPay: "К оплате",
+    qrInstructions: "Откройте приложение Kaspi.kz, отсканируйте QR и оплатите {total} ₸. После оплаты нажмите кнопку ниже.",
+    processing: "Оформление...",
+    confirmPaid: "✅ Я оплатил(а), подтвердить",
+    orderError: "Ошибка оформления",
+    ageParts: "{min}–{max} лет · {parts} частей",
+    forWhom: "Для кого покупаем?",
+    noChildren: "Нет детей. Добавьте в кабинете.",
+    selectChild: "— выберите ребёнка —",
+    childOption: "{name}, {age} лет",
+    challengePrice: "Цена задания",
+    coinsForChild: "Монеты для ребёнка",
+    maxCoins: "50 000 монет",
+    total: "Итого",
+    payBtn: "Оплатить 🚀",
+    selectChildWarn: "⚠️ Сначала выберите ребёнка, для которого покупаете",
+    purchaseDone: "Покупка оформлена!",
+    childGotAccess: "Ребёнок уже получил доступ к заданию!",
+    great: "Отлично!",
+    catalogTitle: "Каталог заданий",
+    cabinet: "← Кабинет",
+    allAges: "Все",
+    childRequests: "🔔 Запросы детей",
+    noChallenges: "Нет заданий",
+    tryChangeFilter: "Попробуйте изменить фильтр возраста",
+  },
+  kk: {
+    parts: "{n} бөлім",
+    buyBtn: "Сатып алу",
+    back: "← Артқа",
+    toPay: "Төлеуге",
+    qrInstructions: "Kaspi.kz қосымшасын ашып, QR-кодты сканерлеп, {total} ₸ төлеңіз. Төлегеннен кейін төмендегі батырманы басыңыз.",
+    processing: "Рәсімделуде...",
+    confirmPaid: "✅ Төледім, растау",
+    orderError: "Рәсімдеу қатесі",
+    ageParts: "{min}–{max} жас · {parts} бөлім",
+    forWhom: "Кімге сатып аламыз?",
+    noChildren: "Балалар жоқ. Кабинетте қосыңыз.",
+    selectChild: "— баланы таңдаңыз —",
+    childOption: "{name}, {age} жас",
+    challengePrice: "Тапсырма бағасы",
+    coinsForChild: "Балаға монеталар",
+    maxCoins: "50 000 монета",
+    total: "Барлығы",
+    payBtn: "Төлеу 🚀",
+    selectChildWarn: "⚠️ Алдымен сатып алатын балаңызды таңдаңыз",
+    purchaseDone: "Сатып алу рәсімделді!",
+    childGotAccess: "Бала тапсырмаға қол жеткізді!",
+    great: "Тамаша!",
+    catalogTitle: "Тапсырмалар каталогы",
+    cabinet: "← Кабинет",
+    allAges: "Барлығы",
+    childRequests: "🔔 Балалардың сұраулары",
+    noChallenges: "Тапсырмалар жоқ",
+    tryChangeFilter: "Жас сүзгісін өзгертіп көріңіз",
+  },
+};
 
 const COIN_MAX = 50_000;
 const COIN_STEP = 1_000;
@@ -40,6 +104,7 @@ function ChallengeCard({
   challenge: Challenge & { author?: { name?: string } };
   onBuy: () => void;
 }) {
+  const t = useT(dict);
   const colorIdx = challenge.title.charCodeAt(0) % CARD_GRADS.length;
   const grad = CARD_GRADS[colorIdx];
 
@@ -62,7 +127,7 @@ function ChallengeCard({
           </>
         )}
         <span style={{ position: "absolute", top: 8, left: 8, fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 9999, background: "rgba(0,0,0,0.25)", color: "#ffffff" }}>
-          {challenge.totalParts} частей
+          {t("parts", { n: challenge.totalParts })}
         </span>
         {challenge.membersCount > 0 && (
           <span style={{ position: "absolute", top: 8, right: 8, fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 9999, background: "rgba(0,0,0,0.25)", color: "#ffffff" }}>
@@ -88,7 +153,7 @@ function ChallengeCard({
               onClick={onBuy}
               style={{ padding: "7px 14px", borderRadius: 9999, border: "none", background: "rgba(255,255,255,0.88)", color: "#4776e6", fontWeight: 900, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}
             >
-              Купить
+              {t("buyBtn")}
             </button>
           </div>
         </div>
@@ -105,17 +170,18 @@ function KaspiQrStep({
   onConfirm: () => void;
   isPending: boolean;
 }) {
+  const t = useT(dict);
   return (
     <div style={{ padding: "16px 20px 32px", display: "flex", flexDirection: "column", gap: 16 }}>
       <button
         onClick={onBack}
         style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.65)", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", padding: 0, alignSelf: "flex-start" }}
       >
-        ← Назад
+        {t("back")}
       </button>
 
       <div style={{ textAlign: "center" }}>
-        <p style={{ margin: "0 0 2px", fontSize: 12, color: "rgba(255,255,255,0.55)" }}>К оплате</p>
+        <p style={{ margin: "0 0 2px", fontSize: 12, color: "rgba(255,255,255,0.55)" }}>{t("toPay")}</p>
         <p style={{ margin: 0, fontWeight: 900, fontSize: 30, color: "#ffffff" }}>{total.toLocaleString()} ₸</p>
       </div>
 
@@ -128,7 +194,7 @@ function KaspiQrStep({
       </div>
 
       <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.65)", textAlign: "center", lineHeight: 1.5 }}>
-        Откройте приложение Kaspi.kz, отсканируйте QR и оплатите {total.toLocaleString()} ₸. После оплаты нажмите кнопку ниже.
+        {t("qrInstructions", { total: total.toLocaleString() })}
       </p>
 
       <button
@@ -147,7 +213,7 @@ function KaspiQrStep({
           opacity: isPending ? 0.6 : 1,
         }}
       >
-        {isPending ? "Оформление..." : "✅ Я оплатил(а), подтвердить"}
+        {isPending ? t("processing") : t("confirmPaid")}
       </button>
     </div>
   );
@@ -161,6 +227,7 @@ function PurchaseModal({
   onClose: () => void;
   onSuccess: (payment: Payment) => void;
 }) {
+  const t = useT(dict);
   const [childId, setChildId] = useState("");
   const [coinsAmount, setCoinsAmount] = useState(0);
   const [step, setStep] = useState<"form" | "qr">("form");
@@ -171,7 +238,7 @@ function PurchaseModal({
   const createMutation = useMutation({
     mutationFn: () => paymentsApi.create({ childId, challengeId: challenge.id, coinsAmount }),
     onSuccess: (payment: Payment) => onSuccess(payment),
-    onError: (err: any) => { toast.error(err?.response?.data?.message || "Ошибка оформления"); },
+    onError: (err: any) => { toast.error(err?.response?.data?.message || t("orderError")); },
   });
 
   const colorIdx = challenge.title.charCodeAt(0) % CARD_GRADS.length;
@@ -206,7 +273,7 @@ function PurchaseModal({
           </button>
           <h2 style={{ margin: 0, fontSize: 20, fontWeight: 900, color: "#ffffff", lineHeight: 1.2 }}>{challenge.bookTitle || challenge.title}</h2>
           <p style={{ margin: "4px 0 0", fontSize: 13, color: "rgba(255,255,255,0.75)" }}>
-            {challenge.ageMin}–{challenge.ageMax} лет · {challenge.totalParts} частей
+            {t("ageParts", { min: challenge.ageMin, max: challenge.ageMax, parts: challenge.totalParts })}
           </p>
         </div>
 
@@ -222,11 +289,11 @@ function PurchaseModal({
           {/* Child selector */}
           <div>
             <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.65)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-              Для кого покупаем?
+              {t("forWhom")}
             </label>
             {children.length === 0 ? (
               <p style={{ fontSize: 14, textAlign: "center", padding: "12px 0", color: "rgba(255,255,255,0.55)" }}>
-                Нет детей. Добавьте в кабинете.
+                {t("noChildren")}
               </p>
             ) : (
               <select
@@ -235,10 +302,10 @@ function PurchaseModal({
                 className="glass-input"
                 style={{ appearance: "none", cursor: "pointer", border: !childId ? "1px solid rgba(255,200,0,0.6)" : undefined }}
               >
-                <option value="" style={{ background: "#2a1a60" }}>— выберите ребёнка —</option>
+                <option value="" style={{ background: "#2a1a60" }}>{t("selectChild")}</option>
                 {children.map((ch) => (
                   <option key={ch.id} value={ch.id} style={{ background: "#2a1a60" }}>
-                    {ch.name}, {ch.age} лет
+                    {t("childOption", { name: ch.name, age: ch.age })}
                   </option>
                 ))}
               </select>
@@ -249,7 +316,7 @@ function PurchaseModal({
           <div className="glass-sm" style={{ padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div>
               <p style={{ margin: 0, fontWeight: 800, fontSize: 14, color: "#ffffff" }}>{challenge.title}</p>
-              <p style={{ margin: "3px 0 0", fontSize: 12, color: "rgba(255,255,255,0.55)" }}>Цена задания</p>
+              <p style={{ margin: "3px 0 0", fontSize: 12, color: "rgba(255,255,255,0.55)" }}>{t("challengePrice")}</p>
             </div>
             <p style={{ margin: 0, fontWeight: 900, fontSize: 22, color: "#ffffff" }}>{challenge.price.toLocaleString()} ₸</p>
           </div>
@@ -257,7 +324,7 @@ function PurchaseModal({
           {/* Coins slider */}
           <div className="glass-sm" style={{ padding: 16 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
-              <p style={{ margin: 0, fontWeight: 800, fontSize: 14, color: "#ffffff" }}>Монеты для ребёнка <CoinIcon size={13} /></p>
+              <p style={{ margin: 0, fontWeight: 800, fontSize: 14, color: "#ffffff" }}>{t("coinsForChild")} <CoinIcon size={13} /></p>
               <p style={{ margin: 0, fontWeight: 900, fontSize: 18, color: "#ffd200" }}>{coinsAmount.toLocaleString()}</p>
             </div>
             <p style={{ margin: "0 0 12px", fontSize: 12, color: "rgba(255,255,255,0.55)" }}>+ {coinsTg.toLocaleString()} ₸</p>
@@ -272,14 +339,14 @@ function PurchaseModal({
             />
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 4 }}>
               <span>0</span>
-              <span>50 000 монет</span>
+              <span>{t("maxCoins")}</span>
             </div>
           </div>
 
           {/* Total + buy */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 4 }}>
             <div>
-              <p style={{ margin: 0, fontSize: 12, color: "rgba(255,255,255,0.55)" }}>Итого</p>
+              <p style={{ margin: 0, fontSize: 12, color: "rgba(255,255,255,0.55)" }}>{t("total")}</p>
               <p style={{ margin: "2px 0 0", fontWeight: 900, fontSize: 26, color: "#ffffff" }}>{total.toLocaleString()} ₸</p>
             </div>
             <button
@@ -299,12 +366,12 @@ function PurchaseModal({
                 transition: "opacity 0.15s",
               }}
             >
-              Оплатить 🚀
+              {t("payBtn")}
             </button>
           </div>
           {!childId && children.length > 0 && (
             <p style={{ margin: "-8px 0 0", fontSize: 12.5, fontWeight: 700, color: "#ffd200", textAlign: "right" }}>
-              ⚠️ Сначала выберите ребёнка, для которого покупаете
+              {t("selectChildWarn")}
             </p>
           )}
         </div>
@@ -316,6 +383,7 @@ function PurchaseModal({
 }
 
 function SuccessModal({ onClose }: { onClose: () => void }) {
+  const t = useT(dict);
   return (
     <Portal>
     <div style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 24, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}>
@@ -324,15 +392,15 @@ function SuccessModal({ onClose }: { onClose: () => void }) {
         style={{ width: "100%", maxWidth: 340, padding: 40, textAlign: "center" }}
       >
         <div style={{ fontSize: 64, marginBottom: 20 }}>🎉</div>
-        <h2 style={{ margin: 0, fontSize: 24, fontWeight: 900, color: "#ffffff" }}>Покупка оформлена!</h2>
+        <h2 style={{ margin: 0, fontSize: 24, fontWeight: 900, color: "#ffffff" }}>{t("purchaseDone")}</h2>
         <p style={{ margin: "10px 0 28px", fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.65)", lineHeight: 1.5 }}>
-          Ребёнок уже получил доступ к заданию!
+          {t("childGotAccess")}
         </p>
         <button
           onClick={onClose}
           style={{ width: "100%", padding: "15px 0", borderRadius: 9999, border: "none", background: "rgba(255,255,255,0.9)", color: "#4776e6", fontWeight: 900, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}
         >
-          Отлично!
+          {t("great")}
         </button>
       </div>
     </div>
@@ -341,6 +409,7 @@ function SuccessModal({ onClose }: { onClose: () => void }) {
 }
 
 export default function ParentHomePage() {
+  const t = useT(dict);
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -389,13 +458,13 @@ export default function ParentHomePage() {
         style={{ padding: "52px 20px 16px", position: "sticky", top: 0, zIndex: 10 }}
       >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 900, color: "#ffffff" }}>Каталог заданий</h1>
+          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 900, color: "#ffffff" }}>{t("catalogTitle")}</h1>
           <button
             onClick={() => router.push("/parent/cabinet")}
             className="glass-chip"
             style={{ padding: "8px 14px", border: "1px solid rgba(255,255,255,0.25)", cursor: "pointer", background: "rgba(255,255,255,0.12)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", borderRadius: 9999, color: "#ffffff", fontWeight: 700, fontSize: 13, fontFamily: "inherit" }}
           >
-            ← Кабинет
+            {t("cabinet")}
           </button>
         </div>
 
@@ -421,7 +490,7 @@ export default function ParentHomePage() {
                   transition: "all 0.15s",
                 }}
               >
-                {f.label}
+                {f.value === "" ? t("allAges") : f.label}
               </button>
             );
           })}
@@ -432,7 +501,7 @@ export default function ParentHomePage() {
       {pendingRequests.length > 0 && (
         <div style={{ padding: "16px 20px 0" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 900, color: "#ffffff" }}>🔔 Запросы детей</h2>
+            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 900, color: "#ffffff" }}>{t("childRequests")}</h2>
             <span style={{ fontSize: 12, fontWeight: 900, padding: "2px 9px", borderRadius: 9999, background: "#ef4444", color: "#ffffff" }}>{pendingRequests.length}</span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -453,9 +522,9 @@ export default function ParentHomePage() {
         ) : filteredChallenges.length === 0 ? (
           <div className="glass" style={{ padding: 48, textAlign: "center" }}>
             <p style={{ fontSize: 56, margin: "0 0 16px" }}>📚</p>
-            <p style={{ margin: 0, fontWeight: 900, fontSize: 18, color: "#ffffff" }}>Нет заданий</p>
+            <p style={{ margin: 0, fontWeight: 900, fontSize: 18, color: "#ffffff" }}>{t("noChallenges")}</p>
             <p style={{ margin: "8px 0 0", fontSize: 14, color: "rgba(255,255,255,0.55)" }}>
-              Попробуйте изменить фильтр возраста
+              {t("tryChangeFilter")}
             </p>
           </div>
         ) : (

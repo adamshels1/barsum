@@ -2,15 +2,22 @@
 
 import { ChevronLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useT, type Dict } from "@/i18n/useT";
+
+const dict: Dict = {
+  ru: { back: "Назад" },
+  kk: { back: "Артқа" },
+};
 
 /** Кнопка «Назад» для страниц входа — возвращает на выбор роли на главной. */
 export function BackButton({ href = "/" }: { href?: string }) {
   const router = useRouter();
+  const t = useT(dict);
   return (
     <button
       type="button"
       onClick={() => router.push(href)}
-      aria-label="Назад"
+      aria-label={t("back")}
       style={{
         position: "fixed",
         top: "max(20px, env(safe-area-inset-top))",

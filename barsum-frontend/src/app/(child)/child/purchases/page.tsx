@@ -6,6 +6,30 @@ import { useRouter } from "next/navigation";
 import { rewardsApi } from "@/lib/api/rewards";
 import { CoinIcon } from "@/components/CoinIcon";
 import { rewardPhotoUrl } from "@/lib/media";
+import { useT, type Dict } from "@/i18n/useT";
+
+const dict: Dict = {
+  ru: {
+    pending: "Ждёт родителя",
+    delivered: "Получено",
+    rejected: "Отклонено",
+    back: "Назад",
+    title: "История покупок",
+    empty: "Покупок пока нет",
+    emptySub: "Здесь появятся награды, которые ты возьмёшь в магазине",
+    rewardFallback: "Награда",
+  },
+  kk: {
+    pending: "Ата-ананы күтуде",
+    delivered: "Алынды",
+    rejected: "Қабылданбады",
+    back: "Артқа",
+    title: "Сатып алулар тарихы",
+    empty: "Әзірге сатып алулар жоқ",
+    emptySub: "Дүкеннен алатын сыйлықтарың осында пайда болады",
+    rewardFallback: "Сыйлық",
+  },
+};
 
 interface RewardRequest {
   id: string;
@@ -21,12 +45,6 @@ const TYPE_EMOJI: Record<string, string> = {
   experience: "🎉",
 };
 
-const STATUS_LABEL: Record<RewardRequest["status"], string> = {
-  pending: "Ждёт родителя",
-  delivered: "Получено",
-  rejected: "Отклонено",
-};
-
 const STATUS_COLOR: Record<RewardRequest["status"], string> = {
   pending: "rgba(255,200,0,0.25)",
   delivered: "rgba(34,197,94,0.3)",
@@ -39,6 +57,12 @@ function formatDate(iso: string) {
 
 export default function ChildPurchasesPage() {
   const router = useRouter();
+  const t = useT(dict);
+  const STATUS_LABEL: Record<RewardRequest["status"], string> = {
+    pending: t("pending"),
+    delivered: t("delivered"),
+    rejected: t("rejected"),
+  };
 
   const { data: requests = [], isLoading } = useQuery<RewardRequest[]>({
     queryKey: ["reward-requests-my"],
@@ -53,10 +77,10 @@ export default function ChildPurchasesPage() {
         style={{ display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.65)", fontSize: 14, fontWeight: 700, fontFamily: "inherit", marginBottom: 20, padding: 0 }}
       >
         <ChevronLeft size={18} strokeWidth={2.5} />
-        Назад
+        {t("back")}
       </button>
 
-      <h1 style={{ margin: "0 0 20px", fontSize: 22, fontWeight: 900, color: "#ffffff" }}>История покупок</h1>
+      <h1 style={{ margin: "0 0 20px", fontSize: 22, fontWeight: 900, color: "#ffffff" }}>{t("title")}</h1>
 
       {isLoading ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -67,8 +91,8 @@ export default function ChildPurchasesPage() {
       ) : requests.length === 0 ? (
         <div className="glass" style={{ padding: 40, textAlign: "center" }}>
           <ShoppingBag size={32} color="rgba(255,255,255,0.5)" strokeWidth={1.5} style={{ margin: "0 auto 12px" }} />
-          <p style={{ margin: 0, fontWeight: 900, fontSize: 16, color: "#ffffff" }}>Покупок пока нет</p>
-          <p style={{ margin: "6px 0 0", fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.55)" }}>Здесь появятся награды, которые ты возьмёшь в магазине</p>
+          <p style={{ margin: 0, fontWeight: 900, fontSize: 16, color: "#ffffff" }}>{t("empty")}</p>
+          <p style={{ margin: "6px 0 0", fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.55)" }}>{t("emptySub")}</p>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -84,7 +108,7 @@ export default function ChildPurchasesPage() {
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ margin: 0, fontWeight: 800, color: "#ffffff", fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {req.reward?.name || "Награда"}
+                  {req.reward?.name || t("rewardFallback")}
                 </p>
                 <p style={{ margin: "2px 0 0", fontSize: 12.5, color: "rgba(255,255,255,0.6)" }}>
                   {formatDate(req.createdAt)}

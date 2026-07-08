@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Nunito } from "next/font/google";
 import { Toaster } from "sonner";
 import { QueryProvider } from "@/providers/query-provider";
+import { HtmlLangSync } from "@/i18n/HtmlLangSync";
 import "./globals.css";
 
 const nunito = Nunito({
@@ -24,6 +25,7 @@ export default function RootLayout({
     <html lang="ru">
       <body className={`${nunito.variable} font-sans`}>
         <QueryProvider>
+          <HtmlLangSync />
           {children}
           <Toaster richColors position="top-center" />
         </QueryProvider>

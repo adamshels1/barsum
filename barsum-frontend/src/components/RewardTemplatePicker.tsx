@@ -3,6 +3,20 @@
 import { useState } from "react";
 import { CoinIcon } from "@/components/CoinIcon";
 import { REWARD_TEMPLATES, type RewardTemplate } from "@/lib/rewardTemplates";
+import { useT, type Dict } from "@/i18n/useT";
+
+const dict: Dict = {
+  ru: {
+    added: "✓ Добавлено",
+    cancel: "Отмена",
+    addBtn: "Добавить ✓",
+  },
+  kk: {
+    added: "✓ Қосылды",
+    cancel: "Бас тарту",
+    addBtn: "Қосу ✓",
+  },
+};
 
 const GLASS: React.CSSProperties = {
   background: "rgba(255,255,255,0.13)",
@@ -44,12 +58,13 @@ function TemplateCard({
 }) {
   const [editing, setEditing] = useState(false);
   const [cost, setCost] = useState(String(template.cost));
+  const t = useT(dict);
 
   if (isAdded) {
     return (
       <div style={{ ...GLASS, padding: "10px 10px 12px", textAlign: "center", minWidth: 0 }}>
         <ImageTile template={template} dim />
-        <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.8)" }}>✓ Добавлено</p>
+        <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.8)" }}>{t("added")}</p>
       </div>
     );
   }
@@ -60,7 +75,7 @@ function TemplateCard({
         <button
           type="button"
           onClick={() => setEditing(false)}
-          aria-label="Отмена"
+          aria-label={t("cancel")}
           style={{ position: "absolute", top: 6, right: 6, width: 22, height: 22, borderRadius: "50%", border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13, lineHeight: "22px", padding: 0, background: "rgba(255,255,255,0.18)", color: "rgba(255,255,255,0.8)" }}
         >
           ×
@@ -98,7 +113,7 @@ function TemplateCard({
             textOverflow: "ellipsis",
           }}
         >
-          {isAdding ? "..." : "Добавить ✓"}
+          {isAdding ? "..." : t("addBtn")}
         </button>
       </div>
     );

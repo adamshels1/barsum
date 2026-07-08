@@ -5,6 +5,34 @@ import { ChevronLeft, ChevronRight, Users2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { sessionsApi } from "@/lib/api/sessions";
 import { childPhotoUrl } from "@/lib/media";
+import { useT, type Dict } from "@/i18n/useT";
+
+const dict: Dict = {
+  ru: {
+    back: "Назад",
+    students: "Ученики",
+    subtitle: "Дети, которых записали на ваши задания",
+    noStudents: "Учеников пока нет",
+    noStudentsHint: "Здесь появятся дети, которых родители запишут на ваши книги",
+    yearsOld: "{n} лет",
+    bookOne: "книга",
+    bookMany: "книги",
+    partsWord: "частей",
+    lastActivity: "последняя активность",
+  },
+  kk: {
+    back: "Артқа",
+    students: "Оқушылар",
+    subtitle: "Тапсырмаларыңызға жазылған балалар",
+    noStudents: "Әзірге оқушылар жоқ",
+    noStudentsHint: "Мұнда ата-аналар кітаптарыңызға жазатын балалар пайда болады",
+    yearsOld: "{n} жаста",
+    bookOne: "кітап",
+    bookMany: "кітап",
+    partsWord: "бөлім",
+    lastActivity: "соңғы белсенділік",
+  },
+};
 
 interface Student {
   childId: string;
@@ -24,6 +52,7 @@ function formatDate(iso: string) {
 
 export default function ExpertStudentsPage() {
   const router = useRouter();
+  const t = useT(dict);
 
   const { data: students = [], isLoading } = useQuery<Student[]>({
     queryKey: ["expert-students"],
@@ -37,12 +66,12 @@ export default function ExpertStudentsPage() {
         style={{ display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.65)", fontSize: 14, fontWeight: 700, fontFamily: "inherit", marginBottom: 20, padding: 0 }}
       >
         <ChevronLeft size={18} strokeWidth={2.5} />
-        Назад
+        {t("back")}
       </button>
 
-      <h1 style={{ margin: "0 0 4px", fontSize: 24, fontWeight: 900, color: "#ffffff" }}>Ученики</h1>
+      <h1 style={{ margin: "0 0 4px", fontSize: 24, fontWeight: 900, color: "#ffffff" }}>{t("students")}</h1>
       <p style={{ margin: "0 0 20px", fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.55)" }}>
-        Дети, которых записали на ваши задания
+        {t("subtitle")}
       </p>
 
       {isLoading ? (
@@ -56,9 +85,9 @@ export default function ExpertStudentsPage() {
           <div style={{ width: 56, height: 56, borderRadius: 18, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
             <Users2 size={24} color="#ffffff" strokeWidth={2} />
           </div>
-          <p style={{ margin: 0, fontWeight: 900, color: "#ffffff" }}>Учеников пока нет</p>
+          <p style={{ margin: 0, fontWeight: 900, color: "#ffffff" }}>{t("noStudents")}</p>
           <p style={{ margin: "6px 0 0", fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.55)" }}>
-            Здесь появятся дети, которых родители запишут на ваши книги
+            {t("noStudentsHint")}
           </p>
         </div>
       ) : (
@@ -82,14 +111,14 @@ export default function ExpertStudentsPage() {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ margin: 0, fontWeight: 800, color: "#ffffff", fontSize: 15 }}>{s.name}</p>
                   <p style={{ margin: "2px 0 6px", fontSize: 12, color: "rgba(255,255,255,0.6)" }}>
-                    {s.age} лет · {s.booksCount} {s.booksCount === 1 ? "книга" : "книги"} · 🔥 {s.streak}
+                    {t("yearsOld", { n: s.age })} · {s.booksCount} {s.booksCount === 1 ? t("bookOne") : t("bookMany")} · 🔥 {s.streak}
                   </p>
                   <div style={{ height: 5, borderRadius: 9999, background: "rgba(255,255,255,0.15)", overflow: "hidden", marginBottom: 4 }}>
                     <div style={{ height: "100%", width: `${progress}%`, background: "rgba(255,255,255,0.85)", borderRadius: 9999 }} />
                   </div>
                   <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.5)" }}>
-                    {s.completedParts}/{s.totalParts} частей
-                    {s.lastActivityAt ? ` · последняя активность ${formatDate(s.lastActivityAt)}` : ""}
+                    {s.completedParts}/{s.totalParts} {t("partsWord")}
+                    {s.lastActivityAt ? ` · ${t("lastActivity")} ${formatDate(s.lastActivityAt)}` : ""}
                   </p>
                 </div>
                 <ChevronRight size={18} color="rgba(255,255,255,0.4)" style={{ flexShrink: 0 }} />

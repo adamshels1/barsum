@@ -10,18 +10,64 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { expertsApi } from "@/lib/api/experts";
 import { useAuthStore } from "@/stores/auth-store";
+import { useT, type Dict } from "@/i18n/useT";
 
-const applySchema = z.object({
-  specialization: z.string().min(5, "Минимум 5 символов"),
-  bio: z.string().min(20, "Расскажи о себе подробнее (мин. 20 символов)"),
-});
-
-type ApplyForm = z.infer<typeof applySchema>;
+const dict: Dict = {
+  ru: {
+    minSpec: "Минимум 5 символов",
+    minBio: "Расскажи о себе подробнее (мин. 20 символов)",
+    stillReview: "Заявка всё ещё на рассмотрении",
+    applyError: "Ошибка подачи заявки",
+    redirecting: "Перенаправление...",
+    reviewTitle: "Заявка на рассмотрении",
+    reviewText: "Ваша заявка рассматривается, мы свяжемся с вами в течение 1–2 рабочих дней.",
+    statusReview: "Статус: На проверке",
+    checking: "Проверяем...",
+    refreshStatus: "Обновить статус",
+    becomeExpert: "Стать экспертом",
+    becomeExpertSub: "Расскажи о себе, чтобы мы могли одобрить твой профиль",
+    rejected: "Ваша заявка была отклонена. Можно подать повторно.",
+    specialization: "Специализация",
+    specializationPlaceholder: "Детский психолог, логопед, педагог...",
+    about: "О себе",
+    aboutPlaceholder: "Опиши свой опыт, квалификацию, подход к работе с детьми...",
+    submitting: "Отправляем...",
+    submitApply: "Подать заявку",
+  },
+  kk: {
+    minSpec: "Кемінде 5 таңба",
+    minBio: "Өзің туралы толығырақ жаз (кемінде 20 таңба)",
+    stillReview: "Өтінім әлі қаралуда",
+    applyError: "Өтінім беру қатесі",
+    redirecting: "Бағыттау...",
+    reviewTitle: "Өтінім қаралуда",
+    reviewText: "Өтініміңіз қаралуда, біз сізбен 1–2 жұмыс күні ішінде хабарласамыз.",
+    statusReview: "Мәртебе: Тексеруде",
+    checking: "Тексерілуде...",
+    refreshStatus: "Мәртебені жаңарту",
+    becomeExpert: "Сарапшы болу",
+    becomeExpertSub: "Профиліңді мақұлдай алуымыз үшін өзің туралы айт",
+    rejected: "Өтініміңіз қабылданбады. Қайта беруге болады.",
+    specialization: "Мамандандыру",
+    specializationPlaceholder: "Балалар психологы, логопед, педагог...",
+    about: "Өзім туралы",
+    aboutPlaceholder: "Тәжірибеңді, біліктілігіңді, балалармен жұмыс тәсіліңді сипатта...",
+    submitting: "Жіберілуде...",
+    submitApply: "Өтінім беру",
+  },
+};
 
 export default function ExpertOnboardingPage() {
   const router = useRouter();
+  const t = useT(dict);
   const { expertStatus, setAuth, user, token, role } = useAuthStore();
   const [submitted, setSubmitted] = useState(false);
+
+  const applySchema = z.object({
+    specialization: z.string().min(5, t("minSpec")),
+    bio: z.string().min(20, t("minBio")),
+  });
+  type ApplyForm = z.infer<typeof applySchema>;
 
   const { data: expertData, refetch, isFetching } = useQuery({
     queryKey: ["expert-me"],
@@ -46,7 +92,7 @@ export default function ExpertOnboardingPage() {
       }
       router.replace("/expert/home");
     } else {
-      toast.info("Заявка всё ещё на рассмотрении");
+      toast.info(t("stillReview"));
     }
   };
 
@@ -63,7 +109,7 @@ export default function ExpertOnboardingPage() {
       }
       setSubmitted(true);
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Ошибка подачи заявки");
+      toast.error(err.response?.data?.message || t("applyError"));
     }
   };
 
@@ -73,7 +119,7 @@ export default function ExpertOnboardingPage() {
   if (currentStatus === "approved") {
     return (
       <main style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-        <p style={{ color: "rgba(255,255,255,0.65)" }}>Перенаправление...</p>
+        <p style={{ color: "rgba(255,255,255,0.65)" }}>{t("redirecting")}</p>
       </main>
     );
   }
@@ -86,16 +132,16 @@ export default function ExpertOnboardingPage() {
             <Clock size={40} color="#ffffff" strokeWidth={1.5} />
           </div>
           <h1 style={{ margin: "0 0 12px", fontSize: 26, fontWeight: 900, color: "#ffffff" }}>
-            Заявка на рассмотрении
+            {t("reviewTitle")}
           </h1>
           <p style={{ margin: "0 0 28px", fontSize: 14, lineHeight: 1.6, color: "rgba(255,255,255,0.65)" }}>
-            Ваша заявка рассматривается, мы свяжемся с вами в течение 1–2 рабочих дней.
+            {t("reviewText")}
           </p>
 
           <div className="glass" style={{ padding: "14px 18px", marginBottom: 20, display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#ffd200", flexShrink: 0 }} />
             <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: "#ffffff" }}>
-              Статус: На проверке
+              {t("statusReview")}
             </p>
           </div>
 
@@ -105,7 +151,7 @@ export default function ExpertOnboardingPage() {
             className="btn-white"
             style={{ color: "#4776e6" }}
           >
-            {isFetching ? "Проверяем..." : "Обновить статус"}
+            {isFetching ? t("checking") : t("refreshStatus")}
           </button>
         </div>
       </main>
@@ -119,15 +165,15 @@ export default function ExpertOnboardingPage() {
           <div style={{ width: 64, height: 64, borderRadius: 20, background: "rgba(255,255,255,0.2)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.35)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
             <FileText size={28} color="#ffffff" strokeWidth={2} />
           </div>
-          <h1 style={{ margin: "0 0 6px", fontSize: 26, fontWeight: 900, color: "#ffffff" }}>Стать экспертом</h1>
+          <h1 style={{ margin: "0 0 6px", fontSize: 26, fontWeight: 900, color: "#ffffff" }}>{t("becomeExpert")}</h1>
           <p style={{ margin: 0, fontSize: 14, color: "rgba(255,255,255,0.65)" }}>
-            Расскажи о себе, чтобы мы могли одобрить твой профиль
+            {t("becomeExpertSub")}
           </p>
         </div>
 
         {isRejected && (
           <div style={{ background: "rgba(220,0,0,0.25)", border: "1px solid rgba(255,100,100,0.3)", borderRadius: 14, padding: "12px 16px", marginBottom: 16, fontSize: 14, color: "#ffaaaa", fontWeight: 600 }}>
-            Ваша заявка была отклонена. Можно подать повторно.
+            {t("rejected")}
           </div>
         )}
 
@@ -135,11 +181,11 @@ export default function ExpertOnboardingPage() {
           <form onSubmit={handleSubmit(onSubmit)} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div>
               <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                Специализация
+                {t("specialization")}
               </label>
               <textarea
                 {...register("specialization")}
-                placeholder="Детский психолог, логопед, педагог..."
+                placeholder={t("specializationPlaceholder")}
                 rows={2}
                 className="glass-input"
                 style={{ resize: "none" }}
@@ -153,11 +199,11 @@ export default function ExpertOnboardingPage() {
 
             <div>
               <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                О себе
+                {t("about")}
               </label>
               <textarea
                 {...register("bio")}
-                placeholder="Опиши свой опыт, квалификацию, подход к работе с детьми..."
+                placeholder={t("aboutPlaceholder")}
                 rows={5}
                 className="glass-input"
                 style={{ resize: "none" }}
@@ -175,7 +221,7 @@ export default function ExpertOnboardingPage() {
               className="btn-white"
               style={{ marginTop: 4, color: "#4776e6" }}
             >
-              {isSubmitting ? "Отправляем..." : "Подать заявку"}
+              {isSubmitting ? t("submitting") : t("submitApply")}
             </button>
           </form>
         </div>

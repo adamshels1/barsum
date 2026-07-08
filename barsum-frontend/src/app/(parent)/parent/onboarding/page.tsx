@@ -12,15 +12,78 @@ import { childrenApi } from "@/lib/api/children";
 import { rewardsApi } from "@/lib/api/rewards";
 import { RewardTemplatePicker } from "@/components/RewardTemplatePicker";
 import type { RewardTemplate } from "@/lib/rewardTemplates";
+import { useT, type Dict } from "@/i18n/useT";
 
-const childSchema = z.object({
-  name: z.string().min(2, "Минимум 2 символа"),
-  age: z.coerce.number().min(4).max(16),
-  login: z.string().min(3, "Минимум 3 символа").regex(/^[a-z0-9_]+$/, "Только a-z, 0-9, _"),
-  password: z.string().min(4, "Минимум 4 символа"),
-});
-
-type ChildForm = z.infer<typeof childSchema>;
+const dict: Dict = {
+  ru: {
+    min2: "Минимум 2 символа",
+    min3: "Минимум 3 символа",
+    loginRule: "Только a-z, 0-9, _",
+    min4: "Минимум 4 символа",
+    templateAdded: "«{name}» добавлена в магазин",
+    addError: "Ошибка при добавлении",
+    createError: "Ошибка создания профиля",
+    credsCopied: "Логин и пароль скопированы",
+    copyText: "Логин: {login}\nПароль: {password}\nСайт: https://barsum.app",
+    shareText: "Barsum — данные для входа ребёнка «{name}»\nЛогин: {login}\nПароль: {password}\nСайт: https://barsum.app",
+    shareTitle: "Barsum — вход для ребёнка",
+    dataCopied: "Данные скопированы в буфер обмена",
+    setupShop: "Настрой магазин",
+    shopHint: "Добавь пару наград одним тапом — цену можно поправить. Это необязательно, всегда можно сделать позже.",
+    toCabinet: "В кабинет →",
+    profileCreated: "Профиль создан!",
+    saveCreds: "Сохрани данные для входа ребёнка",
+    name: "Имя",
+    login: "Логин",
+    password: "Пароль",
+    copiedSuffix: "{label} скопирован",
+    copy: "Копировать",
+    share: "Поделиться",
+    next: "Далее →",
+    addChild: "Добавь ребёнка",
+    createToStart: "Создай профиль, чтобы начать",
+    childNamePlaceholder: "Имя ребёнка",
+    agePlaceholder: "Возраст",
+    loginPlaceholder: "Логин (a-z, 0-9, _)",
+    passwordPlaceholder: "Пароль для ребёнка",
+    creating: "Создаём...",
+    createProfile: "Создать профиль",
+  },
+  kk: {
+    min2: "Кемінде 2 таңба",
+    min3: "Кемінде 3 таңба",
+    loginRule: "Тек a-z, 0-9, _",
+    min4: "Кемінде 4 таңба",
+    templateAdded: "«{name}» дүкенге қосылды",
+    addError: "Қосу кезінде қате",
+    createError: "Профильді құру қатесі",
+    credsCopied: "Логин мен құпиясөз көшірілді",
+    copyText: "Логин: {login}\nҚұпиясөз: {password}\nСайт: https://barsum.app",
+    shareText: "Barsum — «{name}» баласының кіру деректері\nЛогин: {login}\nҚұпиясөз: {password}\nСайт: https://barsum.app",
+    shareTitle: "Barsum — бала үшін кіру",
+    dataCopied: "Деректер алмасу буферіне көшірілді",
+    setupShop: "Дүкенді баптаңыз",
+    shopHint: "Бір рет түртіп бірнеше сыйлық қосыңыз — бағаны түзетуге болады. Бұл міндетті емес, оны кейін де жасауға болады.",
+    toCabinet: "Кабинетке →",
+    profileCreated: "Профиль құрылды!",
+    saveCreds: "Баланың кіру деректерін сақтаңыз",
+    name: "Аты",
+    login: "Логин",
+    password: "Құпиясөз",
+    copiedSuffix: "{label} көшірілді",
+    copy: "Көшіру",
+    share: "Бөлісу",
+    next: "Әрі қарай →",
+    addChild: "Бала қосу",
+    createToStart: "Бастау үшін профиль құрыңыз",
+    childNamePlaceholder: "Баланың аты",
+    agePlaceholder: "Жасы",
+    loginPlaceholder: "Логин (a-z, 0-9, _)",
+    passwordPlaceholder: "Балаға арналған құпиясөз",
+    creating: "Құрылуда...",
+    createProfile: "Профиль құру",
+  },
+};
 
 const GLASS: React.CSSProperties = {
   background: "rgba(255,255,255,0.13)",
@@ -31,20 +94,29 @@ const GLASS: React.CSSProperties = {
 };
 
 export default function ParentOnboardingPage() {
+  const t = useT(dict);
   const router = useRouter();
   const [created, setCreated] = useState<{ login: string; password: string; name: string } | null>(null);
   const [showShopStep, setShowShopStep] = useState(false);
   const [addedNames, setAddedNames] = useState<Set<string>>(new Set());
   const [pendingName, setPendingName] = useState<string | null>(null);
 
+  const childSchema = z.object({
+    name: z.string().min(2, t("min2")),
+    age: z.coerce.number().min(4).max(16),
+    login: z.string().min(3, t("min3")).regex(/^[a-z0-9_]+$/, t("loginRule")),
+    password: z.string().min(4, t("min4")),
+  });
+  type ChildForm = z.infer<typeof childSchema>;
+
   const addTemplateMutation = useMutation({
     mutationFn: (template: RewardTemplate) => rewardsApi.create({ name: template.name, cost: template.cost, type: template.type, photoUrl: template.image }),
     onMutate: (template) => setPendingName(template.name),
     onSuccess: (_data, template) => {
       setAddedNames((prev) => new Set(prev).add(template.name));
-      toast.success(`«${template.name}» добавлена в магазин`);
+      toast.success(t("templateAdded", { name: template.name }));
     },
-    onError: (err: any) => toast.error(err.response?.data?.message || "Ошибка при добавлении"),
+    onError: (err: any) => toast.error(err.response?.data?.message || t("addError")),
     onSettled: () => setPendingName(null),
   });
 
@@ -57,23 +129,23 @@ export default function ParentOnboardingPage() {
       await childrenApi.create(data);
       setCreated({ login: data.login, password: data.password, name: data.name });
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Ошибка создания профиля");
+      toast.error(err.response?.data?.message || t("createError"));
     }
   };
 
   const copyAll = () => {
     if (!created) return;
-    const text = `Логин: ${created.login}\nПароль: ${created.password}\nСайт: https://barsum.app`;
-    navigator.clipboard.writeText(text).then(() => toast.success("Логин и пароль скопированы"));
+    const text = t("copyText", { login: created.login, password: created.password });
+    navigator.clipboard.writeText(text).then(() => toast.success(t("credsCopied")));
   };
 
   const shareAll = () => {
     if (!created) return;
-    const text = `Barsum — данные для входа ребёнка «${created.name}»\nЛогин: ${created.login}\nПароль: ${created.password}\nСайт: https://barsum.app`;
+    const text = t("shareText", { name: created.name, login: created.login, password: created.password });
     if (typeof navigator !== "undefined" && navigator.share) {
-      navigator.share({ title: "Barsum — вход для ребёнка", text });
+      navigator.share({ title: t("shareTitle"), text });
     } else {
-      navigator.clipboard.writeText(text).then(() => toast.success("Данные скопированы в буфер обмена"));
+      navigator.clipboard.writeText(text).then(() => toast.success(t("dataCopied")));
     }
   };
 
@@ -83,9 +155,9 @@ export default function ParentOnboardingPage() {
         <div style={{ width: "100%", maxWidth: 400 }}>
           <div style={{ textAlign: "center", marginBottom: 20 }}>
             <div style={{ fontSize: 44, marginBottom: 6 }}>🎁</div>
-            <h1 style={{ margin: "0 0 6px", fontSize: 24, fontWeight: 900, color: "#ffffff" }}>Настрой магазин</h1>
+            <h1 style={{ margin: "0 0 6px", fontSize: 24, fontWeight: 900, color: "#ffffff" }}>{t("setupShop")}</h1>
             <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.65)" }}>
-              Добавь пару наград одним тапом — цену можно поправить. Это необязательно, всегда можно сделать позже.
+              {t("shopHint")}
             </p>
           </div>
 
@@ -100,7 +172,7 @@ export default function ParentOnboardingPage() {
             className="btn-white"
             style={{ marginTop: 20, color: "#4776e6" }}
           >
-            В кабинет →
+            {t("toCabinet")}
           </button>
         </div>
       </main>
@@ -113,15 +185,15 @@ export default function ParentOnboardingPage() {
         <div style={{ width: "100%", maxWidth: 360 }}>
           <div style={{ textAlign: "center", marginBottom: 24 }}>
             <div style={{ fontSize: 56, marginBottom: 8 }}>🎉</div>
-            <h1 style={{ margin: "0 0 6px", fontSize: 26, fontWeight: 900, color: "#ffffff" }}>Профиль создан!</h1>
-            <p style={{ margin: 0, fontSize: 14, color: "rgba(255,255,255,0.65)" }}>Сохрани данные для входа ребёнка</p>
+            <h1 style={{ margin: "0 0 6px", fontSize: 26, fontWeight: 900, color: "#ffffff" }}>{t("profileCreated")}</h1>
+            <p style={{ margin: 0, fontSize: 14, color: "rgba(255,255,255,0.65)" }}>{t("saveCreds")}</p>
           </div>
 
           <div style={{ ...GLASS, padding: "20px 20px", marginBottom: 12 }}>
             {[
-              { label: "Имя", value: created.name, mono: false, copyKey: null as string | null },
-              { label: "Логин", value: created.login, mono: true, copyKey: created.login as string | null },
-              { label: "Пароль", value: created.password, mono: true, copyKey: created.password as string | null },
+              { label: t("name"), value: created.name, mono: false, copyKey: null as string | null },
+              { label: t("login"), value: created.login, mono: true, copyKey: created.login as string | null },
+              { label: t("password"), value: created.password, mono: true, copyKey: created.password as string | null },
             ].map(({ label, value, mono, copyKey }) => (
               <div key={label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                 <div>
@@ -130,7 +202,7 @@ export default function ParentOnboardingPage() {
                 </div>
                 {copyKey && (
                   <button
-                    onClick={() => navigator.clipboard.writeText(copyKey).then(() => toast.success(`${label} скопирован`))}
+                    onClick={() => navigator.clipboard.writeText(copyKey).then(() => toast.success(t("copiedSuffix", { label })))}
                     style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 10, padding: "8px 10px", cursor: "pointer" }}
                   >
                     <ClipboardCopy size={16} color="rgba(255,255,255,0.8)" />
@@ -146,19 +218,19 @@ export default function ParentOnboardingPage() {
               style={{ flex: 1, ...GLASS, padding: "13px 0", border: "1px solid rgba(255,255,255,0.3)", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 14, color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
             >
               <ClipboardCopy size={15} />
-              Копировать
+              {t("copy")}
             </button>
             <button
               onClick={shareAll}
               style={{ flex: 1, ...GLASS, padding: "13px 0", border: "1px solid rgba(255,255,255,0.3)", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 14, color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
             >
               <Share2 size={15} />
-              Поделиться
+              {t("share")}
             </button>
           </div>
 
           <button onClick={() => setShowShopStep(true)} className="btn-white" style={{ color: "#4776e6" }}>
-            Далее →
+            {t("next")}
           </button>
         </div>
       </main>
@@ -172,17 +244,17 @@ export default function ParentOnboardingPage() {
           <div style={{ width: 72, height: 72, borderRadius: 24, background: "rgba(255,255,255,0.2)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.35)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
             <Baby size={32} color="#ffffff" strokeWidth={2} />
           </div>
-          <h1 style={{ margin: "0 0 6px", fontSize: 28, fontWeight: 900, color: "#ffffff" }}>Добавь ребёнка</h1>
-          <p style={{ margin: 0, fontSize: 14, color: "rgba(255,255,255,0.65)" }}>Создай профиль, чтобы начать</p>
+          <h1 style={{ margin: "0 0 6px", fontSize: 28, fontWeight: 900, color: "#ffffff" }}>{t("addChild")}</h1>
+          <p style={{ margin: 0, fontSize: 14, color: "rgba(255,255,255,0.65)" }}>{t("createToStart")}</p>
         </div>
 
         <div style={{ background: "rgba(255,255,255,0.15)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 24, padding: "28px 24px" }}>
           <form onSubmit={handleSubmit(onSubmit)} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {[
-              { name: "name", placeholder: "Имя ребёнка", type: "text" },
-              { name: "age", placeholder: "Возраст", type: "number" },
-              { name: "login", placeholder: "Логин (a-z, 0-9, _)", type: "text" },
-              { name: "password", placeholder: "Пароль для ребёнка", type: "password" },
+              { name: "name", placeholder: t("childNamePlaceholder"), type: "text" },
+              { name: "age", placeholder: t("agePlaceholder"), type: "number" },
+              { name: "login", placeholder: t("loginPlaceholder"), type: "text" },
+              { name: "password", placeholder: t("passwordPlaceholder"), type: "password" },
             ].map((f) => (
               <div key={f.name}>
                 <input
@@ -200,7 +272,7 @@ export default function ParentOnboardingPage() {
               </div>
             ))}
             <button type="submit" disabled={isSubmitting} className="btn-white" style={{ marginTop: 4, color: "#4776e6" }}>
-              {isSubmitting ? "Создаём..." : "Создать профиль"}
+              {isSubmitting ? t("creating") : t("createProfile")}
             </button>
           </form>
         </div>

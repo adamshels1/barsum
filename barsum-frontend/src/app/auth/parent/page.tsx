@@ -9,21 +9,60 @@ import { z } from "zod";
 import { apiClient } from "@/lib/api/client";
 import { MascotWave } from "@/components/MascotWave";
 import { BackButton } from "@/components/BackButton";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useAuthStore } from "@/stores/auth-store";
+import { useT, type Dict } from "@/i18n/useT";
 
-const loginSchema = z.object({
-  identifier: z.string().min(1, "Введите email или логин"),
-  password: z.string().min(1, "Введите пароль"),
-});
-const registerSchema = z.object({
-  identifier: z.string().email("Введите корректный email"),
-  password: z.string().min(6, "Минимум 6 символов"),
-  name: z.string().min(2, "Введите имя"),
-});
-
-type LoginForm = z.infer<typeof loginSchema>;
-type RegisterForm = z.infer<typeof registerSchema>;
-type Form = LoginForm & { name?: string };
+const dict: Dict = {
+  ru: {
+    enterEmailOrLogin: "Введите email или логин",
+    enterPassword: "Введите пароль",
+    enterValidEmail: "Введите корректный email",
+    minSixChars: "Минимум 6 символов",
+    enterName: "Введите имя",
+    loginError: "Ошибка входа",
+    title: "Родитель",
+    subtitle: "Мотивируй своего ребёнка",
+    tabLogin: "Войти",
+    tabRegister: "Регистрация",
+    yourName: "Ваше имя",
+    namePlaceholder: "Например: Айгерим",
+    email: "Email",
+    emailOrLogin: "Email или логин",
+    emailPlaceholder: "email@example.com",
+    emailOrLoginPlaceholder: "email@example.com или логин",
+    password: "Пароль",
+    minSixPlaceholder: "Минимум 6 символов",
+    yourPassword: "Ваш пароль",
+    loading: "Загрузка...",
+    signUp: "Зарегистрироваться",
+    signIn: "Войти",
+  },
+  kk: {
+    enterEmailOrLogin: "Email немесе логинді енгізіңіз",
+    enterPassword: "Құпиясөзді енгізіңіз",
+    enterValidEmail: "Дұрыс email енгізіңіз",
+    minSixChars: "Кемінде 6 таңба",
+    enterName: "Атыңызды енгізіңіз",
+    loginError: "Кіру қатесі",
+    title: "Ата-ана",
+    subtitle: "Балаңызды ынталандырыңыз",
+    tabLogin: "Кіру",
+    tabRegister: "Тіркелу",
+    yourName: "Атыңыз",
+    namePlaceholder: "Мысалы: Айгерім",
+    email: "Email",
+    emailOrLogin: "Email немесе логин",
+    emailPlaceholder: "email@example.com",
+    emailOrLoginPlaceholder: "email@example.com немесе логин",
+    password: "Құпиясөз",
+    minSixPlaceholder: "Кемінде 6 таңба",
+    yourPassword: "Құпиясөзіңіз",
+    loading: "Жүктелуде...",
+    signUp: "Тіркелу",
+    signIn: "Кіру",
+  },
+};
 
 const BG = "linear-gradient(135deg, #4776e6 0%, #6a3de8 60%, #8e54e9 100%)";
 
@@ -31,6 +70,20 @@ export default function ParentAuthPage() {
   const router = useRouter();
   const setAuth = useAuthStore((s) => s.setAuth);
   const [isRegister, setIsRegister] = useState(false);
+  const t = useT(dict);
+
+  const loginSchema = z.object({
+    identifier: z.string().min(1, t("enterEmailOrLogin")),
+    password: z.string().min(1, t("enterPassword")),
+  });
+  const registerSchema = z.object({
+    identifier: z.string().email(t("enterValidEmail")),
+    password: z.string().min(6, t("minSixChars")),
+    name: z.string().min(2, t("enterName")),
+  });
+
+  type LoginForm = z.infer<typeof loginSchema>;
+  type Form = LoginForm & { name?: string };
 
   const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm<Form>({
     resolver: zodResolver(isRegister ? registerSchema : loginSchema),
@@ -65,27 +118,30 @@ export default function ParentAuthPage() {
       }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || "Ошибка входа");
+      toast.error(error.response?.data?.message || t("loginError"));
     }
   };
 
   return (
     <main style={{ minHeight: "100dvh", background: BG, display: "flex", flexDirection: "column" }}>
       <BackButton />
+      <div style={{ position: "fixed", top: 16, right: 16, zIndex: 2 }}>
+        <LanguageSwitcher />
+      </div>
       <div style={{ position: "fixed", top: "-15%", right: "-10%", width: 260, height: 260, borderRadius: "50%", background: "rgba(255,255,255,0.12)", filter: "blur(70px)", pointerEvents: "none" }} />
       <div style={{ position: "fixed", bottom: "-10%", left: "-10%", width: 220, height: 220, borderRadius: "50%", background: "rgba(0,0,0,0.15)", filter: "blur(60px)", pointerEvents: "none" }} />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", paddingTop: 60, paddingBottom: 32, position: "relative", zIndex: 1 }}>
         <MascotWave size={140} animate={false} />
-        <h1 style={{ fontSize: 32, fontWeight: 900, color: "#ffffff", margin: 0 }}>Родитель</h1>
+        <h1 style={{ fontSize: 32, fontWeight: 900, color: "#ffffff", margin: 0 }}>{t("title")}</h1>
         <p style={{ color: "rgba(255,255,255,0.68)", fontSize: 15, fontWeight: 600, marginTop: 6 }}>
-          Мотивируй своего ребёнка
+          {t("subtitle")}
         </p>
       </div>
 
       <div style={{ background: "rgba(255,255,255,0.1)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", borderTop: "1px solid rgba(255,255,255,0.2)", borderRadius: "28px 28px 0 0", padding: "32px 24px 40px", position: "relative", zIndex: 1 }}>
         <div style={{ display: "flex", background: "rgba(0,0,0,0.2)", borderRadius: 9999, padding: 4, marginBottom: 24 }}>
-          {["Войти", "Регистрация"].map((label, i) => {
+          {[t("tabLogin"), t("tabRegister")].map((label, i) => {
             const active = isRegister === (i === 1);
             return (
               <button key={label} type="button" onClick={() => switchTab(i === 1)} style={{ flex: 1, padding: "10px 0", borderRadius: 9999, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 14, fontFamily: "inherit", background: active ? "rgba(255,255,255,0.9)" : "transparent", color: active ? "#4776e6" : "rgba(255,255,255,0.62)", transition: "all 0.18s" }}>
@@ -98,25 +154,25 @@ export default function ParentAuthPage() {
         <form onSubmit={handleSubmit(onSubmit)} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {isRegister && (
             <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.65)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Ваше имя</label>
-              <input {...register("name")} placeholder="Например: Айгерим" className="glass-input" />
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.65)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>{t("yourName")}</label>
+              <input {...register("name")} placeholder={t("namePlaceholder")} className="glass-input" />
               {errors.name && <p style={{ color: "#ffd6d6", fontSize: 12, fontWeight: 600, marginTop: 6 }}>{errors.name.message}</p>}
             </div>
           )}
           <div>
             <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.65)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-              {isRegister ? "Email" : "Email или логин"}
+              {isRegister ? t("email") : t("emailOrLogin")}
             </label>
-            <input {...register("identifier")} type={isRegister ? "email" : "text"} placeholder={isRegister ? "email@example.com" : "email@example.com или логин"} autoComplete="email" className="glass-input" />
+            <input {...register("identifier")} type={isRegister ? "email" : "text"} placeholder={isRegister ? t("emailPlaceholder") : t("emailOrLoginPlaceholder")} autoComplete="email" className="glass-input" />
             {errors.identifier && <p style={{ color: "#ffd6d6", fontSize: 12, fontWeight: 600, marginTop: 6 }}>{errors.identifier.message}</p>}
           </div>
           <div>
-            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.65)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Пароль</label>
-            <input {...register("password")} type="password" placeholder={isRegister ? "Минимум 6 символов" : "Ваш пароль"} autoComplete={isRegister ? "new-password" : "current-password"} className="glass-input" />
+            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.65)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>{t("password")}</label>
+            <input {...register("password")} type="password" placeholder={isRegister ? t("minSixPlaceholder") : t("yourPassword")} autoComplete={isRegister ? "new-password" : "current-password"} className="glass-input" />
             {errors.password && <p style={{ color: "#ffd6d6", fontSize: 12, fontWeight: 600, marginTop: 6 }}>{errors.password.message}</p>}
           </div>
           <button type="submit" disabled={isSubmitting} className="btn-white" style={{ marginTop: 8, color: "#4776e6" }}>
-            {isSubmitting ? "Загрузка..." : isRegister ? "Зарегистрироваться" : "Войти"}
+            {isSubmitting ? t("loading") : isRegister ? t("signUp") : t("signIn")}
           </button>
         </form>
       </div>

@@ -6,6 +6,40 @@ import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { sessionsApi } from "@/lib/api/sessions";
 import { childPhotoUrl } from "@/lib/media";
+import { useT, type Dict } from "@/i18n/useT";
+
+const dict: Dict = {
+  ru: {
+    statusCompleted: "Прочитано",
+    statusPending: "В процессе",
+    statusFailed: "Не сдано",
+    back: "Назад",
+    noActivity: "Активности пока нет",
+    part: "Часть",
+    yearsOld: "{n} лет",
+    streakDays: "🔥 {n} дней",
+    booksAtYou: "книг у вас",
+    partsRead: "частей прочитано",
+    partsShort: "частей",
+    booksProgress: "Прогресс по книгам",
+    noActiveBooks: "Нет активных книг",
+  },
+  kk: {
+    statusCompleted: "Оқылды",
+    statusPending: "Барысында",
+    statusFailed: "Тапсырылмады",
+    back: "Артқа",
+    noActivity: "Әзірге белсенділік жоқ",
+    part: "Бөлім",
+    yearsOld: "{n} жаста",
+    streakDays: "🔥 {n} күн",
+    booksAtYou: "сіздегі кітаптар",
+    partsRead: "бөлім оқылды",
+    partsShort: "бөлім",
+    booksProgress: "Кітаптар бойынша прогресс",
+    noActiveBooks: "Белсенді кітаптар жоқ",
+  },
+};
 
 interface StudentSession {
   id: string;
@@ -33,16 +67,17 @@ interface StudentDetail {
 }
 
 const STATUS_CONFIG = {
-  completed: { icon: "✅", label: "Прочитано", bg: "rgba(34,197,94,0.3)", color: "#ffffff" },
-  pending: { icon: "⏳", label: "В процессе", bg: "rgba(255,200,0,0.25)", color: "#ffffff" },
-  failed: { icon: "❌", label: "Не сдано", bg: "rgba(239,68,68,0.35)", color: "#ffffff" },
-} satisfies Record<StudentSession["status"], { icon: string; label: string; bg: string; color: string }>;
+  completed: { icon: "✅", labelKey: "statusCompleted", bg: "rgba(34,197,94,0.3)", color: "#ffffff" },
+  pending: { icon: "⏳", labelKey: "statusPending", bg: "rgba(255,200,0,0.25)", color: "#ffffff" },
+  failed: { icon: "❌", labelKey: "statusFailed", bg: "rgba(239,68,68,0.35)", color: "#ffffff" },
+} satisfies Record<StudentSession["status"], { icon: string; labelKey: string; bg: string; color: string }>;
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("ru-RU", { day: "2-digit", month: "short", year: "numeric" });
 }
 
 function BookCard({ book }: { book: StudentBook }) {
+  const t = useT(dict);
   const [open, setOpen] = useState(false);
   const progress = book.totalParts > 0 ? Math.min((book.completedParts / book.totalParts) * 100, 100) : 0;
   const sortedSessions = [...book.sessions].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -64,7 +99,7 @@ function BookCard({ book }: { book: StudentBook }) {
             <div style={{ height: "100%", width: `${progress}%`, background: "rgba(255,255,255,0.85)", borderRadius: 9999 }} />
           </div>
           <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.55)" }}>
-            {book.completedParts}/{book.totalParts} частей
+            {book.completedParts}/{book.totalParts} {t("partsShort")}
           </p>
         </div>
         <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 14, flexShrink: 0 }}>{open ? "▲" : "▼"}</span>
@@ -73,7 +108,7 @@ function BookCard({ book }: { book: StudentBook }) {
       {open && (
         <div style={{ padding: "0 16px 16px", display: "flex", flexDirection: "column", gap: 8, borderTop: "1px solid rgba(255,255,255,0.12)" }}>
           {sortedSessions.length === 0 ? (
-            <p style={{ margin: "12px 0 0", fontSize: 13, color: "rgba(255,255,255,0.5)" }}>Активности пока нет</p>
+            <p style={{ margin: "12px 0 0", fontSize: 13, color: "rgba(255,255,255,0.5)" }}>{t("noActivity")}</p>
           ) : (
             sortedSessions.map((s) => {
               const cfg = STATUS_CONFIG[s.status] ?? STATUS_CONFIG.pending;
@@ -81,13 +116,13 @@ function BookCard({ book }: { book: StudentBook }) {
                 <div key={s.id} style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 10, background: "rgba(255,255,255,0.08)", borderRadius: 12, padding: "10px 12px" }}>
                   <span style={{ fontSize: 16 }}>{cfg.icon}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ margin: 0, fontWeight: 700, fontSize: 13, color: "#ffffff" }}>Часть {s.partNumber}</p>
+                    <p style={{ margin: 0, fontWeight: 700, fontSize: 13, color: "#ffffff" }}>{t("part")} {s.partNumber}</p>
                     <p style={{ margin: "2px 0 0", fontSize: 11, color: "rgba(255,255,255,0.55)" }}>{formatDate(s.createdAt)}</p>
                   </div>
                   {s.aiScore != null && (
                     <span style={{ fontSize: 12, fontWeight: 800, color: "#ffd200" }}>AI: {Number(s.aiScore)}/10</span>
                   )}
-                  <span style={{ fontSize: 10.5, padding: "3px 8px", borderRadius: 9999, fontWeight: 800, background: cfg.bg, color: cfg.color, flexShrink: 0 }}>{cfg.label}</span>
+                  <span style={{ fontSize: 10.5, padding: "3px 8px", borderRadius: 9999, fontWeight: 800, background: cfg.bg, color: cfg.color, flexShrink: 0 }}>{t(cfg.labelKey)}</span>
                 </div>
               );
             })
@@ -100,6 +135,7 @@ function BookCard({ book }: { book: StudentBook }) {
 
 export default function ExpertStudentDetailPage() {
   const router = useRouter();
+  const t = useT(dict);
   const { childId } = useParams<{ childId: string }>();
 
   const { data, isLoading } = useQuery<StudentDetail>({
@@ -118,7 +154,7 @@ export default function ExpertStudentDetailPage() {
         style={{ display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.65)", fontSize: 14, fontWeight: 700, fontFamily: "inherit", marginBottom: 20, padding: 0 }}
       >
         <ChevronLeft size={18} strokeWidth={2.5} />
-        Назад
+        {t("back")}
       </button>
 
       {isLoading || !data ? (
@@ -140,8 +176,8 @@ export default function ExpertStudentDetailPage() {
             <div>
               <h1 style={{ margin: "0 0 4px", fontSize: 24, fontWeight: 900, color: "#ffffff" }}>{data.child.name}</h1>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <span style={{ fontSize: 13, color: "rgba(255,255,255,0.65)" }}>{data.child.age} лет</span>
-                <span style={{ fontSize: 13, fontWeight: 700, color: "#ffffff" }}>🔥 {data.child.streak} дней</span>
+                <span style={{ fontSize: 13, color: "rgba(255,255,255,0.65)" }}>{t("yearsOld", { n: data.child.age })}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#ffffff" }}>{t("streakDays", { n: data.child.streak })}</span>
               </div>
             </div>
           </div>
@@ -149,18 +185,18 @@ export default function ExpertStudentDetailPage() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 24 }}>
             <div className="glass" style={{ padding: "14px 12px", textAlign: "center", borderRadius: 16 }}>
               <p style={{ margin: 0, fontSize: 20, fontWeight: 900, color: "#ffffff" }}>{data.books.length}</p>
-              <p style={{ margin: "2px 0 0", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.55)" }}>книг у вас</p>
+              <p style={{ margin: "2px 0 0", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.55)" }}>{t("booksAtYou")}</p>
             </div>
             <div className="glass" style={{ padding: "14px 12px", textAlign: "center", borderRadius: 16 }}>
               <p style={{ margin: 0, fontSize: 20, fontWeight: 900, color: "#ffffff" }}>{totalCompleted}/{totalParts}</p>
-              <p style={{ margin: "2px 0 0", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.55)" }}>частей прочитано</p>
+              <p style={{ margin: "2px 0 0", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.55)" }}>{t("partsRead")}</p>
             </div>
           </div>
 
-          <h2 style={{ margin: "0 0 12px", fontSize: 15, fontWeight: 900, color: "#ffffff" }}>Прогресс по книгам</h2>
+          <h2 style={{ margin: "0 0 12px", fontSize: 15, fontWeight: 900, color: "#ffffff" }}>{t("booksProgress")}</h2>
           {data.books.length === 0 ? (
             <div className="glass" style={{ padding: 32, textAlign: "center", borderRadius: 18 }}>
-              <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.6)" }}>Нет активных книг</p>
+              <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.6)" }}>{t("noActiveBooks")}</p>
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>

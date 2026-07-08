@@ -5,18 +5,33 @@ import { usePathname, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { rewardsApi } from "@/lib/api/rewards";
 import type { RewardRequest } from "@/types";
+import { useT, type Dict } from "@/i18n/useT";
+
+const dict: Dict = {
+  ru: {
+    catalog: "Каталог",
+    rewards: "Награды",
+    cabinet: "Кабинет",
+  },
+  kk: {
+    catalog: "Каталог",
+    rewards: "Сыйлықтар",
+    cabinet: "Кабинет",
+  },
+};
 
 const BG = "linear-gradient(135deg, #4776e6 0%, #6a3de8 60%, #8e54e9 100%)";
 
 const tabs = [
-  { label: "Каталог", Icon: BookOpen, href: "/parent/home", match: (p: string) => p === "/parent/home" },
-  { label: "Награды", Icon: Gift, href: "/parent/rewards", match: (p: string) => p.startsWith("/parent/rewards") },
-  { label: "Кабинет", Icon: Home, href: "/parent/cabinet", match: (p: string) => p.startsWith("/parent/cabinet") || p.startsWith("/parent/child") },
+  { key: "catalog", Icon: BookOpen, href: "/parent/home", match: (p: string) => p === "/parent/home" },
+  { key: "rewards", Icon: Gift, href: "/parent/rewards", match: (p: string) => p.startsWith("/parent/rewards") },
+  { key: "cabinet", Icon: Home, href: "/parent/cabinet", match: (p: string) => p.startsWith("/parent/cabinet") || p.startsWith("/parent/child") },
 ];
 
 export default function ParentLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? "";
   const router = useRouter();
+  const t = useT(dict);
 
   // Онбординг — отдельный флоу без нижнего меню
   const hideNav = pathname.startsWith("/parent/onboarding");
@@ -64,7 +79,7 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
                 key={tab.href}
                 onClick={() => router.push(tab.href)}
                 style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, minWidth: 72, background: "transparent", border: "none", cursor: "pointer", padding: 4 }}
-                aria-label={tab.label}
+                aria-label={t(tab.key)}
               >
                 <div style={{ position: "relative", width: 56, height: 32, borderRadius: 9999, display: "flex", alignItems: "center", justifyContent: "center", background: isActive ? "rgba(255,255,255,0.22)" : "transparent", transition: "all 0.15s" }}>
                   <Icon size={20} strokeWidth={isActive ? 2.5 : 2} color={isActive ? "#ffffff" : "rgba(255,255,255,0.5)"} />
@@ -75,7 +90,7 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
                   )}
                 </div>
                 <span style={{ fontSize: 11, fontWeight: isActive ? 800 : 600, color: isActive ? "#ffffff" : "rgba(255,255,255,0.5)", transition: "all 0.15s" }}>
-                  {tab.label}
+                  {t(tab.key)}
                 </span>
               </button>
             );
