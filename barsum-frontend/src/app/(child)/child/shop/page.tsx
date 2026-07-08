@@ -1,9 +1,9 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Camera, CheckCircle2, ChevronRight, Pencil, Sparkles } from "lucide-react";
+import { Camera, CheckCircle2, ChevronLeft, ChevronRight, Pencil, Sparkles } from "lucide-react";
 import { useRef, useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { coinsApi } from "@/lib/api/coins";
 import { dreamsApi } from "@/lib/api/dreams";
@@ -797,6 +797,7 @@ function DreamTab({ childId }: { childId: string }) {
 }
 
 function ChildShopInner() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const initialTab = searchParams.get("tab") === "dream" ? "dream" : "rewards";
   const [activeTab, setActiveTab] = useState<"rewards" | "dream">(initialTab);
@@ -819,6 +820,13 @@ function ChildShopInner() {
   return (
     <main style={{ minHeight: "100dvh", paddingBottom: 24 }}>
       <div style={{ padding: "20px 20px 0" }}>
+        <button
+          onClick={() => router.push("/child/home")}
+          style={{ display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.65)", fontSize: 14, fontWeight: 700, fontFamily: "inherit", marginBottom: 12, padding: 0 }}
+        >
+          <ChevronLeft size={18} strokeWidth={2.5} />
+          Назад
+        </button>
         <h2 style={{ margin: 0, fontSize: 20, fontWeight: 900, color: "#ffffff" }}>
           {activeTab === "rewards" ? "🎁 Магазин наград" : "💫 Моя мечта"}
         </h2>
