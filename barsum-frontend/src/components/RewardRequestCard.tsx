@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { rewardsApi } from "@/lib/api/rewards";
 import type { RewardRequest } from "@/types";
 import { CoinIcon } from "@/components/CoinIcon";
+import { rewardPhotoUrl } from "@/lib/media";
 
 const GLASS: React.CSSProperties = {
   background: "rgba(255,255,255,0.13)",
@@ -48,7 +49,7 @@ export function RewardRequestCard({ request, highlight }: { request: RewardReque
   const busy = deliverMutation.isPending || rejectMutation.isPending;
   const childName = request.child?.name ?? `Ребёнок ${request.childId.slice(-4)}`;
   const rewardName = request.reward?.name ?? `Награда ${request.rewardId.slice(-4)}`;
-  const photoUrl = request.reward?.photoUrl;
+  const photoUrl = rewardPhotoUrl(request.reward);
 
   return (
     <div style={{ ...GLASS, padding: "14px 16px", background: highlight ? "rgba(255,255,255,0.22)" : GLASS.background }}>

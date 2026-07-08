@@ -10,6 +10,7 @@ import { dreamsApi } from "@/lib/api/dreams";
 import { sessionsApi } from "@/lib/api/sessions";
 import { useAuthStore } from "@/stores/auth-store";
 import { CoinIcon } from "@/components/CoinIcon";
+import { dreamPhotoUrl } from "@/lib/media";
 
 const CARD_COLORS = [
   "linear-gradient(135deg, #667eea, #764ba2)",
@@ -86,7 +87,7 @@ function DreamCard({ dream, currentBalance, onSend, isSending }: {
         position: "relative",
         minHeight: 140,
         ...(dream.photoUrl ? {
-          backgroundImage: `url(${dream.photoUrl})`,
+          backgroundImage: `url(${dreamPhotoUrl(dream)})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
         } : {}),

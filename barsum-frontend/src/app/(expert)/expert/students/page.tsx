@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Users2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { sessionsApi } from "@/lib/api/sessions";
+import { childPhotoUrl } from "@/lib/media";
 
 interface Student {
   childId: string;
@@ -72,7 +73,7 @@ export default function ExpertStudentsPage() {
                 style={{ width: "100%", padding: "14px 16px", display: "flex", alignItems: "center", gap: 14, textAlign: "left", border: "1px solid rgba(255,255,255,0.2)", cursor: "pointer", fontFamily: "inherit", borderRadius: 18 }}
               >
                 {s.photoUrl ? (
-                  <img src={s.photoUrl} alt={s.name} style={{ width: 52, height: 52, borderRadius: 16, objectFit: "cover", flexShrink: 0 }} />
+                  <img src={childPhotoUrl({ id: s.childId, photoUrl: s.photoUrl })} alt={s.name} style={{ width: 52, height: 52, borderRadius: 16, objectFit: "cover", flexShrink: 0 }} />
                 ) : (
                   <div style={{ width: 52, height: 52, borderRadius: 16, background: "rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 900, color: "#ffffff", flexShrink: 0 }}>
                     {s.name[0]}

@@ -2,7 +2,8 @@ import { Injectable, ConflictException, NotFoundException, ForbiddenException } 
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { Child } from './entities/child.entity';
-import * as bcrypt from 'bcrypt';
+import { FilesService, parseStoredFileUrl, imageMimeFromUrl } from '../files/files.service';
+import { encryptChildPassword } from '../common/child-password.util';
 
 @Injectable()
 export class ChildrenService {
@@ -10,6 +11,7 @@ export class ChildrenService {
     @InjectRepository(Child)
     private childRepo: Repository<Child>,
     private dataSource: DataSource,
+    private filesService: FilesService,
   ) {}
 
   async findByLogin(login: string): Promise<Child | null> {
@@ -27,8 +29,8 @@ export class ChildrenService {
   async create(dto: { name: string; age: number; login: string; password: string; parentId: string }): Promise<Child> {
     const existing = await this.findByLogin(dto.login);
     if (existing) throw new ConflictException('Login already taken');
-    const hashed = await bcrypt.hash(dto.password, 10);
-    const child = this.childRepo.create({ ...dto, password: hashed });
+    const encrypted = encryptChildPassword(dto.password);
+    const child = this.childRepo.create({ ...dto, password: encrypted });
     return this.childRepo.save(child);
   }
 
@@ -37,10 +39,21 @@ export class ChildrenService {
     if (!child) throw new NotFoundException('Child not found');
     if (child.parentId !== parentId) throw new ForbiddenException('Not your child');
     if (dto.password) {
-      dto.password = await bcrypt.hash(dto.password, 10);
+      dto.password = encryptChildPassword(dto.password);
     }
     Object.assign(child, dto);
     return this.childRepo.save(child);
+  }
+
+  // Отдаём фото ребёнка через backend (тот же https-origin, что и API),
+  // чтобы не упираться в mixed-content блокировку прямых http-ссылок MinIO на проде.
+  async getPhoto(id: string): Promise<{ buffer: Buffer; contentType: string }> {
+    const child = await this.findById(id);
+    if (!child?.photoUrl) throw new NotFoundException('Photo not found');
+    const parsed = parseStoredFileUrl(child.photoUrl);
+    if (!parsed) throw new NotFoundException('Photo not found');
+    const buffer = await this.filesService.getBuffer(parsed.key, parsed.bucket);
+    return { buffer, contentType: imageMimeFromUrl(child.photoUrl) };
   }
 
   async incrementStreak(id: string): Promise<void> {

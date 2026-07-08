@@ -5,6 +5,7 @@ import { ChevronLeft } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { sessionsApi } from "@/lib/api/sessions";
+import { childPhotoUrl } from "@/lib/media";
 
 interface StudentSession {
   id: string;
@@ -130,7 +131,7 @@ export default function ExpertStudentDetailPage() {
         <>
           <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
             {data.child.photoUrl ? (
-              <img src={data.child.photoUrl} alt={data.child.name} style={{ width: 64, height: 64, borderRadius: 20, objectFit: "cover", flexShrink: 0 }} />
+              <img src={childPhotoUrl(data.child)} alt={data.child.name} style={{ width: 64, height: 64, borderRadius: 20, objectFit: "cover", flexShrink: 0 }} />
             ) : (
               <div style={{ width: 64, height: 64, borderRadius: 20, background: "rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 900, color: "#ffffff", flexShrink: 0 }}>
                 {data.child.name[0]}

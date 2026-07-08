@@ -15,6 +15,7 @@ import { useAuthStore } from "@/stores/auth-store";
 import { CoinIcon } from "@/components/CoinIcon";
 import { Portal } from "@/components/Portal";
 import type { Payment } from "@/types";
+import { childPhotoUrl } from "@/lib/media";
 
 const PAYMENT_STATUS_LABEL: Record<Payment["status"], string> = {
   confirmed: "Оплачено",
@@ -196,7 +197,7 @@ export default function ParentCabinetPage() {
                 style={{ ...GLASS, width: "100%", padding: "14px 16px", display: "flex", alignItems: "center", gap: 14, textAlign: "left", border: "1px solid rgba(255,255,255,0.2)", cursor: "pointer", fontFamily: "inherit" }}
               >
                 {child.photoUrl ? (
-                  <img src={child.photoUrl} alt={child.name} style={{ width: 48, height: 48, borderRadius: 16, objectFit: "cover", flexShrink: 0 }} />
+                  <img src={childPhotoUrl(child)} alt={child.name} style={{ width: 48, height: 48, borderRadius: 16, objectFit: "cover", flexShrink: 0 }} />
                 ) : (
                   <div style={{ width: 48, height: 48, borderRadius: 16, background: "rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 900, color: "#ffffff", flexShrink: 0 }}>
                     {child.name[0]}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Camera } from "lucide-react";
+import { Camera, Copy, Eye, EyeOff } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
@@ -12,6 +12,7 @@ import { rewardsApi } from "@/lib/api/rewards";
 import { sessionsApi } from "@/lib/api/sessions";
 import type { Child, ChildStats, RewardRequest, Session } from "@/types";
 import { CoinIcon } from "@/components/CoinIcon";
+import { childPhotoUrl, dreamPhotoUrl, rewardPhotoUrl } from "@/lib/media";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3012";
 
@@ -180,6 +181,69 @@ function SessionRow({ session, defaultOpen }: { session: Session; defaultOpen?: 
   );
 }
 
+const iconButtonStyle: React.CSSProperties = {
+  width: 32,
+  height: 32,
+  borderRadius: 10,
+  border: "none",
+  background: "rgba(255,255,255,0.15)",
+  color: "#ffffff",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  cursor: "pointer",
+  flexShrink: 0,
+};
+
+/** Логин и пароль ребёнка — родитель может посмотреть и скопировать их в любой момент (задача 8). */
+function CredentialsSection({ child }: { child: Child }) {
+  const [showPassword, setShowPassword] = useState(false);
+
+  const copy = async (value: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success(`${label} скопирован`);
+    } catch {
+      toast.error("Не удалось скопировать");
+    }
+  };
+
+  return (
+    <div style={{ ...GLASS, padding: "14px 16px", marginBottom: 12 }}>
+      <p style={{ margin: "0 0 12px", fontWeight: 800, fontSize: 14, color: "#ffffff" }}>🔑 Логин и пароль ребёнка</p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", width: 52, flexShrink: 0 }}>Логин</span>
+          <span style={{ flex: 1, fontFamily: "monospace", fontSize: 14, color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{child.login}</span>
+          <button onClick={() => copy(child.login, "Логин")} style={iconButtonStyle} aria-label="Скопировать логин">
+            <Copy size={14} strokeWidth={2.5} />
+          </button>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", width: 52, flexShrink: 0 }}>Пароль</span>
+          {child.password ? (
+            <>
+              <span style={{ flex: 1, fontFamily: "monospace", fontSize: 14, color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {showPassword ? child.password : "•".repeat(Math.max(child.password.length, 6))}
+              </span>
+              <button onClick={() => setShowPassword((v) => !v)} style={iconButtonStyle} aria-label={showPassword ? "Скрыть пароль" : "Показать пароль"}>
+                {showPassword ? <EyeOff size={14} strokeWidth={2.5} /> : <Eye size={14} strokeWidth={2.5} />}
+              </button>
+              <button onClick={() => copy(child.password!, "Пароль")} style={iconButtonStyle} aria-label="Скопировать пароль">
+                <Copy size={14} strokeWidth={2.5} />
+              </button>
+            </>
+          ) : (
+            <span style={{ flex: 1, fontSize: 12.5, color: "rgba(255,255,255,0.6)" }}>
+              Пароль задан до обновления и недоступен для просмотра — задайте новый ниже
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function EditProfileSection({ child }: { child: Child }) {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -242,7 +306,7 @@ function EditProfileSection({ child }: { child: Child }) {
             background: photoPreview
               ? `url(${photoPreview}) center/cover`
               : child.photoUrl
-              ? `url(${child.photoUrl}) center/cover`
+              ? `url(${childPhotoUrl(child)}) center/cover`
               : "rgba(255,255,255,0.1)",
             display: "flex",
             alignItems: "center",
@@ -347,7 +411,7 @@ function DreamApprovalSection() {
           <div key={dream.id} style={{ ...GLASS, padding: "14px 16px" }}>
             <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
               {dream.photoUrl ? (
-                <img src={dream.photoUrl} alt="" style={{ width: 56, height: 56, borderRadius: 12, objectFit: "cover", flexShrink: 0 }} />
+                <img src={dreamPhotoUrl(dream)} alt="" style={{ width: 56, height: 56, borderRadius: 12, objectFit: "cover", flexShrink: 0 }} />
               ) : (
                 <div style={{ width: 56, height: 56, borderRadius: 12, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }}>💫</div>
               )}
@@ -445,7 +509,7 @@ function SpendingHistory({ childId }: { childId: string }) {
             return (
               <div key={req.id} style={{ ...GLASS, padding: "13px 16px", display: "flex", alignItems: "center", gap: 12 }}>
                 <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0, overflow: "hidden" }}>
-                  {req.reward?.photoUrl ? <img src={req.reward.photoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "🎁"}
+                  {req.reward?.photoUrl ? <img src={rewardPhotoUrl(req.reward)} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "🎁"}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ margin: 0, fontWeight: 800, color: "#ffffff", fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{rewardName}</p>
@@ -464,10 +528,51 @@ function SpendingHistory({ childId }: { childId: string }) {
   );
 }
 
+const TABS = [
+  { key: "overview", label: "Обзор" },
+  { key: "expenses", label: "Расходы" },
+  { key: "sessions", label: "Сессии" },
+] as const;
+type TabKey = (typeof TABS)[number]["key"];
+
+/** Вкладки, чтобы не скроллить всю страницу ради истории расходов/сессий (задача 4). */
+function TabBar({ active, onChange }: { active: TabKey; onChange: (key: TabKey) => void }) {
+  return (
+    <div style={{ display: "flex", background: "rgba(0,0,0,0.2)", borderRadius: 9999, padding: 4, marginBottom: 20 }}>
+      {TABS.map((tab) => {
+        const isActive = active === tab.key;
+        return (
+          <button
+            key={tab.key}
+            type="button"
+            onClick={() => onChange(tab.key)}
+            style={{
+              flex: 1,
+              padding: "10px 0",
+              borderRadius: 9999,
+              border: "none",
+              cursor: "pointer",
+              fontWeight: 700,
+              fontSize: 13,
+              fontFamily: "inherit",
+              background: isActive ? "rgba(255,255,255,0.9)" : "transparent",
+              color: isActive ? "#4776e6" : "rgba(255,255,255,0.62)",
+              transition: "all 0.18s",
+            }}
+          >
+            {tab.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function ParentChildProgressPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const childId = params.id;
+  const [activeTab, setActiveTab] = useState<TabKey>("overview");
 
   const { data: child, isLoading: loadingChild } = useQuery<Child>({
     queryKey: ["child", childId],
@@ -526,7 +631,7 @@ export default function ParentChildProgressPage() {
         <>
           <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
             {child.photoUrl ? (
-              <img src={child.photoUrl} alt={child.name} style={{ width: 64, height: 64, borderRadius: 20, objectFit: "cover", flexShrink: 0 }} />
+              <img src={childPhotoUrl(child)} alt={child.name} style={{ width: 64, height: 64, borderRadius: 20, objectFit: "cover", flexShrink: 0 }} />
             ) : (
               <div style={{ width: 64, height: 64, borderRadius: 20, background: "rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 900, color: "#ffffff", flexShrink: 0 }}>
                 {child.name[0]}
@@ -546,43 +651,52 @@ export default function ParentChildProgressPage() {
 
           <DreamApprovalSection />
 
-          <div style={{ marginBottom: 12 }}>
-            <EditProfileSection child={child} />
-          </div>
+          <TabBar active={activeTab} onChange={setActiveTab} />
 
-          <div style={{ marginBottom: 20 }}>
-            <ChangePasswordSection childId={childId} parentId={child.parentId} />
-          </div>
+          {activeTab === "overview" && (
+            <>
+              <CredentialsSection child={child} />
 
-          {stats && (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 24 }}>
-              <StatCard emoji="🔥" value={stats.streak} label="Дней подряд" highlight />
-              <StatCard emoji="📚" value={stats.totalSessions} label="Сессий" />
-              <StatCard emoji={<CoinIcon size={22} />} value={stats.totalCoinsEarned} label="Монет заработано" />
-              <StatCard emoji="📖" value={stats.activeEnrollments} label="Активных курсов" />
-            </div>
+              <div style={{ marginBottom: 12 }}>
+                <EditProfileSection child={child} />
+              </div>
+
+              <div style={{ marginBottom: 20 }}>
+                <ChangePasswordSection childId={childId} parentId={child.parentId} />
+              </div>
+
+              {stats && (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <StatCard emoji="🔥" value={stats.streak} label="Дней подряд" highlight />
+                  <StatCard emoji="📚" value={stats.totalSessions} label="Сессий" />
+                  <StatCard emoji={<CoinIcon size={22} />} value={stats.totalCoinsEarned} label="Монет заработано" />
+                  <StatCard emoji="📖" value={stats.activeEnrollments} label="Активных курсов" />
+                </div>
+              )}
+            </>
           )}
 
-          <SpendingHistory childId={childId} />
+          {activeTab === "expenses" && <SpendingHistory childId={childId} />}
 
-          <div>
-            <h2 style={{ margin: "0 0 12px", fontSize: 15, fontWeight: 900, color: "#ffffff" }}>История сессий</h2>
-            {loadingSessions ? (
-              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.6)" }}>Загрузка...</p>
-            ) : sortedSessions.length === 0 ? (
-              <div style={{ background: "rgba(255,255,255,0.1)", borderRadius: 18, padding: "32px 16px", textAlign: "center" }}>
-                <p style={{ fontSize: 40, margin: "0 0 8px" }}>📭</p>
-                <p style={{ margin: "0 0 4px", fontWeight: 700, color: "#ffffff" }}>Сессий пока нет</p>
-                <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.6)" }}>Начните первый курс, чтобы увидеть прогресс</p>
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {sortedSessions.map((session, idx) => (
-                  <SessionRow key={session.id} session={session} defaultOpen={idx === 0} />
-                ))}
-              </div>
-            )}
-          </div>
+          {activeTab === "sessions" && (
+            <div>
+              {loadingSessions ? (
+                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.6)" }}>Загрузка...</p>
+              ) : sortedSessions.length === 0 ? (
+                <div style={{ background: "rgba(255,255,255,0.1)", borderRadius: 18, padding: "32px 16px", textAlign: "center" }}>
+                  <p style={{ fontSize: 40, margin: "0 0 8px" }}>📭</p>
+                  <p style={{ margin: "0 0 4px", fontWeight: 700, color: "#ffffff" }}>Сессий пока нет</p>
+                  <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.6)" }}>Начните первый курс, чтобы увидеть прогресс</p>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {sortedSessions.map((session, idx) => (
+                    <SessionRow key={session.id} session={session} defaultOpen={idx === 0} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </>
       )}
     </main>

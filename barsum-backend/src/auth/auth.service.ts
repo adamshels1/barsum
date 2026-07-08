@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { decryptChildPassword, isBcryptHash } from '../common/child-password.util';
 import { UsersService } from '../users/users.service';
 import { RegisterParentDto } from './dto/register-parent.dto';
 import { LoginDto } from './dto/login.dto';
@@ -53,11 +54,18 @@ export class AuthService {
     return { user: result, access_token: token };
   }
 
+  // Пароли детей, созданных до перехода на обратимое шифрование, ещё хранятся
+  // как bcrypt-хэш — поддерживаем оба формата на время миграции.
+  private async verifyChildPassword(plain: string, stored: string): Promise<boolean> {
+    if (isBcryptHash(stored)) return bcrypt.compare(plain, stored);
+    return decryptChildPassword(stored) === plain;
+  }
+
   async loginChild(dto: ChildLoginDto) {
     const child = await this.childrenService.findByLogin(dto.login);
     if (!child) throw new UnauthorizedException('Invalid credentials');
 
-    const valid = await bcrypt.compare(dto.password, child.password);
+    const valid = await this.verifyChildPassword(dto.password, child.password);
     if (!valid) throw new UnauthorizedException('Invalid credentials');
 
     const token = await this.jwtService.signAsync({
@@ -138,7 +146,7 @@ export class AuthService {
     } else {
       const child = await this.childrenService.findByLogin(identifier);
       if (child) {
-        const valid = await bcrypt.compare(password, child.password);
+        const valid = await this.verifyChildPassword(password, child.password);
         if (!valid) throw new UnauthorizedException('Неверный логин или пароль');
 
         const token = await this.jwtService.signAsync({

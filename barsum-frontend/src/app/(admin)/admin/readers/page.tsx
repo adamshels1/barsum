@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { adminApi } from "@/lib/api/admin";
 import { CoinIcon } from "@/components/CoinIcon";
+import { childPhotoUrl } from "@/lib/media";
 
 interface ReaderRow {
   childId: string;
@@ -110,7 +111,7 @@ function ReaderCard({ row, rank }: { row: ReaderRow; rank: number }) {
           {medal ?? rank}
         </div>
         {row.photoUrl ? (
-          <img src={row.photoUrl} alt={row.name} style={{ width: 44, height: 44, borderRadius: 14, objectFit: "cover", flexShrink: 0 }} />
+          <img src={childPhotoUrl({ id: row.childId, photoUrl: row.photoUrl })} alt={row.name} style={{ width: 44, height: 44, borderRadius: 14, objectFit: "cover", flexShrink: 0 }} />
         ) : (
           <div style={{ width: 44, height: 44, borderRadius: 14, background: "rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 900, color: "#ffffff", flexShrink: 0 }}>
             {row.name[0]}

@@ -11,6 +11,8 @@ export interface User {
 export interface Child {
   id: string;
   login: string;
+  /** Расшифрованный пароль — приходит только владельцу-родителю из GET /children/:id. */
+  password?: string;
   name: string;
   age: number;
   parentId: string;

@@ -12,6 +12,7 @@ import { RewardRequestCard } from "@/components/RewardRequestCard";
 import { RewardTemplatePicker } from "@/components/RewardTemplatePicker";
 import type { RewardTemplate } from "@/lib/rewardTemplates";
 import { Portal } from "@/components/Portal";
+import { rewardPhotoUrl } from "@/lib/media";
 
 interface ReviewQueueItem {
   id: string;
@@ -209,7 +210,7 @@ function RewardCard({ reward }: { reward: Reward }) {
     <div style={{ ...GLASS, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 }}>
       <div style={{ width: 72, height: 72, borderRadius: 18, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, flexShrink: 0, overflow: "hidden" }}>
         {reward.photoUrl ? (
-          <img src={reward.photoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <img src={rewardPhotoUrl(reward)} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         ) : (
           TYPE_LABELS[reward.type]?.emoji ?? "🎁"
         )}

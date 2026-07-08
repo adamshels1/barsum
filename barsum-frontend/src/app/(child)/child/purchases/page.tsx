@@ -5,13 +5,14 @@ import { ChevronLeft, ShoppingBag } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { rewardsApi } from "@/lib/api/rewards";
 import { CoinIcon } from "@/components/CoinIcon";
+import { rewardPhotoUrl } from "@/lib/media";
 
 interface RewardRequest {
   id: string;
   coinsAmount: number;
   status: "pending" | "delivered" | "rejected";
   createdAt: string;
-  reward?: { name: string; type: string; photoUrl?: string | null };
+  reward?: { id: string; name: string; type: string; photoUrl?: string | null };
 }
 
 const TYPE_EMOJI: Record<string, string> = {
@@ -76,7 +77,7 @@ export default function ChildPurchasesPage() {
               <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0, overflow: "hidden" }}>
                 {req.reward?.photoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={req.reward.photoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <img src={rewardPhotoUrl(req.reward)} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 ) : (
                   TYPE_EMOJI[req.reward?.type ?? ""] ?? "🎁"
                 )}

@@ -9,6 +9,7 @@ import { Reward } from './entities/reward.entity';
 import { RewardRequest } from './entities/reward-request.entity';
 import { CoinsService } from '../coins/coins.service';
 import { RewardRequestStatus, RewardType, CoinTransactionType } from '../common/enums';
+import { FilesService, parseStoredFileUrl, imageMimeFromUrl } from '../files/files.service';
 
 @Injectable()
 export class RewardsService {
@@ -18,6 +19,7 @@ export class RewardsService {
     @InjectRepository(RewardRequest)
     private requestRepo: Repository<RewardRequest>,
     private coinsService: CoinsService,
+    private filesService: FilesService,
   ) {}
 
   async findAll(parentId: string): Promise<Reward[]> {
@@ -125,5 +127,16 @@ export class RewardsService {
       order: { createdAt: 'DESC' },
       relations: ['reward'],
     });
+  }
+
+  // Отдаём фото награды через backend (тот же https-origin, что и API),
+  // чтобы не упираться в mixed-content блокировку прямых http-ссылок MinIO на проде.
+  async getPhoto(id: string): Promise<{ buffer: Buffer; contentType: string }> {
+    const reward = await this.rewardRepo.findOne({ where: { id } });
+    if (!reward?.photoUrl) throw new NotFoundException('Photo not found');
+    const parsed = parseStoredFileUrl(reward.photoUrl);
+    if (!parsed) throw new NotFoundException('Photo not found');
+    const buffer = await this.filesService.getBuffer(parsed.key, parsed.bucket);
+    return { buffer, contentType: imageMimeFromUrl(reward.photoUrl) };
   }
 }

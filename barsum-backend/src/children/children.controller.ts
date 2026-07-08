@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Patch, Body, Param, UseGuards, Request, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, UseGuards, Request, UploadedFile, UseInterceptors, NotFoundException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ChildrenService } from './children.service';
 import { FilesService } from '../files/files.service';
+import { decryptChildPassword, isBcryptHash } from '../common/child-password.util';
 
 @ApiTags('children')
 @ApiBearerAuth()
@@ -38,10 +39,16 @@ export class ChildrenController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Профиль ребёнка' })
-  async getOne(@Param('id') id: string) {
+  async getOne(@Request() req: any, @Param('id') id: string) {
     const child = await this.childrenService.findById(id);
-    if (!child) throw new Error('Not found');
+    if (!child) throw new NotFoundException('Not found');
     const { password, ...result } = child as any;
+    const isOwner = req.user.role === 'parent' && child.parentId === req.user.sub;
+    // Отдаём расшифрованный пароль владельцу-родителю, чтобы он мог посмотреть
+    // его позже (если забыл). Для старых аккаунтов с bcrypt-хэшем это невозможно.
+    if (isOwner && !isBcryptHash(password)) {
+      return { ...result, password: decryptChildPassword(password) };
+    }
     return result;
   }
 

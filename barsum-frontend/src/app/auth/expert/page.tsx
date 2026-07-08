@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { apiClient } from "@/lib/api/client";
 import { MascotWave } from "@/components/MascotWave";
+import { BackButton } from "@/components/BackButton";
 import { useAuthStore } from "@/stores/auth-store";
 
 const loginSchema = z.object({
@@ -66,6 +67,7 @@ export default function ExpertAuthPage() {
 
   return (
     <main style={{ minHeight: "100dvh", background: BG, display: "flex", flexDirection: "column" }}>
+      <BackButton />
       <div style={{ position: "fixed", top: "-15%", right: "-10%", width: 240, height: 240, borderRadius: "50%", background: "rgba(255,255,255,0.18)", filter: "blur(60px)", pointerEvents: "none" }} />
       <div style={{ position: "fixed", bottom: "-10%", left: "-10%", width: 200, height: 200, borderRadius: "50%", background: "rgba(0,0,0,0.1)", filter: "blur(50px)", pointerEvents: "none" }} />
 

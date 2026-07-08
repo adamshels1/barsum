@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Dream } from './entities/dream.entity';
 import { DreamStatus } from '../common/enums';
 import { Child } from '../children/entities/child.entity';
+import { FilesService, parseStoredFileUrl, imageMimeFromUrl } from '../files/files.service';
 
 @Injectable()
 export class DreamsService {
@@ -12,6 +13,7 @@ export class DreamsService {
     private dreamRepo: Repository<Dream>,
     @InjectRepository(Child)
     private childRepo: Repository<Child>,
+    private filesService: FilesService,
   ) {}
 
   async create(childId: string, dto: { name: string; photoUrl?: string }): Promise<Dream> {
@@ -99,5 +101,16 @@ export class DreamsService {
     if (!dream) throw new NotFoundException('Dream not found');
     dream.photoUrl = photoUrl;
     return this.dreamRepo.save(dream);
+  }
+
+  // Отдаём фото мечты через backend (тот же https-origin, что и API),
+  // чтобы не упираться в mixed-content блокировку прямых http-ссылок MinIO на проде.
+  async getPhoto(id: string): Promise<{ buffer: Buffer; contentType: string }> {
+    const dream = await this.dreamRepo.findOne({ where: { id } });
+    if (!dream?.photoUrl) throw new NotFoundException('Photo not found');
+    const parsed = parseStoredFileUrl(dream.photoUrl);
+    if (!parsed) throw new NotFoundException('Photo not found');
+    const buffer = await this.filesService.getBuffer(parsed.key, parsed.bucket);
+    return { buffer, contentType: imageMimeFromUrl(dream.photoUrl) };
   }
 }

@@ -23,6 +23,15 @@ export function audioMimeFromUrl(url: string): string {
   return AUDIO_MIME_BY_EXT[ext ?? ''] ?? 'audio/webm';
 }
 
+const IMAGE_MIME_BY_EXT: Record<string, string> = {
+  png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif',
+};
+
+export function imageMimeFromUrl(url: string): string {
+  const ext = url.split('?')[0].split('.').pop()?.toLowerCase();
+  return IMAGE_MIME_BY_EXT[ext ?? ''] ?? 'image/jpeg';
+}
+
 /**
  * Разбирает сохранённую в БД ссылку на файл MinIO в { bucket, key } независимо от того,
  * как она сформирована: http://ip:9100/<bucket>/<key>, https://host/prefix/<bucket>/<key> и т.д.

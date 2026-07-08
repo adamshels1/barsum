@@ -11,6 +11,7 @@ import { rewardsApi } from "@/lib/api/rewards";
 import { useAuthStore } from "@/stores/auth-store";
 import { CoinIcon } from "@/components/CoinIcon";
 import { Portal } from "@/components/Portal";
+import { dreamPhotoUrl, rewardPhotoUrl } from "@/lib/media";
 
 interface Reward {
   id: string;
@@ -88,7 +89,7 @@ function ConfirmModal({
             }}
           >
             {reward.photoUrl ? (
-              <img src={reward.photoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <img src={rewardPhotoUrl(reward)} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             ) : (
               TYPE_EMOJI[reward.type] ?? "🎁"
             )}
@@ -277,7 +278,7 @@ function RewardsTab({ childId }: { childId: string }) {
                     }}
                   >
                     {reward.photoUrl ? (
-                      <img src={reward.photoUrl} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+                      <img src={rewardPhotoUrl(reward)} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
                     ) : (
                       TYPE_EMOJI[reward.type] ?? "🎁"
                     )}
@@ -546,7 +547,7 @@ function DreamTab({ childId }: { childId: string }) {
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         {dream.photoUrl && (
           <div style={{ borderRadius: 16, overflow: "hidden", height: 176 }}>
-            <img src={dream.photoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            <img src={dreamPhotoUrl(dream)} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           </div>
         )}
         <div
@@ -580,7 +581,7 @@ function DreamTab({ childId }: { childId: string }) {
           overflow: "hidden",
           position: "relative",
           background: dream.photoUrl
-            ? `url(${dream.photoUrl}) center/cover`
+            ? `url(${dreamPhotoUrl(dream)}) center/cover`
             : undefined,
           minHeight: dream.photoUrl ? 160 : "auto",
         }}
