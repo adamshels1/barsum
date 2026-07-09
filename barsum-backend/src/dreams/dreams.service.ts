@@ -35,11 +35,20 @@ export class DreamsService {
   }
 
   async findMy(childId: string): Promise<Dream | null> {
-    return this.dreamRepo.findOne({
+    // Активная/на одобрении важнее — показываем её.
+    const current = await this.dreamRepo.findOne({
       where: [
         { childId, status: DreamStatus.ACTIVE },
         { childId, status: DreamStatus.PENDING_APPROVAL },
       ],
+      order: { createdAt: 'DESC' },
+    });
+    if (current) return current;
+    // Иначе — собранная мечта, которая ждёт исполнения родителем.
+    // fulfilled/rejected не показываем: ребёнок увидит экран «Добавь мечту».
+    return this.dreamRepo.findOne({
+      where: { childId, status: DreamStatus.COMPLETED },
+      order: { createdAt: 'DESC' },
     });
   }
 
@@ -49,6 +58,26 @@ export class DreamsService {
       relations: ['child'],
       order: { createdAt: 'DESC' },
     });
+  }
+
+  // Собранные мечты, ожидающие исполнения родителем.
+  async findCompletedForParent(parentId: string): Promise<Dream[]> {
+    return this.dreamRepo.find({
+      where: { parentId, status: DreamStatus.COMPLETED },
+      relations: ['child'],
+      order: { updatedAt: 'DESC' },
+    });
+  }
+
+  // Родитель отмечает, что исполнил мечту (выдал приз) → архивируем.
+  async fulfill(id: string, parentId: string): Promise<Dream> {
+    const dream = await this.dreamRepo.findOne({ where: { id } });
+    if (!dream) throw new NotFoundException('Dream not found');
+    if (dream.parentId !== parentId) throw new ForbiddenException('Not your child dream');
+    if (dream.status !== DreamStatus.COMPLETED)
+      throw new BadRequestException('Dream is not completed');
+    dream.status = DreamStatus.FULFILLED;
+    return this.dreamRepo.save(dream);
   }
 
   async approve(id: string, parentId: string, targetCoins: number): Promise<Dream> {

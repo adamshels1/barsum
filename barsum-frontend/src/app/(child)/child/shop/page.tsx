@@ -43,6 +43,7 @@ const dict: Dict = {
     myDream: "Моя мечта",
     edit: "Изменить",
     dreamAchieved: "🎉 Мечта достигнута!",
+    waitingParentFulfill: "Ждём, пока родитель исполнит мечту",
     outOf: "из {n}",
     sendCoinsToDream: "Отправить монеты в мечту",
     available: "Доступно:",
@@ -90,6 +91,7 @@ const dict: Dict = {
     myDream: "Менің арманым",
     edit: "Өзгерту",
     dreamAchieved: "🎉 Арман орындалды!",
+    waitingParentFulfill: "Ата-ана арманды орындағанын күтеміз",
     outOf: "{n} ішінен",
     sendCoinsToDream: "Монеталарды арманға жіберу",
     available: "Қолжетімді:",
@@ -791,6 +793,9 @@ function DreamTab({ childId }: { childId: string }) {
             >
               <p style={{ margin: 0, fontSize: 16, fontWeight: 900, color: "#aaffcc" }}>
                 {t("dreamAchieved")}
+              </p>
+              <p style={{ margin: "4px 0 0", fontSize: 12, fontWeight: 700, color: "rgba(200,255,220,0.85)" }}>
+                {t("waitingParentFulfill")}
               </p>
             </div>
           )}

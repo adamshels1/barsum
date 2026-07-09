@@ -82,6 +82,10 @@ const dict: Dict = {
     error: "Ошибка",
     dreamRejected: "Мечта отклонена",
     dreamsToApprove: "💫 Мечты на одобрение",
+    dreamsToFulfill: "🎉 Собранные мечты",
+    collectedBadge: "Собрана",
+    fulfillBtn: "Исполнено ✓",
+    dreamFulfilled: "Мечта отмечена исполненной!",
     childPrefix: "Ребёнок: {name}",
     waitingApproval: "Ждёт одобрения",
     setCoinPrice: "Установите стоимость в монетах:",
@@ -169,6 +173,10 @@ const dict: Dict = {
     error: "Қате",
     dreamRejected: "Арман қабылданбады",
     dreamsToApprove: "💫 Мақұлдауға арналған армандар",
+    dreamsToFulfill: "🎉 Жиналған армандар",
+    collectedBadge: "Жиналды",
+    fulfillBtn: "Орындалды ✓",
+    dreamFulfilled: "Арман орындалды деп белгіленді!",
     childPrefix: "Бала: {name}",
     waitingApproval: "Мақұлдауды күтуде",
     setCoinPrice: "Монетамен құнын белгілеңіз:",
@@ -643,6 +651,61 @@ function DreamApprovalSection() {
   );
 }
 
+/** Собранные детьми мечты, ожидающие исполнения родителем: кнопка «Исполнено». */
+function DreamFulfillSection() {
+  const t = useT(dict);
+  const queryClient = useQueryClient();
+
+  const { data: completedDreams = [] } = useQuery<any[]>({
+    queryKey: ["dreams-completed"],
+    queryFn: dreamsApi.parentCompleted,
+  });
+
+  const fulfillMutation = useMutation({
+    mutationFn: (id: string) => dreamsApi.fulfill(id),
+    onSuccess: () => {
+      toast.success(t("dreamFulfilled"));
+      queryClient.invalidateQueries({ queryKey: ["dreams-completed"] });
+    },
+    onError: () => toast.error(t("error")),
+  });
+
+  if (completedDreams.length === 0) return null;
+
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <h2 style={{ margin: "0 0 12px", fontSize: 15, fontWeight: 900, color: "#ffffff" }}>{t("dreamsToFulfill")}</h2>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {completedDreams.map((dream: any) => (
+          <div key={dream.id} style={{ ...GLASS, padding: "14px 16px", border: "1px solid rgba(0,220,120,0.4)" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
+              {dream.photoUrl ? (
+                <img src={dreamPhotoUrl(dream)} alt="" style={{ width: 56, height: 56, borderRadius: 12, objectFit: "cover", flexShrink: 0 }} />
+              ) : (
+                <div style={{ width: 56, height: 56, borderRadius: 12, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }}>🎉</div>
+              )}
+              <div>
+                <p style={{ margin: 0, fontWeight: 800, color: "#ffffff" }}>{dream.name}</p>
+                <p style={{ margin: "2px 0 4px", fontSize: 12, color: "rgba(255,255,255,0.6)" }}>{t("childPrefix", { name: dream.child?.name ?? "" })}</p>
+                <span style={{ fontSize: 11, padding: "3px 8px", borderRadius: 9999, fontWeight: 800, background: "rgba(0,220,120,0.3)", color: "#aaffcc" }}>
+                  {t("collectedBadge")} · <CoinIcon size={11} /> {dream.savedCoins?.toLocaleString?.() ?? dream.savedCoins}
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={() => fulfillMutation.mutate(dream.id)}
+              disabled={fulfillMutation.isPending}
+              style={{ width: "100%", padding: "11px 0", borderRadius: 12, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13, background: "rgba(34,197,94,0.75)", color: "#ffffff", opacity: fulfillMutation.isPending ? 0.6 : 1 }}
+            >
+              {fulfillMutation.isPending ? "..." : t("fulfillBtn")}
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const SPEND_STATUS: Record<RewardRequest["status"], { bg: string }> = {
   pending: { bg: "rgba(255,200,0,0.28)" },
   delivered: { bg: "rgba(34,197,94,0.32)" },
@@ -834,6 +897,8 @@ export default function ParentChildProgressPage() {
           </div>
 
           <DreamApprovalSection />
+
+          <DreamFulfillSection />
 
           <TabBar active={activeTab} onChange={setActiveTab} />
 

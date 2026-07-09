@@ -14,8 +14,11 @@ export const dreamsApi = {
     return apiClient.post(`/dreams/${id}/photo`, fd).then((r) => r.data);
   },
   parentPending: () => apiClient.get("/dreams/parent/pending").then((r) => r.data),
+  parentCompleted: () => apiClient.get("/dreams/parent/completed").then((r) => r.data),
   approve: (id: string, targetCoins: number) =>
     apiClient.post(`/dreams/${id}/approve`, { targetCoins }).then((r) => r.data),
   reject: (id: string, reason: string) =>
     apiClient.post(`/dreams/${id}/reject`, { reason }).then((r) => r.data),
+  fulfill: (id: string) =>
+    apiClient.post(`/dreams/${id}/fulfill`).then((r) => r.data),
 };

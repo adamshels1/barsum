@@ -30,6 +30,16 @@ export class DreamsController {
     return this.dreamsService.findPendingForParent(req.user.sub);
   }
 
+  @Get('parent/completed')
+  findCompletedForParent(@Request() req: any) {
+    return this.dreamsService.findCompletedForParent(req.user.sub);
+  }
+
+  @Post(':id/fulfill')
+  fulfill(@Request() req: any, @Param('id') id: string) {
+    return this.dreamsService.fulfill(id, req.user.sub);
+  }
+
   @Post(':id/approve')
   approve(@Request() req: any, @Param('id') id: string, @Body() body: { targetCoins: number }) {
     return this.dreamsService.approve(id, req.user.sub, body.targetCoins);

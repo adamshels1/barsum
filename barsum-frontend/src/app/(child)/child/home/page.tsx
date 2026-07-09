@@ -22,6 +22,8 @@ const dict: Dict = {
     days: "дней",
     awaitingApproval: "Ждёт одобрения родителя",
     dreamRejected: "Мечта отклонена",
+    dreamCollected: "«{name}» собрана! 🎉",
+    waitingParentFulfill: "Ждём, пока родитель исполнит мечту",
     myDream: "Моя мечта",
     saved: "накоплено",
     goal: "цель:",
@@ -47,6 +49,8 @@ const dict: Dict = {
     days: "күн",
     awaitingApproval: "Ата-ананың мақұлдауын күтуде",
     dreamRejected: "Арман қабылданбады",
+    dreamCollected: "«{name}» жиналды! 🎉",
+    waitingParentFulfill: "Ата-ана арманды орындағанын күтеміз",
     myDream: "Менің арманым",
     saved: "жиналды",
     goal: "мақсат:",
@@ -131,6 +135,17 @@ function DreamCard({ dream, currentBalance, onSend, isSending }: {
         <p style={{ margin: "4px 0 0", fontSize: 12, fontWeight: 600, color: "#ffb3b3" }}>
           {t("dreamRejected")}{dream.rejectedReason ? `: ${dream.rejectedReason}` : ""}
         </p>
+      </div>
+    );
+  }
+  if (dream.status === "completed") {
+    return (
+      <div className="glass" style={{ padding: 16, marginBottom: 12, display: "flex", alignItems: "center", gap: 12, border: "1px solid rgba(0,220,120,0.45)" }}>
+        <span style={{ fontSize: 28 }}>🎉</span>
+        <div>
+          <p style={{ margin: 0, fontWeight: 900, fontSize: 15, color: "#ffffff" }}>{t("dreamCollected", { name: dream.name })}</p>
+          <p style={{ margin: "4px 0 0", fontSize: 12, fontWeight: 600, color: "#aaffcc" }}>{t("waitingParentFulfill")}</p>
+        </div>
       </div>
     );
   }
