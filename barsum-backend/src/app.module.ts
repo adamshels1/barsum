@@ -18,10 +18,12 @@ import { AiModule } from './ai/ai.module';
 import { PaymentsModule } from './payments/payments.module';
 import { DreamsModule } from './dreams/dreams.module';
 import { AdminModule } from './admin/admin.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    NotificationsModule,
     ScheduleModule.forRoot(),
     TypeOrmModule.forRoot({
       type: 'postgres',

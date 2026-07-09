@@ -6,6 +6,7 @@ import { DreamStatus, CoinTransactionType } from '../common/enums';
 import { Child } from '../children/entities/child.entity';
 import { FilesService, parseStoredFileUrl, imageMimeFromUrl } from '../files/files.service';
 import { CoinsService } from '../coins/coins.service';
+import { TelegramService, esc } from '../notifications/telegram.service';
 
 @Injectable()
 export class DreamsService {
@@ -16,6 +17,7 @@ export class DreamsService {
     private childRepo: Repository<Child>,
     private filesService: FilesService,
     private coinsService: CoinsService,
+    private telegram: TelegramService,
   ) {}
 
   async create(childId: string, dto: { name: string; photoUrl?: string }): Promise<Dream> {
@@ -31,7 +33,14 @@ export class DreamsService {
       savedCoins: 0,
       status: DreamStatus.PENDING_APPROVAL,
     });
-    return this.dreamRepo.save(dream);
+    const saved = await this.dreamRepo.save(dream);
+
+    this.telegram.send(
+      'other',
+      `⭐ <b>Новая мечта</b>\n🧒 Ребёнок: ${esc(child.name)} (${esc(childId)})\nМечта: «${esc(saved.name)}»`,
+    );
+
+    return saved;
   }
 
   async findMy(childId: string): Promise<Dream | null> {
@@ -77,7 +86,17 @@ export class DreamsService {
     if (dream.status !== DreamStatus.COMPLETED)
       throw new BadRequestException('Dream is not completed');
     dream.status = DreamStatus.FULFILLED;
-    return this.dreamRepo.save(dream);
+    const saved = await this.dreamRepo.save(dream);
+
+    const child = await this.childRepo.findOne({ where: { id: dream.childId } }).catch(() => null);
+
+    this.telegram.send(
+      'other',
+      `🌟 <b>Мечта исполнена</b>\n🧒 Ребёнок: ${esc(child?.name ?? '—')} (${esc(dream.childId)})\n` +
+        `Мечта: «${esc(saved.name)}» — родитель выдал приз`,
+    );
+
+    return saved;
   }
 
   async approve(id: string, parentId: string, targetCoins: number): Promise<Dream> {

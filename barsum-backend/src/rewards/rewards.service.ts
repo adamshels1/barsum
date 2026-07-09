@@ -4,12 +4,15 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { Reward } from './entities/reward.entity';
+import { User } from '../users/entities/user.entity';
+import { Child } from '../children/entities/child.entity';
 import { RewardRequest } from './entities/reward-request.entity';
 import { CoinsService } from '../coins/coins.service';
 import { RewardRequestStatus, RewardType, CoinTransactionType } from '../common/enums';
 import { FilesService, parseStoredFileUrl, imageMimeFromUrl } from '../files/files.service';
+import { TelegramService, esc } from '../notifications/telegram.service';
 
 @Injectable()
 export class RewardsService {
@@ -20,6 +23,8 @@ export class RewardsService {
     private requestRepo: Repository<RewardRequest>,
     private coinsService: CoinsService,
     private filesService: FilesService,
+    private telegram: TelegramService,
+    private dataSource: DataSource,
   ) {}
 
   async findAll(parentId: string): Promise<Reward[]> {
@@ -66,7 +71,22 @@ export class RewardsService {
       coinsAmount: reward.cost,
       status: RewardRequestStatus.PENDING,
     });
-    return this.requestRepo.save(req);
+    const saved = await this.requestRepo.save(req);
+
+    const [child, parent] = await Promise.all([
+      this.dataSource.getRepository(Child).findOne({ where: { id: childId } }).catch(() => null),
+      this.dataSource.getRepository(User).findOne({ where: { id: parentId } }).catch(() => null),
+    ]);
+
+    this.telegram.send(
+      'other',
+      `🎁 <b>Запрос награды</b>\n` +
+        `🧒 Ребёнок: ${esc(child?.name ?? '—')} (${esc(childId)})\n` +
+        `Награда: ${esc(reward.name)} (${reward.cost} монет)\n` +
+        `👤 Родитель: ${esc(parent?.name ?? '—')} (${esc(parentId)})`,
+    );
+
+    return saved;
   }
 
   async deliver(requestId: string, parentId: string): Promise<RewardRequest> {

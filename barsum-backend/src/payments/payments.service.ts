@@ -7,12 +7,15 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { Payment } from './entities/payment.entity';
+import { User } from '../users/entities/user.entity';
+import { Child } from '../children/entities/child.entity';
 import { ChallengeEnrollment } from '../sessions/entities/enrollment.entity';
 import { Challenge } from '../challenges/entities/challenge.entity';
 import { CoinsService } from '../coins/coins.service';
 import { PaymentStatus, CoinTransactionType, EnrollmentStatus } from '../common/enums';
+import { TelegramService, esc } from '../notifications/telegram.service';
 
 @Injectable()
 export class PaymentsService {
@@ -26,7 +29,21 @@ export class PaymentsService {
     @InjectRepository(Challenge)
     private challengeRepo: Repository<Challenge>,
     private coinsService: CoinsService,
+    private telegram: TelegramService,
+    private dataSource: DataSource,
   ) {}
+
+  // Достаём имена родителя и ребёнка для человекочитаемого уведомления.
+  private async actorLines(parentId: string, childId: string): Promise<string> {
+    const [parent, child] = await Promise.all([
+      this.dataSource.getRepository(User).findOne({ where: { id: parentId } }).catch(() => null),
+      this.dataSource.getRepository(Child).findOne({ where: { id: childId } }).catch(() => null),
+    ]);
+    return (
+      `👤 Родитель: ${esc(parent?.name ?? '—')} (${esc(parentId)})\n` +
+      `🧒 Ребёнок: ${esc(child?.name ?? '—')} (${esc(childId)})`
+    );
+  }
 
   async create(dto: {
     parentId: string;
@@ -49,6 +66,13 @@ export class PaymentsService {
     });
     const saved = await this.paymentRepo.save(payment);
     await this.activateEnrollment(saved);
+
+    this.telegram.send(
+      'payments',
+      `💳 <b>Новая оплата</b>\n${await this.actorLines(saved.parentId, saved.childId)}\n` +
+        `Сумма: ${saved.total} ₸ (задание ${saved.challengePrice} ₸ + монеты ${saved.coinsAmount})`,
+    );
+
     return saved;
   }
 
@@ -122,6 +146,12 @@ export class PaymentsService {
     payment.resolvedAt = new Date();
     await this.paymentRepo.save(payment);
     await this.activateEnrollment(payment);
+
+    this.telegram.send(
+      'payments',
+      `✅ <b>Оплата подтверждена</b>\n${await this.actorLines(payment.parentId, payment.childId)}\n` +
+        `Сумма: ${payment.total} ₸`,
+    );
 
     return payment;
   }

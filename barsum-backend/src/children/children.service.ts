@@ -4,6 +4,8 @@ import { DataSource, Repository } from 'typeorm';
 import { Child } from './entities/child.entity';
 import { FilesService, parseStoredFileUrl, imageMimeFromUrl } from '../files/files.service';
 import { encryptChildPassword } from '../common/child-password.util';
+import { TelegramService, esc } from '../notifications/telegram.service';
+import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class ChildrenService {
@@ -12,6 +14,7 @@ export class ChildrenService {
     private childRepo: Repository<Child>,
     private dataSource: DataSource,
     private filesService: FilesService,
+    private telegram: TelegramService,
   ) {}
 
   async findByLogin(login: string): Promise<Child | null> {
@@ -31,7 +34,22 @@ export class ChildrenService {
     if (existing) throw new ConflictException('Login already taken');
     const encrypted = encryptChildPassword(dto.password);
     const child = this.childRepo.create({ ...dto, password: encrypted });
-    return this.childRepo.save(child);
+    const saved = await this.childRepo.save(child);
+
+    const parent = await this.dataSource
+      .getRepository(User)
+      .findOne({ where: { id: dto.parentId } })
+      .catch(() => null);
+
+    this.telegram.send(
+      'registrations',
+      `👶 <b>Добавлен ребёнок</b>\n` +
+        `Ребёнок: ${esc(saved.name)}, ${esc(saved.age)} лет (логин ${esc(saved.login)})\n` +
+        `🆔 ${esc(saved.id)}\n` +
+        `👤 Родитель: ${esc(parent?.name ?? '—')} (${esc(dto.parentId)})`,
+    );
+
+    return saved;
   }
 
   async update(id: string, parentId: string, dto: { name?: string; age?: number; password?: string; photoUrl?: string }): Promise<Child> {

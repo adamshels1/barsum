@@ -10,6 +10,7 @@ import { UniversalLoginDto } from './dto/universal-login.dto';
 import { ChildrenService } from '../children/children.service';
 import { ExpertsService } from '../experts/experts.service';
 import { UserRole } from '../common/enums';
+import { TelegramService, esc } from '../notifications/telegram.service';
 
 @Injectable()
 export class AuthService {
@@ -18,6 +19,7 @@ export class AuthService {
     private jwtService: JwtService,
     private childrenService: ChildrenService,
     private expertsService: ExpertsService,
+    private telegram: TelegramService,
   ) {}
 
   async registerParent(dto: RegisterParentDto) {
@@ -26,6 +28,11 @@ export class AuthService {
 
     const hashed = await bcrypt.hash(dto.password, 10);
     const user = await this.usersService.create({ ...dto, password: hashed, role: UserRole.PARENT });
+
+    this.telegram.send(
+      'registrations',
+      `🎉 <b>Новый родитель</b>\nИмя: ${esc(user.name)}\nEmail: ${esc(user.email)}\n🆔 ${esc(user.id)}`,
+    );
 
     const token = await this.jwtService.signAsync({
       sub: user.id,
@@ -86,6 +93,11 @@ export class AuthService {
     const hashed = await bcrypt.hash(dto.password, 10);
     const user = await this.usersService.create({ ...dto, password: hashed, role: UserRole.EXPERT });
     const expert = await this.expertsService.createForUser(user.id);
+
+    this.telegram.send(
+      'registrations',
+      `🎓 <b>Новый эксперт</b>\nИмя: ${esc(user.name)}\nEmail: ${esc(user.email)}\n🆔 ${esc(user.id)}`,
+    );
 
     const token = await this.jwtService.signAsync({
       sub: user.id,

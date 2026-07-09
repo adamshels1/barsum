@@ -16,6 +16,7 @@ import { AiService } from '../ai/ai.service';
 import { FilesService, BUCKET_AUDIO, parseStoredFileUrl, audioMimeFromUrl } from '../files/files.service';
 import { SessionPhase, SessionStatus, EnrollmentStatus, CoinTransactionType } from '../common/enums';
 import { assessReading, readingAdvice } from './reading-assessment';
+import { TelegramService, esc } from '../notifications/telegram.service';
 
 // Порог автозачёта (0–10). Ниже — уходит эксперту на ручную проверку.
 const AUTO_CREDIT_SCORE = 7;
@@ -35,6 +36,7 @@ export class SessionsService {
     private childrenService: ChildrenService,
     private aiService: AiService,
     private filesService: FilesService,
+    private telegram: TelegramService,
   ) {}
 
   async create(enrollmentId: string, childId: string): Promise<Session> {
@@ -291,11 +293,23 @@ export class SessionsService {
         });
         await this.childrenService.incrementStreak(childId);
       }
-      return this.sessionRepo.save(session);
+      const savedSession = await this.sessionRepo.save(session);
+      const child = await this.childrenService.findById(childId).catch(() => null);
+      this.telegram.send(
+        'other',
+        `📖 <b>Чтение засчитано</b>\n🧒 ${esc(child?.name ?? 'Ребёнок')} (${esc(childId)}) — часть ${session.partNumber}, оценка ${session.aiScore}/10` +
+          (enrollment?.coinsPerPart ? ` (+${enrollment.coinsPerPart} монет)` : ''),
+      );
+      return savedSession;
     }
 
     // Слабое чтение — решение принимает эксперт (не родитель), с готовым AI-черновиком.
     await this.routeToExpert(session, enrollment, 'low_score', expertDraft);
+    const child = await this.childrenService.findById(childId).catch(() => null);
+    this.telegram.send(
+      'other',
+      `📖 <b>Чтение на проверке эксперта</b>\n🧒 ${esc(child?.name ?? 'Ребёнок')} (${esc(childId)}) — часть ${session.partNumber}, оценка ${session.aiScore}/10`,
+    );
     return session;
   }
 
