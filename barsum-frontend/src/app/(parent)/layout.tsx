@@ -23,9 +23,9 @@ const dict: Dict = {
 const BG = "linear-gradient(135deg, #4776e6 0%, #6a3de8 60%, #8e54e9 100%)";
 
 const tabs = [
+  { key: "cabinet", Icon: Home, href: "/parent/cabinet", match: (p: string) => p.startsWith("/parent/cabinet") || p.startsWith("/parent/child") },
   { key: "catalog", Icon: BookOpen, href: "/parent/home", match: (p: string) => p === "/parent/home" },
   { key: "rewards", Icon: Gift, href: "/parent/rewards", match: (p: string) => p.startsWith("/parent/rewards") },
-  { key: "cabinet", Icon: Home, href: "/parent/cabinet", match: (p: string) => p.startsWith("/parent/cabinet") || p.startsWith("/parent/child") },
 ];
 
 export default function ParentLayout({ children }: { children: React.ReactNode }) {

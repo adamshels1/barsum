@@ -1,9 +1,9 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Baby, ClipboardCopy, Share2 } from "lucide-react";
+import { Baby, Camera, ClipboardCopy, Share2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -48,6 +48,8 @@ const dict: Dict = {
     passwordPlaceholder: "Пароль для ребёнка",
     creating: "Создаём...",
     createProfile: "Создать профиль",
+    addPhoto: "Фото",
+    chooseBook: "Выбрать книгу в каталоге →",
   },
   kk: {
     min2: "Кемінде 2 таңба",
@@ -82,6 +84,8 @@ const dict: Dict = {
     passwordPlaceholder: "Балаға арналған құпиясөз",
     creating: "Құрылуда...",
     createProfile: "Профиль құру",
+    addPhoto: "Фото",
+    chooseBook: "Каталогтан кітап таңдау →",
   },
 };
 
@@ -100,6 +104,18 @@ export default function ParentOnboardingPage() {
   const [showShopStep, setShowShopStep] = useState(false);
   const [addedNames, setAddedNames] = useState<Set<string>>(new Set());
   const [pendingName, setPendingName] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+
+  const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setPhotoFile(f);
+    const reader = new FileReader();
+    reader.onloadend = () => setPhotoPreview(reader.result as string);
+    reader.readAsDataURL(f);
+  };
 
   const childSchema = z.object({
     name: z.string().min(2, t("min2")),
@@ -126,7 +142,14 @@ export default function ParentOnboardingPage() {
 
   const onSubmit = async (data: ChildForm) => {
     try {
-      await childrenApi.create(data);
+      const child = await childrenApi.create(data);
+      if (photoFile && child?.id) {
+        try {
+          await childrenApi.uploadPhoto(child.id, photoFile);
+        } catch {
+          // фото не критично — профиль уже создан
+        }
+      }
       setCreated({ login: data.login, password: data.password, name: data.name });
     } catch (err: any) {
       toast.error(err.response?.data?.message || t("createError"));
@@ -168,9 +191,15 @@ export default function ParentOnboardingPage() {
           />
 
           <button
-            onClick={() => router.push("/parent/cabinet")}
+            onClick={() => router.push("/parent/home")}
             className="btn-white"
             style={{ marginTop: 20, color: "#4776e6" }}
+          >
+            {t("chooseBook")}
+          </button>
+          <button
+            onClick={() => router.push("/parent/cabinet")}
+            style={{ marginTop: 10, width: "100%", background: "transparent", border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13, color: "rgba(255,255,255,0.7)" }}
           >
             {t("toCabinet")}
           </button>
@@ -250,6 +279,21 @@ export default function ParentOnboardingPage() {
 
         <div style={{ background: "rgba(255,255,255,0.15)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 24, padding: "28px 24px" }}>
           <form onSubmit={handleSubmit(onSubmit)} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              style={{ alignSelf: "center", width: 88, height: 88, borderRadius: 9999, border: "1px solid rgba(255,255,255,0.3)", background: "rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", overflow: "hidden", padding: 0 }}
+            >
+              {photoPreview ? (
+                <img src={photoPreview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                  <Camera size={22} color="rgba(255,255,255,0.75)" />
+                  <span style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.6)" }}>{t("addPhoto")}</span>
+                </div>
+              )}
+            </button>
+            <input ref={fileRef} type="file" accept="image/*" onChange={handlePhoto} style={{ display: "none" }} />
             {[
               { name: "name", placeholder: t("childNamePlaceholder"), type: "text" },
               { name: "age", placeholder: t("agePlaceholder"), type: "number" },

@@ -124,7 +124,7 @@ export default function ChildAuthPage() {
 
 function redirectByRole(role: string, expertStatus: string | undefined, router: ReturnType<typeof useRouter>) {
   if (role === "child") router.push("/child/home");
-  else if (role === "parent") router.push("/parent/home");
+  else if (role === "parent") router.push("/parent/cabinet");
   else if (role === "expert") router.push(expertStatus === "approved" ? "/expert/home" : "/expert/onboarding");
   else if (role === "admin") router.push("/admin");
 }
