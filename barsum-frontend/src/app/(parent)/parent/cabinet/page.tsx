@@ -15,6 +15,7 @@ import { useAuthStore } from "@/stores/auth-store";
 import { CoinIcon } from "@/components/CoinIcon";
 import { Portal } from "@/components/Portal";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { ChildRequestsInbox } from "@/components/ChildRequestsInbox";
 import type { Payment } from "@/types";
 import { childPhotoUrl } from "@/lib/media";
 import { useT, type Dict } from "@/i18n/useT";
@@ -31,7 +32,6 @@ const dict: Dict = {
     createError: "Ошибка создания профиля",
     familyCabinet: "Семейный кабинет",
     parentFallback: "Родитель",
-    langLabel: "Язык",
     logout: "Выйти",
     coinBalance: "Баланс монет",
     rate: "1 ₸ = 10 монет",
@@ -71,7 +71,6 @@ const dict: Dict = {
     createError: "Профильді құру қатесі",
     familyCabinet: "Отбасылық кабинет",
     parentFallback: "Ата-ана",
-    langLabel: "Тіл",
     logout: "Шығу",
     coinBalance: "Монета балансы",
     rate: "1 ₸ = 10 монета",
@@ -220,12 +219,7 @@ export default function ParentCabinetPage() {
           </h1>
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
-            <span style={{ fontSize: 10, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              {t("langLabel")}
-            </span>
-            <LanguageSwitcher />
-          </div>
+          <LanguageSwitcher />
           <button
             onClick={handleLogout}
             className="glass-chip"
@@ -236,6 +230,9 @@ export default function ParentCabinetPage() {
           </button>
         </div>
       </div>
+
+      {/* Запросы от детей — награды + мечты (задача: всё на главной) */}
+      <ChildRequestsInbox />
 
       <div style={{ padding: "20px 20px 0" }}>
         {/* Balance card */}
