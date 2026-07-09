@@ -5,6 +5,7 @@ import { Dream } from './entities/dream.entity';
 import { Child } from '../children/entities/child.entity';
 import { FilesService } from '../files/files.service';
 import { CoinsService } from '../coins/coins.service';
+import { TelegramService } from '../notifications/telegram.service';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { DreamStatus } from '../common/enums';
 
@@ -25,6 +26,10 @@ const mockCoinsService = {
   transfer: jest.fn(),
 };
 
+const mockTelegramService = {
+  send: jest.fn(),
+};
+
 describe('DreamsService', () => {
   let service: DreamsService;
 
@@ -36,6 +41,7 @@ describe('DreamsService', () => {
         { provide: getRepositoryToken(Child), useValue: mockChildRepo },
         { provide: FilesService, useValue: mockFilesService },
         { provide: CoinsService, useValue: mockCoinsService },
+        { provide: TelegramService, useValue: mockTelegramService },
       ],
     }).compile();
     service = module.get<DreamsService>(DreamsService);

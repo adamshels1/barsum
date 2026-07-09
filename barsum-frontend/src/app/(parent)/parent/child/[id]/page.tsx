@@ -83,6 +83,9 @@ const dict: Dict = {
     dreamRejected: "Мечта отклонена",
     dreamsToApprove: "💫 Мечты на одобрение",
     dreamsToFulfill: "🎉 Собранные мечты",
+    currentDreams: "💫 Мечты ребёнка",
+    dreamSavedOf: "{saved} из {target}",
+    dreamCollectedBadge: "Собрана",
     collectedBadge: "Собрана",
     fulfillBtn: "Исполнено ✓",
     dreamFulfilled: "Мечта отмечена исполненной!",
@@ -174,6 +177,9 @@ const dict: Dict = {
     dreamRejected: "Арман қабылданбады",
     dreamsToApprove: "💫 Мақұлдауға арналған армандар",
     dreamsToFulfill: "🎉 Жиналған армандар",
+    currentDreams: "💫 Баланың армандары",
+    dreamSavedOf: "{target} ішінен {saved}",
+    dreamCollectedBadge: "Жиналды",
     collectedBadge: "Жиналды",
     fulfillBtn: "Орындалды ✓",
     dreamFulfilled: "Арман орындалды деп белгіленді!",
@@ -561,6 +567,64 @@ function ChangePasswordSection({ childId }: { childId: string; parentId: string 
   );
 }
 
+/** Текущие мечты ребёнка (в процессе накопления + собранные) — родитель видит, к чему копит ребёнок. */
+function ChildDreamsSection({ childId }: { childId: string }) {
+  const t = useT(dict);
+  const { data: dreams = [] } = useQuery<any[]>({
+    queryKey: ["dreams-child", childId],
+    queryFn: () => dreamsApi.parentChild(childId),
+    enabled: !!childId,
+  });
+
+  // Мечты в работе: активные (копит) и собранные (ждут исполнения).
+  // Ожидающие одобрения показывает отдельная секция ниже.
+  const current = dreams.filter((d) => d.status === "active" || d.status === "completed");
+  if (current.length === 0) return null;
+
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <h2 style={{ margin: "0 0 12px", fontSize: 15, fontWeight: 900, color: "#ffffff" }}>{t("currentDreams")}</h2>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {current.map((dream) => {
+          const target = dream.targetCoins || 0;
+          const saved = dream.savedCoins || 0;
+          const progress = target > 0 ? Math.min((saved / target) * 100, 100) : 0;
+          const isCompleted = dream.status === "completed";
+          return (
+            <div key={dream.id} style={{ ...GLASS, padding: "14px 16px", ...(isCompleted ? { border: "1px solid rgba(0,220,120,0.4)" } : {}) }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                {dream.photoUrl ? (
+                  <img src={dreamPhotoUrl(dream)} alt="" style={{ width: 48, height: 48, borderRadius: 12, objectFit: "cover", flexShrink: 0 }} />
+                ) : (
+                  <div style={{ width: 48, height: 48, borderRadius: 12, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>
+                    {isCompleted ? "🎉" : "💫"}
+                  </div>
+                )}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
+                    <p style={{ margin: 0, fontWeight: 800, color: "#ffffff", fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{dream.name}</p>
+                    {isCompleted ? (
+                      <span style={{ fontSize: 10.5, padding: "3px 8px", borderRadius: 9999, fontWeight: 800, background: "rgba(0,220,120,0.3)", color: "#aaffcc", flexShrink: 0 }}>{t("dreamCollectedBadge")}</span>
+                    ) : (
+                      <span style={{ fontSize: 12, fontWeight: 900, color: "#ffffff", flexShrink: 0 }}>{Math.round(progress)}%</span>
+                    )}
+                  </div>
+                  <div style={{ height: 6, borderRadius: 9999, background: "rgba(255,255,255,0.18)", overflow: "hidden", marginBottom: 6 }}>
+                    <div style={{ height: "100%", width: `${progress}%`, borderRadius: 9999, background: isCompleted ? "rgba(0,220,120,0.85)" : "rgba(255,255,255,0.85)" }} />
+                  </div>
+                  <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.65)" }}>
+                    <CoinIcon size={12} /> {t("dreamSavedOf", { saved: saved.toLocaleString(), target: target.toLocaleString() })}
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function DreamApprovalSection() {
   const t = useT(dict);
   const REJECT_REASONS = [t("reason1"), t("reason2"), t("reason3"), t("reason4")];
@@ -897,6 +961,8 @@ export default function ParentChildProgressPage() {
           </div>
 
           <DreamApprovalSection />
+
+          <ChildDreamsSection childId={childId} />
 
           <DreamFulfillSection />
 

@@ -34,6 +34,7 @@ const dict: Dict = {
     sendFailed: "Не удалось отправить монеты",
     reader: "Читатель",
     addDream: "Добавь свою мечту!",
+    addAnotherDream: "Добавить ещё мечту",
     parentsHelp: "Родители помогут её осуществить",
     myTasks: "Мои задания",
     noActiveTasks: "Нет активных заданий",
@@ -61,6 +62,7 @@ const dict: Dict = {
     sendFailed: "Монеталарды жіберу мүмкін болмады",
     reader: "Оқырман",
     addDream: "Арманыңды қос!",
+    addAnotherDream: "Тағы арман қосу",
     parentsHelp: "Ата-анаң оны орындауға көмектеседі",
     myTasks: "Менің тапсырмаларым",
     noActiveTasks: "Белсенді тапсырмалар жоқ",
@@ -110,7 +112,7 @@ function HeroCard({ name, balance, streak, onHistory }: { name: string; balance:
 
 function DreamCard({ dream, currentBalance, onSend, isSending }: {
   dream: any; currentBalance: number;
-  onSend: (amount: number) => void; isSending: boolean;
+  onSend: (amount: number, dreamId: string) => void; isSending: boolean;
 }) {
   const t = useT(dict);
   const [sendAmount, setSendAmount] = useState("");
@@ -199,7 +201,7 @@ function DreamCard({ dream, currentBalance, onSend, isSending }: {
               <button
                 onClick={() => {
                   const amt = Number(sendAmount);
-                  if (amt > 0 && amt <= currentBalance) { onSend(amt); setSendAmount(""); }
+                  if (amt > 0 && amt <= currentBalance) { onSend(amt, dream.id); setSendAmount(""); }
                 }}
                 disabled={!sendAmount || Number(sendAmount) < 1 || Number(sendAmount) > currentBalance || isSending}
                 style={{
@@ -250,17 +252,23 @@ export default function ChildHomePage() {
     enabled: !!user?.id,
   });
 
-  const { data: dream } = useQuery({
-    queryKey: ["dream-my"],
-    queryFn: dreamsApi.my,
+  const { data: dreams = [] } = useQuery<any[]>({
+    queryKey: ["dream-my-all"],
+    queryFn: dreamsApi.myAll,
   });
+
+  // Текущие мечты (несколько): на одобрении, активные, собранные. Исполненные — в магазине (история).
+  const currentDreams = (dreams as any[]).filter(
+    (d) => d.status === "pending_approval" || d.status === "active" || d.status === "completed",
+  );
 
   const currentBalance: number = balance_data?.balance ?? 0;
   const streak: number = (user as any)?.streak ?? 0;
 
   const sendMutation = useMutation({
-    mutationFn: (amount: number) => dreamsApi.send(amount),
+    mutationFn: ({ amount, dreamId }: { amount: number; dreamId: string }) => dreamsApi.send(amount, dreamId),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["dream-my-all"] });
       queryClient.invalidateQueries({ queryKey: ["dream-my"] });
       queryClient.invalidateQueries({ queryKey: ["child-balance", user?.id] });
       toast.success(t("coinsAdded"));
@@ -273,26 +281,26 @@ export default function ChildHomePage() {
     <main style={{ padding: "20px 20px 8px", maxWidth: 480, margin: "0 auto" }}>
       <HeroCard name={user?.name || t("reader")} balance={currentBalance} streak={streak} onHistory={() => router.push("/child/purchases")} />
 
-      {dream ? (
-        <DreamCard dream={dream} currentBalance={currentBalance} onSend={(amt) => sendMutation.mutate(amt)} isSending={sendMutation.isPending} />
-      ) : (
-        <button
-          onClick={() => router.push("/child/shop?tab=dream")}
-          className="glass"
-          style={{ width: "100%", marginBottom: 12, padding: 16, display: "flex", alignItems: "center", gap: 12, textAlign: "left", cursor: "pointer", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 20, background: "rgba(255,255,255,0.08)" }}
-        >
-          <div style={{ width: 48, height: 48, borderRadius: 16, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <Sparkles size={22} color="#ffffff" strokeWidth={2.5} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <p style={{ margin: 0, fontWeight: 900, fontSize: 15, color: "#ffffff" }}>{t("addDream")}</p>
-            <p style={{ margin: "3px 0 0", fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.55)" }}>{t("parentsHelp")}</p>
-          </div>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="9 18 15 12 9 6" />
-          </svg>
-        </button>
-      )}
+      {currentDreams.length > 0 && currentDreams.map((d) => (
+        <DreamCard key={d.id} dream={d} currentBalance={currentBalance} onSend={(amt, dreamId) => sendMutation.mutate({ amount: amt, dreamId })} isSending={sendMutation.isPending} />
+      ))}
+
+      <button
+        onClick={() => router.push("/child/shop?tab=dream")}
+        className="glass"
+        style={{ width: "100%", marginBottom: 12, padding: 16, display: "flex", alignItems: "center", gap: 12, textAlign: "left", cursor: "pointer", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 20, background: "rgba(255,255,255,0.08)" }}
+      >
+        <div style={{ width: 48, height: 48, borderRadius: 16, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <Sparkles size={22} color="#ffffff" strokeWidth={2.5} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <p style={{ margin: 0, fontWeight: 900, fontSize: 15, color: "#ffffff" }}>{currentDreams.length > 0 ? t("addAnotherDream") : t("addDream")}</p>
+          <p style={{ margin: "3px 0 0", fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.55)" }}>{t("parentsHelp")}</p>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+      </button>
 
       <p style={{ fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>{t("myTasks")}</p>
 
@@ -370,7 +378,7 @@ export default function ChildHomePage() {
                     <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.55)" }}>
                       {completedParts}/{totalParts} {t("parts")}
                     </span>
-                    <span style={{ fontSize: 11, fontWeight: 900, color: "#ffd200" }}><CoinIcon size={12} /> +{(ch?.coinsReward ?? 0).toLocaleString()}</span>
+                    <span style={{ fontSize: 11, fontWeight: 900, color: "#ffd200" }}><CoinIcon size={12} /> +{((enrollment.coinsPerPart ?? 0) * (ch?.totalParts ?? 0)).toLocaleString()}</span>
                   </div>
                 </div>
               </button>

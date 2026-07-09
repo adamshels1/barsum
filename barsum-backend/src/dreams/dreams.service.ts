@@ -61,6 +61,26 @@ export class DreamsService {
     });
   }
 
+  // Все мечты ребёнка (несколько мечт + история исполненных).
+  async findAllMy(childId: string): Promise<Dream[]> {
+    return this.dreamRepo.find({
+      where: { childId },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  // Текущие мечты конкретного ребёнка — чтобы родитель видел, к чему копит ребёнок.
+  async findCurrentForParentChild(parentId: string, childId: string): Promise<Dream[]> {
+    return this.dreamRepo.find({
+      where: [
+        { parentId, childId, status: DreamStatus.PENDING_APPROVAL },
+        { parentId, childId, status: DreamStatus.ACTIVE },
+        { parentId, childId, status: DreamStatus.COMPLETED },
+      ],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
   async findPendingForParent(parentId: string): Promise<Dream[]> {
     return this.dreamRepo.find({
       where: { parentId, status: DreamStatus.PENDING_APPROVAL },
@@ -119,13 +139,17 @@ export class DreamsService {
     return this.dreamRepo.save(dream);
   }
 
-  async sendCoins(childId: string, amount: number): Promise<Dream> {
+  async sendCoins(childId: string, amount: number, dreamId?: string): Promise<Dream> {
     if (!Number.isInteger(amount) || amount <= 0) {
       throw new BadRequestException('Сумма должна быть целым числом больше нуля');
     }
 
+    // Если указан dreamId — копим в конкретную мечту (у ребёнка их может быть несколько),
+    // иначе — в единственную активную (обратная совместимость).
     const dream = await this.dreamRepo.findOne({
-      where: { childId, status: DreamStatus.ACTIVE },
+      where: dreamId
+        ? { id: dreamId, childId, status: DreamStatus.ACTIVE }
+        : { childId, status: DreamStatus.ACTIVE },
     });
     if (!dream) throw new NotFoundException('No active dream');
 

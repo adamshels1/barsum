@@ -25,6 +25,11 @@ export class DreamsController {
     return this.dreamsService.findMy(req.user.sub);
   }
 
+  @Get('my/all')
+  findAllMy(@Request() req: any) {
+    return this.dreamsService.findAllMy(req.user.sub);
+  }
+
   @Get('parent/pending')
   findPendingForParent(@Request() req: any) {
     return this.dreamsService.findPendingForParent(req.user.sub);
@@ -33,6 +38,11 @@ export class DreamsController {
   @Get('parent/completed')
   findCompletedForParent(@Request() req: any) {
     return this.dreamsService.findCompletedForParent(req.user.sub);
+  }
+
+  @Get('parent/child/:childId')
+  findCurrentForParentChild(@Request() req: any, @Param('childId') childId: string) {
+    return this.dreamsService.findCurrentForParentChild(req.user.sub, childId);
   }
 
   @Post(':id/fulfill')
@@ -64,9 +74,9 @@ export class DreamsController {
   @Post('send')
   sendCoins(
     @Request() req: any,
-    @Body() body: { amount: number },
+    @Body() body: { amount: number; dreamId?: string },
   ) {
-    return this.dreamsService.sendCoins(req.user.sub, body.amount);
+    return this.dreamsService.sendCoins(req.user.sub, body.amount, body.dreamId);
   }
 
   @Patch(':id')

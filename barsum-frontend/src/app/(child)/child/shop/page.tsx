@@ -62,6 +62,15 @@ const dict: Dict = {
     dreamWaitingApproval: "Мечта «{name}» ждёт одобрения родителя",
     tabRewards: "🎁 Награды",
     tabDream: "💫 Мечта",
+    addAnotherDream: "➕ Добавить мечту",
+    myDreamsHeading: "Мои мечты",
+    fulfilledHeading: "🏆 Исполненные мечты",
+    fulfilledBadge: "Исполнена",
+    newDreamHeading: "Новая мечта",
+    photoUpdated: "Фото обновлено!",
+    photoUpdateError: "Не удалось обновить фото",
+    noDreamsYet: "У тебя пока нет мечты",
+    addFirstDream: "Добавь свою первую мечту!",
   },
   kk: {
     requestReward: "Сыйлық сұрау керек пе?",
@@ -110,6 +119,15 @@ const dict: Dict = {
     dreamWaitingApproval: "«{name}» арманы ата-ананың мақұлдауын күтуде",
     tabRewards: "🎁 Сыйлықтар",
     tabDream: "💫 Арман",
+    addAnotherDream: "➕ Арман қосу",
+    myDreamsHeading: "Менің армандарым",
+    fulfilledHeading: "🏆 Орындалған армандар",
+    fulfilledBadge: "Орындалды",
+    newDreamHeading: "Жаңа арман",
+    photoUpdated: "Фото жаңартылды!",
+    photoUpdateError: "Фотоны жаңарту мүмкін болмады",
+    noDreamsYet: "Әзірге арманың жоқ",
+    addFirstDream: "Алғашқы арманыңды қос!",
   },
 };
 
@@ -127,7 +145,7 @@ interface Dream {
   name: string;
   targetCoins: number;
   savedCoins: number;
-  status: "pending_approval" | "active" | "completed" | "rejected";
+  status: "pending_approval" | "active" | "completed" | "fulfilled" | "rejected";
   photoUrl?: string;
   rejectedReason?: string;
 }
@@ -463,30 +481,14 @@ function RewardsTab({ childId }: { childId: string }) {
   );
 }
 
-function DreamTab({ childId }: { childId: string }) {
+/** Форма создания новой мечты (фото + название). Ребёнок может добавлять несколько мечт. */
+function CreateDreamForm({ onCreated }: { onCreated: () => void }) {
   const t = useT(dict);
   const queryClient = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
-
   const [newName, setNewName] = useState("");
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [sendAmount, setSendAmount] = useState("");
-  const [editing, setEditing] = useState(false);
-  const [editName, setEditName] = useState("");
-
-  const { data: dream, isLoading: loadingDream } = useQuery<Dream | null>({
-    queryKey: ["dream-my"],
-    queryFn: dreamsApi.my,
-  });
-
-  const { data: balanceData } = useQuery({
-    queryKey: ["child-balance", childId],
-    queryFn: () => coinsApi.childBalance(childId),
-    enabled: !!childId,
-  });
-
-  const balance: number = balanceData?.balance ?? 0;
 
   const createMutation = useMutation({
     mutationFn: async () => {
@@ -497,32 +499,11 @@ function DreamTab({ childId }: { childId: string }) {
       return created;
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["dream-my-all"] });
       queryClient.invalidateQueries({ queryKey: ["dream-my"] });
-      setNewName("");
-      setPhotoFile(null);
-      setPhotoPreview(null);
+      onCreated();
     },
     onError: () => toast.error(t("createDreamError")),
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: { name?: string } }) =>
-      dreamsApi.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["dream-my"] });
-      setEditing(false);
-    },
-  });
-
-  const sendMutation = useMutation({
-    mutationFn: (amount: number) => dreamsApi.send(amount),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["dream-my"] });
-      queryClient.invalidateQueries({ queryKey: ["child-balance", childId] });
-      setSendAmount("");
-    },
-    onError: (err: any) =>
-      toast.error(err?.response?.data?.message || t("sendCoinsError")),
   });
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -534,215 +515,160 @@ function DreamTab({ childId }: { childId: string }) {
     reader.readAsDataURL(f);
   };
 
-  if (loadingDream) {
-    return (
-      <p style={{ fontSize: 14, textAlign: "center", padding: "32px 0", color: "rgba(255,255,255,0.65)" }}>
-        {t("loading")}
-      </p>
-    );
-  }
-
-  if (!dream || dream.status === "rejected") {
-    return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        {dream?.status === "rejected" && (
-          <div
-            style={{
-              background: "rgba(220,0,0,0.15)",
-              borderRadius: 16,
-              padding: 16,
-            }}
-          >
-            <p style={{ margin: 0, fontWeight: 700, fontSize: 14, color: "rgba(255,160,160,0.9)" }}>
-              {t("prevDreamRejected")}
-            </p>
-            {dream.rejectedReason && (
-              <p style={{ margin: "4px 0 0", fontSize: 12, color: "rgba(255,160,160,0.75)" }}>
-                {t("reason", { reason: dream.rejectedReason })}
-              </p>
-            )}
-          </div>
-        )}
-
-        <button
-          type="button"
-          onClick={() => fileRef.current?.click()}
-          className="glass-sm"
-          style={{
-            borderRadius: 20,
-            overflow: "hidden",
-            height: 176,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-            cursor: "pointer",
-            border: "none",
-            position: "relative",
-            width: "100%",
-          }}
-        >
-          {photoPreview ? (
-            <>
-              <img src={photoPreview} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
-              <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  background: "rgba(0,0,0,0.3)",
-                }}
-              >
-                <span style={{ color: "#ffffff", fontWeight: 700, fontSize: 14, background: "rgba(0,0,0,0.4)", padding: "6px 14px", borderRadius: 9999 }}>
-                  {t("changePhoto")}
-                </span>
-              </div>
-            </>
-          ) : (
-            <>
-              <Camera size={40} color="rgba(255,255,255,0.6)" strokeWidth={1.5} />
-              <span style={{ fontWeight: 700, fontSize: 14, color: "#ffffff" }}>{t("photographDream")}</span>
-              <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>{t("orFromGallery")}</span>
-            </>
-          )}
-        </button>
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          style={{ display: "none" }}
-          onChange={handlePhotoChange}
-        />
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div>
-            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-              {t("whatDoYouWant")}
-            </label>
-            <input
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder={t("dreamPlaceholder")}
-              className="glass-input"
-            />
-          </div>
-          <p style={{ margin: 0, fontSize: 12, textAlign: "center", color: "rgba(255,255,255,0.55)" }}>
-            {t("parentWillApprove")}
-          </p>
-          <button
-            onClick={() => createMutation.mutate()}
-            disabled={!newName.trim() || createMutation.isPending}
-            className="btn-white"
-            style={{ color: "#4776e6", opacity: !newName.trim() || createMutation.isPending ? 0.5 : 1 }}
-          >
-            {createMutation.isPending ? t("creating") : t("sendToParent")}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (dream.status === "pending_approval") {
-    return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        {dream.photoUrl && (
-          <div style={{ borderRadius: 16, overflow: "hidden", height: 176 }}>
-            <img src={dreamPhotoUrl(dream)} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-          </div>
-        )}
-        <div
-          className="glass-sm"
-          style={{ padding: 20, textAlign: "center" }}
-        >
-          <p style={{ fontSize: 36, margin: "0 0 12px" }}>⏳</p>
-          <p style={{ margin: 0, fontWeight: 900, fontSize: 18, color: "#ffffff" }}>
-            {dream.name}
-          </p>
-          <p style={{ margin: "8px 0 0", fontSize: 13, color: "rgba(255,255,255,0.65)" }}>
-            {t("waitingParentApproval")}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  const progress =
-    dream.targetCoins > 0
-      ? Math.min((dream.savedCoins / dream.targetCoins) * 100, 100)
-      : 0;
-  const isCompleted = dream.status === "completed";
-
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <button
+        type="button"
+        onClick={() => fileRef.current?.click()}
+        className="glass-sm"
+        style={{
+          borderRadius: 20,
+          overflow: "hidden",
+          height: 176,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 8,
+          cursor: "pointer",
+          border: "none",
+          position: "relative",
+          width: "100%",
+        }}
+      >
+        {photoPreview ? (
+          <>
+            <img src={photoPreview} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.3)" }}>
+              <span style={{ color: "#ffffff", fontWeight: 700, fontSize: 14, background: "rgba(0,0,0,0.4)", padding: "6px 14px", borderRadius: 9999 }}>
+                {t("changePhoto")}
+              </span>
+            </div>
+          </>
+        ) : (
+          <>
+            <Camera size={40} color="rgba(255,255,255,0.6)" strokeWidth={1.5} />
+            <span style={{ fontWeight: 700, fontSize: 14, color: "#ffffff" }}>{t("photographDream")}</span>
+            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>{t("orFromGallery")}</span>
+          </>
+        )}
+      </button>
+      <input ref={fileRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={handlePhotoChange} />
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div>
+          <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+            {t("whatDoYouWant")}
+          </label>
+          <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder={t("dreamPlaceholder")} className="glass-input" />
+        </div>
+        <p style={{ margin: 0, fontSize: 12, textAlign: "center", color: "rgba(255,255,255,0.55)" }}>
+          {t("parentWillApprove")}
+        </p>
+        <button
+          onClick={() => createMutation.mutate()}
+          disabled={!newName.trim() || createMutation.isPending}
+          className="btn-white"
+          style={{ color: "#4776e6", opacity: !newName.trim() || createMutation.isPending ? 0.5 : 1 }}
+        >
+          {createMutation.isPending ? t("creating") : t("sendToParent")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** Одна текущая мечта (на одобрении / активная / собранная): накопление, правка названия и фото. */
+function DreamManageCard({ dream, childId, balance }: { dream: Dream; childId: string; balance: number }) {
+  const t = useT(dict);
+  const queryClient = useQueryClient();
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState(dream.name);
+  const [sendAmount, setSendAmount] = useState("");
+
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ["dream-my-all"] });
+    queryClient.invalidateQueries({ queryKey: ["dream-my"] });
+  };
+
+  const updateMutation = useMutation({
+    mutationFn: (data: { name?: string }) => dreamsApi.update(dream.id, data),
+    onSuccess: () => { invalidate(); setEditing(false); },
+  });
+
+  const photoMutation = useMutation({
+    mutationFn: (file: File) => dreamsApi.uploadPhoto(dream.id, file),
+    onSuccess: () => { invalidate(); toast.success(t("photoUpdated")); },
+    onError: () => toast.error(t("photoUpdateError")),
+  });
+
+  const sendMutation = useMutation({
+    mutationFn: (amount: number) => dreamsApi.send(amount, dream.id),
+    onSuccess: () => {
+      invalidate();
+      queryClient.invalidateQueries({ queryKey: ["child-balance", childId] });
+      setSendAmount("");
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.message || t("sendCoinsError")),
+  });
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) photoMutation.mutate(f);
+    e.target.value = "";
+  };
+
+  const isPending = dream.status === "pending_approval";
+  const isCompleted = dream.status === "completed";
+  const progress = dream.targetCoins > 0 ? Math.min((dream.savedCoins / dream.targetCoins) * 100, 100) : 0;
+
+  // Кнопка «изменить фото» — задача: редактирование мечты (только фото).
+  const photoButton = (
+    <>
+      <button
+        onClick={() => photoInputRef.current?.click()}
+        disabled={photoMutation.isPending}
+        className="glass-chip"
+        style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", border: "none", cursor: "pointer", fontFamily: "inherit", color: "#ffffff", fontWeight: 700, fontSize: 12, flexShrink: 0, opacity: photoMutation.isPending ? 0.5 : 1 }}
+      >
+        <Camera size={12} strokeWidth={2.5} />
+        {t("changePhoto")}
+      </button>
+      <input ref={photoInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handlePhotoChange} />
+    </>
+  );
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <div
         className={dream.photoUrl ? undefined : "glass"}
         style={{
           borderRadius: 16,
           overflow: "hidden",
           position: "relative",
-          background: dream.photoUrl
-            ? `url(${dreamPhotoUrl(dream)}) center/cover`
-            : undefined,
+          background: dream.photoUrl ? `url(${dreamPhotoUrl(dream)}) center/cover` : undefined,
           minHeight: dream.photoUrl ? 160 : "auto",
         }}
       >
         {dream.photoUrl && (
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              background: "linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.65))",
-            }}
-          />
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.65))" }} />
         )}
         <div style={{ position: "relative", padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
             {editing ? (
               <div style={{ flex: 1, display: "flex", gap: 8 }}>
-                <input
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  className="glass-input"
-                  style={{ flex: 1 }}
-                  autoFocus
-                />
+                <input value={editName} onChange={(e) => setEditName(e.target.value)} className="glass-input" style={{ flex: 1 }} autoFocus />
                 <button
-                  onClick={() =>
-                    updateMutation.mutate({ id: dream.id, data: { name: editName } })
-                  }
+                  onClick={() => updateMutation.mutate({ name: editName })}
                   disabled={!editName.trim() || updateMutation.isPending}
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 9999,
-                    background: "rgba(255,255,255,0.9)",
-                    color: "#4776e6",
-                    border: "none",
-                    cursor: "pointer",
-                    fontWeight: 900,
-                    fontSize: 16,
-                    flexShrink: 0,
-                  }}
+                  style={{ width: 40, height: 40, borderRadius: 9999, background: "rgba(255,255,255,0.9)", color: "#4776e6", border: "none", cursor: "pointer", fontWeight: 900, fontSize: 16, flexShrink: 0 }}
                 >
                   ✓
                 </button>
                 <button
                   onClick={() => setEditing(false)}
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 9999,
-                    background: "rgba(255,255,255,0.16)",
-                    color: "#ffffff",
-                    border: "1px solid rgba(255,255,255,0.3)",
-                    cursor: "pointer",
-                    fontSize: 16,
-                    flexShrink: 0,
-                  }}
+                  style={{ width: 40, height: 40, borderRadius: 9999, background: "rgba(255,255,255,0.16)", color: "#ffffff", border: "1px solid rgba(255,255,255,0.3)", cursor: "pointer", fontSize: 16, flexShrink: 0 }}
                 >
                   ✕
                 </button>
@@ -758,96 +684,73 @@ function DreamTab({ childId }: { childId: string }) {
                   </p>
                 </div>
                 {!isCompleted && (
-                  <button
-                    onClick={() => {
-                      setEditName(dream.name);
-                      setEditing(true);
-                    }}
-                    className="glass-chip"
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 4,
-                      padding: "6px 12px",
-                      border: "none",
-                      cursor: "pointer",
-                      fontFamily: "inherit",
-                      color: "#ffffff",
-                      fontWeight: 700,
-                      fontSize: 12,
-                      flexShrink: 0,
-                    }}
-                  >
-                    <Pencil size={12} strokeWidth={2.5} />
-                    {t("edit")}
-                  </button>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end", flexShrink: 0 }}>
+                    <button
+                      onClick={() => { setEditName(dream.name); setEditing(true); }}
+                      className="glass-chip"
+                      style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", border: "none", cursor: "pointer", fontFamily: "inherit", color: "#ffffff", fontWeight: 700, fontSize: 12 }}
+                    >
+                      <Pencil size={12} strokeWidth={2.5} />
+                      {t("edit")}
+                    </button>
+                    {photoButton}
+                  </div>
                 )}
               </>
             )}
           </div>
 
-          {isCompleted && (
-            <div
-              className="glass-sm"
-              style={{ background: "rgba(0,200,100,0.25)", borderRadius: 12, padding: 12, textAlign: "center" }}
-            >
-              <p style={{ margin: 0, fontSize: 16, fontWeight: 900, color: "#aaffcc" }}>
-                {t("dreamAchieved")}
-              </p>
-              <p style={{ margin: "4px 0 0", fontSize: 12, fontWeight: 700, color: "rgba(200,255,220,0.85)" }}>
-                {t("waitingParentFulfill")}
+          {isPending ? (
+            <div className="glass-sm" style={{ padding: 12, textAlign: "center" }}>
+              <p style={{ margin: 0, fontSize: 24 }}>⏳</p>
+              <p style={{ margin: "4px 0 0", fontSize: 13, color: "rgba(255,255,255,0.75)", fontWeight: 700 }}>
+                {t("waitingParentApproval")}
               </p>
             </div>
-          )}
-
-          <div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, marginBottom: 8 }}>
-              <span style={{ fontWeight: 700, color: "#ffffff" }}><CoinIcon size={13} /> {dream.savedCoins.toLocaleString()}</span>
-              <span style={{ color: "rgba(255,255,255,0.65)" }}>{t("outOf", { n: dream.targetCoins.toLocaleString() })}</span>
-            </div>
-            <div
-              style={{
-                width: "100%",
-                height: 20,
-                borderRadius: 9999,
-                overflow: "hidden",
-                background: "rgba(255,255,255,0.25)",
-              }}
-            >
-              <div
-                style={{
-                  height: "100%",
-                  borderRadius: 9999,
-                  transition: "width 0.5s ease",
-                  width: `${progress === 0 ? 0 : Math.max(progress, 4)}%`,
-                  background: isCompleted ? "rgba(0,220,120,0.8)" : "rgba(255,255,255,0.85)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "flex-end",
-                  paddingRight: 8,
-                }}
-              >
-                {progress >= 15 && (
-                  <span style={{ fontSize: 11, fontWeight: 800, color: isCompleted ? "#ffffff" : "#4776e6" }}>
-                    {Math.round(progress)}%
-                  </span>
+          ) : (
+            <>
+              {isCompleted && (
+                <div className="glass-sm" style={{ background: "rgba(0,200,100,0.25)", borderRadius: 12, padding: 12, textAlign: "center" }}>
+                  <p style={{ margin: 0, fontSize: 16, fontWeight: 900, color: "#aaffcc" }}>{t("dreamAchieved")}</p>
+                  <p style={{ margin: "4px 0 0", fontSize: 12, fontWeight: 700, color: "rgba(200,255,220,0.85)" }}>{t("waitingParentFulfill")}</p>
+                </div>
+              )}
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, marginBottom: 8 }}>
+                  <span style={{ fontWeight: 700, color: "#ffffff" }}><CoinIcon size={13} /> {dream.savedCoins.toLocaleString()}</span>
+                  <span style={{ color: "rgba(255,255,255,0.65)" }}>{t("outOf", { n: dream.targetCoins.toLocaleString() })}</span>
+                </div>
+                <div style={{ width: "100%", height: 20, borderRadius: 9999, overflow: "hidden", background: "rgba(255,255,255,0.25)" }}>
+                  <div
+                    style={{
+                      height: "100%",
+                      borderRadius: 9999,
+                      transition: "width 0.5s ease",
+                      width: `${progress === 0 ? 0 : Math.max(progress, 4)}%`,
+                      background: isCompleted ? "rgba(0,220,120,0.8)" : "rgba(255,255,255,0.85)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "flex-end",
+                      paddingRight: 8,
+                    }}
+                  >
+                    {progress >= 15 && (
+                      <span style={{ fontSize: 11, fontWeight: 800, color: isCompleted ? "#ffffff" : "#4776e6" }}>{Math.round(progress)}%</span>
+                    )}
+                  </div>
+                </div>
+                {progress < 15 && (
+                  <p style={{ textAlign: "right", fontSize: 11, marginTop: 4, fontWeight: 700, color: "rgba(255,255,255,0.65)" }}>{Math.round(progress)}%</p>
                 )}
               </div>
-            </div>
-            {progress < 15 && (
-              <p style={{ textAlign: "right", fontSize: 11, marginTop: 4, fontWeight: 700, color: "rgba(255,255,255,0.65)" }}>
-                {Math.round(progress)}%
-              </p>
-            )}
-          </div>
+            </>
+          )}
         </div>
       </div>
 
-      {!isCompleted && balance > 0 && (
+      {!isPending && !isCompleted && balance > 0 && (
         <div className="glass" style={{ padding: 20, borderRadius: 16 }}>
-          <p style={{ margin: "0 0 4px", fontWeight: 700, color: "#ffffff" }}>
-            {t("sendCoinsToDream")}
-          </p>
+          <p style={{ margin: "0 0 4px", fontWeight: 700, color: "#ffffff" }}>{t("sendCoinsToDream")}</p>
           <p style={{ margin: "0 0 12px", fontSize: 12, color: "rgba(255,255,255,0.65)" }}>
             {t("available")} <CoinIcon size={12} /> {balance.toLocaleString()}
           </p>
@@ -864,45 +767,145 @@ function DreamTab({ childId }: { childId: string }) {
             />
             <button
               onClick={() => sendMutation.mutate(Number(sendAmount))}
-              disabled={
-                !sendAmount ||
-                Number(sendAmount) < 1 ||
-                Number(sendAmount) > balance ||
-                sendMutation.isPending
-              }
+              disabled={!sendAmount || Number(sendAmount) < 1 || Number(sendAmount) > balance || sendMutation.isPending}
               className="btn-white"
-              style={{
-                color: "#4776e6",
-                width: "auto",
-                padding: "0 20px",
-                flexShrink: 0,
-                opacity:
-                  !sendAmount || Number(sendAmount) < 1 || Number(sendAmount) > balance
-                    ? 0.4
-                    : 1,
-              }}
+              style={{ color: "#4776e6", width: "auto", padding: "0 20px", flexShrink: 0, opacity: !sendAmount || Number(sendAmount) < 1 || Number(sendAmount) > balance ? 0.4 : 1 }}
             >
               {sendMutation.isPending ? "..." : t("deposit")}
             </button>
           </div>
           {sendAmount !== "" && Number(sendAmount) > balance && (
-            <p style={{ marginTop: 8, fontSize: 13, fontWeight: 700, color: "#ffd0d0" }}>
-              {t("insufficient", { n: balance.toLocaleString() })}
-            </p>
+            <p style={{ marginTop: 8, fontSize: 13, fontWeight: 700, color: "#ffd0d0" }}>{t("insufficient", { n: balance.toLocaleString() })}</p>
           )}
-          {sendMutation.isSuccess && (
-            <p style={{ marginTop: 8, fontSize: 13, fontWeight: 700, color: "#aaffcc" }}>
-              {t("coinsSent")}
-            </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Исполненная мечта — история (родитель уже выдал приз). */
+function FulfilledDreamCard({ dream }: { dream: Dream }) {
+  const t = useT(dict);
+  return (
+    <div className="glass-sm" style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, borderRadius: 14 }}>
+      <div style={{ width: 44, height: 44, borderRadius: 12, flexShrink: 0, overflow: "hidden", background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>
+        {dream.photoUrl ? <img src={dreamPhotoUrl(dream)} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "🏆"}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ margin: 0, fontWeight: 800, fontSize: 14, color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{dream.name}</p>
+        <p style={{ margin: "2px 0 0", fontSize: 12, color: "rgba(255,255,255,0.6)" }}>
+          <CoinIcon size={11} /> {dream.targetCoins.toLocaleString()}
+        </p>
+      </div>
+      <span style={{ fontSize: 11, padding: "4px 10px", borderRadius: 9999, fontWeight: 800, background: "rgba(0,220,120,0.25)", color: "#aaffcc", flexShrink: 0 }}>
+        {t("fulfilledBadge")} ✓
+      </span>
+    </div>
+  );
+}
+
+function DreamTab({ childId }: { childId: string }) {
+  const t = useT(dict);
+  const [adding, setAdding] = useState(false);
+
+  const { data: dreams = [], isLoading } = useQuery<Dream[]>({
+    queryKey: ["dream-my-all"],
+    queryFn: dreamsApi.myAll,
+  });
+
+  const { data: balanceData } = useQuery({
+    queryKey: ["child-balance", childId],
+    queryFn: () => coinsApi.childBalance(childId),
+    enabled: !!childId,
+  });
+
+  const balance: number = balanceData?.balance ?? 0;
+
+  const current = dreams.filter(
+    (d) => d.status === "pending_approval" || d.status === "active" || d.status === "completed",
+  );
+  const fulfilled = dreams.filter((d) => (d.status as string) === "fulfilled");
+  const lastRejected = dreams.find((d) => d.status === "rejected");
+
+  if (isLoading) {
+    return (
+      <p style={{ fontSize: 14, textAlign: "center", padding: "32px 0", color: "rgba(255,255,255,0.65)" }}>
+        {t("loading")}
+      </p>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {lastRejected && current.length === 0 && (
+        <div style={{ background: "rgba(220,0,0,0.15)", borderRadius: 16, padding: 16 }}>
+          <p style={{ margin: 0, fontWeight: 700, fontSize: 14, color: "rgba(255,160,160,0.9)" }}>{t("prevDreamRejected")}</p>
+          {lastRejected.rejectedReason && (
+            <p style={{ margin: "4px 0 0", fontSize: 12, color: "rgba(255,160,160,0.75)" }}>{t("reason", { reason: lastRejected.rejectedReason })}</p>
           )}
         </div>
       )}
 
-      {!isCompleted && balance === 0 && (
+      {/* Добавление новой мечты — доступно всегда, мечт может быть несколько */}
+      {adding ? (
+        <div className="glass" style={{ padding: 16, borderRadius: 18 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <p style={{ margin: 0, fontWeight: 900, fontSize: 15, color: "#ffffff" }}>{t("newDreamHeading")}</p>
+            <button
+              onClick={() => setAdding(false)}
+              style={{ width: 32, height: 32, borderRadius: 9999, background: "rgba(255,255,255,0.16)", color: "#ffffff", border: "none", cursor: "pointer", fontSize: 15, fontFamily: "inherit" }}
+            >
+              ✕
+            </button>
+          </div>
+          <CreateDreamForm onCreated={() => setAdding(false)} />
+        </div>
+      ) : (
+        <button
+          onClick={() => setAdding(true)}
+          className="glass-sm"
+          style={{ width: "100%", padding: "14px 16px", borderRadius: 16, border: "1px dashed rgba(255,255,255,0.35)", cursor: "pointer", fontFamily: "inherit", fontWeight: 800, fontSize: 14, color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+        >
+          <Sparkles size={18} strokeWidth={2.2} />
+          {t("addAnotherDream")}
+        </button>
+      )}
+
+      {current.length === 0 && !adding && (
+        <div className="glass-sm" style={{ padding: 24, textAlign: "center", borderRadius: 16 }}>
+          <p style={{ fontSize: 32, margin: "0 0 8px" }}>💫</p>
+          <p style={{ margin: 0, fontWeight: 800, fontSize: 15, color: "#ffffff" }}>{t("noDreamsYet")}</p>
+          <p style={{ margin: "4px 0 0", fontSize: 13, color: "rgba(255,255,255,0.6)" }}>{t("addFirstDream")}</p>
+        </div>
+      )}
+
+      {current.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {current.length > 1 && (
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              {t("myDreamsHeading")}
+            </p>
+          )}
+          {current.map((d) => (
+            <DreamManageCard key={d.id} dream={d} childId={childId} balance={balance} />
+          ))}
+        </div>
+      )}
+
+      {balance === 0 && current.some((d) => d.status === "active") && (
         <div className="glass-sm" style={{ padding: 16, textAlign: "center" }}>
-          <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.65)" }}>
-            {t("earnCoinsHint")}
+          <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.65)" }}>{t("earnCoinsHint")}</p>
+        </div>
+      )}
+
+      {fulfilled.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 8 }}>
+          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+            {t("fulfilledHeading")}
           </p>
+          {fulfilled.map((d) => (
+            <FulfilledDreamCard key={d.id} dream={d} />
+          ))}
         </div>
       )}
     </div>
