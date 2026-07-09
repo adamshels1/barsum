@@ -3,6 +3,7 @@ import { Nunito } from "next/font/google";
 import { Toaster } from "sonner";
 import { QueryProvider } from "@/providers/query-provider";
 import { HtmlLangSync } from "@/i18n/HtmlLangSync";
+import { YandexMetrica } from "@/components/YandexMetrica";
 import "./globals.css";
 
 const nunito = Nunito({
@@ -29,6 +30,7 @@ export default function RootLayout({
           {children}
           <Toaster richColors position="top-center" />
         </QueryProvider>
+        <YandexMetrica />
       </body>
     </html>
   );
