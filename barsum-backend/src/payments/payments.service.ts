@@ -14,7 +14,19 @@ import { Child } from '../children/entities/child.entity';
 import { ChallengeEnrollment } from '../sessions/entities/enrollment.entity';
 import { Challenge } from '../challenges/entities/challenge.entity';
 import { CoinsService } from '../coins/coins.service';
-import { PaymentStatus, CoinTransactionType, EnrollmentStatus } from '../common/enums';
+import {
+  PaymentStatus,
+  CoinTransactionType,
+  EnrollmentStatus,
+  ChallengeCategory,
+  ChallengeStatus,
+} from '../common/enums';
+
+// Экономика «своей книги»: 1000 ₸ = 60 минут = 6 сессий по 10 минут.
+// Курс монет как в системе: 1 ₸ = 10 монет → ~167 монет за минуту чтения.
+const OWN_BOOK_MINUTES_PER_1000TG = 60;
+const OWN_BOOK_SESSION_MINUTES = 10;
+const OWN_BOOK_COINS_PER_MINUTE = 167;
 import { TelegramService, esc } from '../notifications/telegram.service';
 
 @Injectable()
@@ -74,6 +86,78 @@ export class PaymentsService {
     );
 
     return saved;
+  }
+
+  // «Своя книжка»: родитель оплачивает время чтения своей физической книги.
+  // Создаём приватный Challenge (без сканов/эталона) + Payment + Enrollment с таймерной экономикой.
+  async createOwnBook(dto: {
+    parentId: string;
+    childId: string;
+    bookTitle: string;
+    amountTg: number;
+  }): Promise<{ payment: Payment; enrollment: ChallengeEnrollment; challenge: Challenge }> {
+    const amountTg = Math.max(0, Math.floor(dto.amountTg));
+    if (amountTg < 1000) {
+      throw new BadRequestException('Минимальная сумма — 1000 ₸');
+    }
+    const title = (dto.bookTitle || '').trim() || 'Своя книга';
+
+    const minutes = Math.round((amountTg / 1000) * OWN_BOOK_MINUTES_PER_1000TG);
+    const sessions = Math.max(1, Math.round(minutes / OWN_BOOK_SESSION_MINUTES));
+    const coinsPerMinute = OWN_BOOK_COINS_PER_MINUTE;
+    // Монет за полную 10-минутную сессию (для отображения ребёнку/родителю).
+    const coinsPerPart = coinsPerMinute * OWN_BOOK_SESSION_MINUTES;
+    const coinsPool = coinsPerPart * sessions;
+
+    const challenge = await this.challengeRepo.save(
+      this.challengeRepo.create({
+        title,
+        bookTitle: title,
+        bookAuthor: 'Своя книга',
+        category: ChallengeCategory.OWN_BOOK,
+        status: ChallengeStatus.PUBLISHED,
+        authorId: dto.parentId,
+        // Дефолтная обложка для всех «своих книг» — герой-барсик (статик фронта).
+        coverImage: '/books/own-book.jpg',
+        totalParts: sessions,
+        price: amountTg,
+        coinsReward: coinsPool,
+      }),
+    );
+
+    const payment = await this.paymentRepo.save(
+      this.paymentRepo.create({
+        parentId: dto.parentId,
+        childId: dto.childId,
+        challengeId: challenge.id,
+        challengePrice: amountTg,
+        coinsAmount: 0,
+        coinsTg: 0,
+        total: amountTg,
+        status: PaymentStatus.CONFIRMED,
+        resolvedAt: new Date(),
+      }),
+    );
+
+    const enrollment = await this.enrollmentRepo.save(
+      this.enrollmentRepo.create({
+        childId: dto.childId,
+        challengeId: challenge.id,
+        parentId: dto.parentId,
+        status: EnrollmentStatus.ACTIVE,
+        coinsPerPart,
+        coinsPerMinute,
+        startedAt: new Date(),
+      }),
+    );
+
+    this.telegram.send(
+      'payments',
+      `📖 <b>Своя книжка оплачена</b>\n${await this.actorLines(dto.parentId, dto.childId)}\n` +
+        `Книга: ${esc(title)}\nСумма: ${amountTg} ₸ · ${minutes} мин · ${sessions} сессий по ${OWN_BOOK_SESSION_MINUTES} мин · до ${coinsPool} монет`,
+    );
+
+    return { payment, enrollment, challenge };
   }
 
   private async activateEnrollment(payment: Payment): Promise<void> {

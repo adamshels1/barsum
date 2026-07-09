@@ -14,12 +14,17 @@ import { CoinsService } from '../coins/coins.service';
 import { ChildrenService } from '../children/children.service';
 import { AiService } from '../ai/ai.service';
 import { FilesService, BUCKET_AUDIO, parseStoredFileUrl, audioMimeFromUrl } from '../files/files.service';
-import { SessionPhase, SessionStatus, EnrollmentStatus, CoinTransactionType } from '../common/enums';
+import { SessionPhase, SessionStatus, EnrollmentStatus, CoinTransactionType, ChallengeCategory } from '../common/enums';
 import { assessReading, readingAdvice } from './reading-assessment';
 import { TelegramService, esc } from '../notifications/telegram.service';
 
 // Порог автозачёта (0–10). Ниже — уходит эксперту на ручную проверку.
 const AUTO_CREDIT_SCORE = 7;
+
+// «Своя книжка»: одна сессия чтения — не больше 10 минут.
+const OWN_BOOK_SESSION_MAX_SEC = 600;
+// Минимум, чтобы сессия засчиталась автоматически (иначе — на подтверждение родителю).
+const OWN_BOOK_MIN_SEC = 60;
 
 @Injectable()
 export class SessionsService {
@@ -74,11 +79,29 @@ export class SessionsService {
     return this.sessionRepo.save(session);
   }
 
-  async findById(id: string): Promise<Session & { coinsPerPart?: number }> {
+  async findById(
+    id: string,
+  ): Promise<
+    Session & {
+      coinsPerPart?: number;
+      coinsPerMinute?: number;
+      category?: ChallengeCategory;
+      bookTitle?: string;
+    }
+  > {
     const s = await this.sessionRepo.findOne({ where: { id } });
     if (!s) throw new NotFoundException('Session not found');
-    const enrollment = await this.enrollmentRepo.findOne({ where: { id: s.enrollmentId } });
-    return { ...s, coinsPerPart: enrollment?.coinsPerPart ?? 0 };
+    const enrollment = await this.enrollmentRepo.findOne({
+      where: { id: s.enrollmentId },
+      relations: ['challenge'],
+    });
+    return {
+      ...s,
+      coinsPerPart: enrollment?.coinsPerPart ?? 0,
+      coinsPerMinute: enrollment?.coinsPerMinute ?? 0,
+      category: enrollment?.challenge?.category,
+      bookTitle: enrollment?.challenge?.bookTitle,
+    };
   }
 
   // Отдаём аудиозапись сессии через backend (тот же https-origin, что и API),
@@ -188,6 +211,109 @@ export class SessionsService {
     }
   }
 
+  // «Своя книжка»: спорную сессию (нет речи / слишком коротко) не теряем и не гоняем
+  // на перезапись, а помечаем как ожидающую подтверждения родителя (эксперта тут нет).
+  private async routeToParent(session: Session, reason: string): Promise<void> {
+    session.reviewReason = reason;
+    session.phase = SessionPhase.DONE;
+    session.status = SessionStatus.PENDING;
+    session.lastError = null;
+    await this.sessionRepo.save(session);
+
+    const child = await this.childrenService.findById(session.childId).catch(() => null);
+    this.telegram.send(
+      'other',
+      `📖 <b>Своя книжка — нужна проверка родителя</b>\n🧒 ${esc(child?.name ?? 'Ребёнок')} (${esc(session.childId)}) — сессия ${session.partNumber}`,
+    );
+  }
+
+  // Начисление монет за сессию чтения своей книги: по-минутно, кап 10 минут.
+  private async creditOwnBookSession(
+    session: Session,
+    enrollment: ChallengeEnrollment,
+    childId: string,
+  ): Promise<Session> {
+    const cappedSec = Math.min(session.audioDurationSec ?? 0, OWN_BOOK_SESSION_MAX_SEC);
+    const minutes = Math.round(cappedSec / 60);
+
+    if (cappedSec < OWN_BOOK_MIN_SEC || minutes < 1) {
+      // Слишком короткая запись — на подтверждение родителю.
+      await this.routeToParent(session, 'too_short');
+      return session;
+    }
+
+    const coins = (enrollment.coinsPerMinute || 0) * minutes;
+    session.phase = SessionPhase.DONE;
+    session.status = SessionStatus.COMPLETED;
+    session.aiFeedback = `Прочитано ${minutes} мин — засчитано ${coins} монет.`;
+    if (coins > 0) {
+      await this.coinsService.transfer({
+        fromId: 'system',
+        fromType: 'system',
+        toId: childId,
+        toType: 'child',
+        amount: coins,
+        type: CoinTransactionType.EARN,
+        referenceId: `session-earn-${session.id}`,
+      });
+      await this.childrenService.incrementStreak(childId);
+    }
+    const saved = await this.sessionRepo.save(session);
+
+    const child = await this.childrenService.findById(childId).catch(() => null);
+    this.telegram.send(
+      'other',
+      `📖 <b>Своя книжка засчитана</b>\n🧒 ${esc(child?.name ?? 'Ребёнок')} (${esc(childId)}) — сессия ${session.partNumber}, ${minutes} мин (+${coins} монет)`,
+    );
+    return saved;
+  }
+
+  // Родитель подтверждает или отклоняет спорную сессию своей книги.
+  async parentConfirmOwnBook(
+    sessionId: string,
+    parentId: string,
+    approve: boolean,
+  ): Promise<Session> {
+    const session = await this.sessionRepo.findOne({ where: { id: sessionId } });
+    if (!session) throw new NotFoundException('Session not found');
+    const enrollment = await this.enrollmentRepo.findOne({
+      where: { id: session.enrollmentId },
+      relations: ['challenge'],
+    });
+    if (!enrollment || enrollment.parentId !== parentId) {
+      throw new ForbiddenException('Not your session');
+    }
+    if (enrollment.challenge?.category !== ChallengeCategory.OWN_BOOK) {
+      throw new BadRequestException('Not an own-book session');
+    }
+    if (session.status === SessionStatus.COMPLETED) return session;
+
+    if (!approve) {
+      session.status = SessionStatus.FAILED;
+      return this.sessionRepo.save(session);
+    }
+
+    const cappedSec = Math.min(session.audioDurationSec ?? 0, OWN_BOOK_SESSION_MAX_SEC);
+    const minutes = Math.max(1, Math.round(cappedSec / 60));
+    const coins = (enrollment.coinsPerMinute || 0) * minutes;
+    session.status = SessionStatus.COMPLETED;
+    session.phase = SessionPhase.DONE;
+    session.aiFeedback = `Подтверждено родителем: ${minutes} мин — ${coins} монет.`;
+    if (coins > 0) {
+      await this.coinsService.transfer({
+        fromId: 'system',
+        fromType: 'system',
+        toId: session.childId,
+        toType: 'child',
+        amount: coins,
+        type: CoinTransactionType.EARN,
+        referenceId: `session-earn-${session.id}`,
+      });
+      await this.childrenService.incrementStreak(session.childId);
+    }
+    return this.sessionRepo.save(session);
+  }
+
   async transcribe(id: string, childId: string): Promise<Session> {
     const session = await this.findById(id);
     if (session.childId !== childId) throw new ForbiddenException('Not your session');
@@ -206,11 +332,16 @@ export class SessionsService {
     const hasText = result.text && result.text.trim().length > 0;
 
     if (!hasText) {
-      // Речь не распозналась — отдаём эксперту (послушает аудио сам)
       const enrollment = await this.enrollmentRepo.findOne({
         where: { id: session.enrollmentId },
         relations: ['challenge'],
       });
+      if (enrollment?.challenge?.category === ChallengeCategory.OWN_BOOK) {
+        // У «своей книги» нет эксперта — спорную запись отдаём на подтверждение родителю.
+        await this.routeToParent(session, 'no_speech');
+        return session;
+      }
+      // Речь не распозналась — отдаём эксперту (послушает аудио сам)
       await this.routeToExpert(
         session,
         enrollment,
@@ -248,6 +379,12 @@ export class SessionsService {
       where: { id: session.enrollmentId },
       relations: ['challenge'],
     });
+
+    // «Своя книжка»: эталонного текста нет — не оцениваем чтение, а начисляем монеты
+    // по-минутно за реально записанное время (речь уже подтверждена на этапе transcribe).
+    if (enrollment?.challenge?.category === ChallengeCategory.OWN_BOOK) {
+      return this.creditOwnBookSession(session, enrollment, childId);
+    }
 
     const referenceText = enrollment?.challenge?.partTexts?.[session.partNumber - 1] ?? '';
     let score: number;

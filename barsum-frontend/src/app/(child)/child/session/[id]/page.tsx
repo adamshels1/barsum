@@ -35,6 +35,10 @@ const dict: Dict = {
     toHome: "На главную",
     back: "Назад",
     readingAloud: "Чтение вслух",
+    ownBook: "Своя книжка",
+    ownBookRead: "Читай свою книгу вслух",
+    ownBookHint: "Таймер идёт — читай до 10 минут. Чем дольше читаешь, тем больше монет!",
+    perMin: "/мин",
   },
   kk: {
     recordFail: "Жазу қатесі. Қайта байқап көр.",
@@ -62,6 +66,10 @@ const dict: Dict = {
     toHome: "Басты бетке",
     back: "Артқа",
     readingAloud: "Дауыстап оқу",
+    ownBook: "Өз кітабы",
+    ownBookRead: "Өз кітабыңды дауыстап оқы",
+    ownBookHint: "Таймер жүріп жатыр — 10 минутқа дейін оқы. Неғұрлым ұзақ оқысаң, соғұрлым көп монета!",
+    perMin: "/мин",
   },
 };
 
@@ -76,6 +84,9 @@ interface Session {
   aiScore?: number;
   status: "pending" | "completed" | "failed";
   coinsPerPart: number;
+  coinsPerMinute?: number;
+  category?: string;
+  bookTitle?: string;
   createdAt: string;
   lastError?: string | null;
   aiFeedback?: string | null;
@@ -124,10 +135,12 @@ const MAX_RECORDING_SECONDS = 600; // 10 минут
 function PhaseRead({
   session,
   dayText,
+  ownBook,
   onUploaded,
 }: {
   session: Session;
   dayText: string | null;
+  ownBook: boolean;
   onUploaded: () => void;
 }) {
   const t = useT(dict);
@@ -371,7 +384,19 @@ function PhaseRead({
         </p>
       )}
 
-      {/* Text block */}
+      {/* Own-book: своя бумажная книга — вместо текста показываем инструкцию */}
+      {ownBook ? (
+        <div className="glass" style={{ padding: 24, borderRadius: 20, textAlign: "center" }}>
+          <p style={{ fontSize: 44, margin: "0 0 10px" }}>📖</p>
+          <p style={{ fontSize: 18, fontWeight: 900, color: "#ffffff", margin: "0 0 8px" }}>
+            {session.bookTitle && session.bookTitle !== "Своя книга" ? session.bookTitle : t("ownBookRead")}
+          </p>
+          <p style={{ fontSize: 14, color: "rgba(255,255,255,0.7)", margin: 0, lineHeight: 1.5 }}>
+            {t("ownBookHint")}
+          </p>
+        </div>
+      ) : (
+      /* Text block */
       <div className="glass" style={{ padding: 20, borderRadius: 20 }}>
         <p style={{ fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12, margin: "0 0 12px" }}>
           {t("part", { n: session.partNumber })}
@@ -401,6 +426,7 @@ function PhaseRead({
           </p>
         )}
       </div>
+      )}
     </div>
   );
 }
@@ -468,7 +494,7 @@ function Confetti() {
 }
 
 // ─── Phase: done ──────────────────────────────────────────────────────────────
-function PhaseDone({ session, coinsPerPart }: { session: Session; coinsPerPart: number }) {
+function PhaseDone({ session, coinsPerPart, ownBook }: { session: Session; coinsPerPart: number; ownBook: boolean }) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const t = useT(dict);
@@ -490,7 +516,11 @@ function PhaseDone({ session, coinsPerPart }: { session: Session; coinsPerPart: 
             <p style={{ fontSize: 48, margin: 0, animation: "streakPulse 0.8s ease 0.5s both" }}>🔥</p>
             <div style={{ animation: "coinPop 0.6s ease 0.3s both" }}>
               <p style={{ fontSize: 24, fontWeight: 900, color: "#ffffff", margin: 0 }}>
-                {coinsPerPart > 0 ? <>{t("coinsAdded", { coins: coinsPerPart })} <CoinIcon size={20} /></> : t("partCounted")}
+                {ownBook
+                  ? (session.aiFeedback || t("partCounted"))
+                  : coinsPerPart > 0
+                    ? <>{t("coinsAdded", { coins: coinsPerPart })} <CoinIcon size={20} /></>
+                    : t("partCounted")}
               </p>
             </div>
             <p style={{ fontSize: 13, color: "rgba(255,255,255,0.65)", margin: 0 }}>
@@ -569,6 +599,8 @@ export default function SessionPage() {
     );
   }
 
+  const ownBook = session.category === "own_book";
+
   return (
     <main style={{ minHeight: "100dvh", padding: "52px 20px 32px", maxWidth: 512, margin: "0 auto" }}>
       {/* Back */}
@@ -602,18 +634,23 @@ export default function SessionPage() {
         </div>
         <div style={{ flex: 1 }}>
           <p style={{ fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em", margin: 0 }}>
-            {t("part", { n: session.partNumber })}
+            {ownBook ? t("ownBook") : t("part", { n: session.partNumber })}
           </p>
           <p style={{ fontWeight: 900, fontSize: 16, color: "#ffffff", margin: "2px 0 0" }}>
             {t("readingAloud")}
           </p>
         </div>
-        {session.coinsPerPart > 0 && (
+        {ownBook && (session.coinsPerMinute ?? 0) > 0 ? (
+          <div className="glass-chip" style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", flexShrink: 0 }}>
+            <CoinIcon size={16} />
+            <span style={{ fontWeight: 900, fontSize: 14, color: "#ffd200" }}>+{session.coinsPerMinute}{t("perMin")}</span>
+          </div>
+        ) : session.coinsPerPart > 0 ? (
           <div className="glass-chip" style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", flexShrink: 0 }}>
             <CoinIcon size={16} />
             <span style={{ fontWeight: 900, fontSize: 14, color: "#ffd200" }}>+{session.coinsPerPart}</span>
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Phase content */}
@@ -621,13 +658,14 @@ export default function SessionPage() {
         <PhaseRead
           session={session}
           dayText={dayTextData?.text ?? null}
+          ownBook={ownBook}
           onUploaded={refetch}
         />
       )}
       {(session.phase === "transcribing" || session.phase === "analyzing") && (
         <PhaseProcessing />
       )}
-      {session.phase === "done" && <PhaseDone session={session} coinsPerPart={session.coinsPerPart ?? 0} />}
+      {session.phase === "done" && <PhaseDone session={session} coinsPerPart={session.coinsPerPart ?? 0} ownBook={ownBook} />}
     </main>
   );
 }

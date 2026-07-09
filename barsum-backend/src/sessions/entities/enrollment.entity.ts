@@ -36,6 +36,10 @@ export class ChallengeEnrollment {
   @Column({ default: 0 })
   coinsPerPart: number;
 
+  // Монет за минуту чтения — только для «своей книги» (OWN_BOOK), начисление по-минутно.
+  @Column({ default: 0 })
+  coinsPerMinute: number;
+
   @Column({ nullable: true, type: 'timestamp' })
   startedAt: Date;
 

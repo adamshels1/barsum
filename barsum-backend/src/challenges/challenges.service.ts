@@ -20,7 +20,9 @@ export class ChallengesService {
     const qb = this.challengeRepo
       .createQueryBuilder('c')
       .leftJoinAndSelect('c.author', 'author')
-      .where('c.status = :status', { status: ChallengeStatus.PUBLISHED });
+      .where('c.status = :status', { status: ChallengeStatus.PUBLISHED })
+      // «Свои книги» — приватные задания родителя, их не показываем в общем каталоге.
+      .andWhere('c.category != :ownBook', { ownBook: ChallengeCategory.OWN_BOOK });
     if (filters?.category) {
       qb.andWhere('c.category = :category', { category: filters.category });
     }
@@ -44,7 +46,7 @@ export class ChallengesService {
     { title: string; author: string; pages: number; ageMin: number; ageMax: number; coverImage: string | null }[]
   > {
     const challenges = await this.challengeRepo.find({
-      where: { status: ChallengeStatus.PUBLISHED },
+      where: { status: ChallengeStatus.PUBLISHED, category: ChallengeCategory.READING },
       select: ['bookTitle', 'bookAuthor', 'pagesTotal', 'ageMin', 'ageMax', 'coverImage'],
       order: { bookTitle: 'ASC' },
     });

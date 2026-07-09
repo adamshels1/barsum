@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Minus, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -21,6 +22,9 @@ const dict: Dict = {
     back: "← Назад",
     toPay: "К оплате",
     qrInstructions: "Откройте приложение Kaspi.kz, отсканируйте QR и оплатите {total} ₸. После оплаты нажмите кнопку ниже.",
+    payOnline: "💳 Оплатить через Kaspi",
+    payHint: "Нажмите «Оплатить через Kaspi», оплатите и вернитесь сюда.",
+    confirmLocked: "Кнопка активируется после нажатия «Оплатить через Kaspi»",
     processing: "Оформление...",
     confirmPaid: "✅ Я оплатил(а), подтвердить",
     orderError: "Ошибка оформления",
@@ -44,6 +48,17 @@ const dict: Dict = {
     childRequests: "🔔 Запросы детей",
     noChallenges: "Нет заданий",
     tryChangeFilter: "Попробуйте изменить фильтр возраста",
+    ownBookTitle: "Своя книжка",
+    ownBookSubtitle: "Ребёнок читает свою бумажную книгу — по 10 минут за монеты",
+    ownBookCta: "Оплатить чтение",
+    ownBookModalTitle: "Своя книжка",
+    bookNameLabel: "Какую книгу читаем?",
+    bookNamePlaceholder: "Например: Гарри Поттер",
+    amountLabel: "Сколько оплачиваем?",
+    customAmount: "Своя сумма, ₸",
+    ownBookPreview: "{minutes} минут · {sessions} сессий по 10 мин · до {coins} монет",
+    ownBookHint: "1 час чтения = 1000 ₸. Ребёнок получает ~{perMin} монет за минуту.",
+    minAmountWarn: "⚠️ Минимальная сумма — 1000 ₸",
   },
   kk: {
     parts: "{n} бөлім",
@@ -51,6 +66,9 @@ const dict: Dict = {
     back: "← Артқа",
     toPay: "Төлеуге",
     qrInstructions: "Kaspi.kz қосымшасын ашып, QR-кодты сканерлеп, {total} ₸ төлеңіз. Төлегеннен кейін төмендегі батырманы басыңыз.",
+    payOnline: "💳 Kaspi арқылы төлеу",
+    payHint: "«Kaspi арқылы төлеу» батырмасын басып, төлеңіз де, осында оралыңыз.",
+    confirmLocked: "Батырма «Kaspi арқылы төлеу» басылғаннан кейін белсенді болады",
     processing: "Рәсімделуде...",
     confirmPaid: "✅ Төледім, растау",
     orderError: "Рәсімдеу қатесі",
@@ -74,11 +92,55 @@ const dict: Dict = {
     childRequests: "🔔 Балалардың сұраулары",
     noChallenges: "Тапсырмалар жоқ",
     tryChangeFilter: "Жас сүзгісін өзгертіп көріңіз",
+    ownBookTitle: "Өз кітабы",
+    ownBookSubtitle: "Бала өз қағаз кітабын оқиды — 10 минуттан монетаға",
+    ownBookCta: "Оқуды төлеу",
+    ownBookModalTitle: "Өз кітабы",
+    bookNameLabel: "Қай кітапты оқимыз?",
+    bookNamePlaceholder: "Мысалы: Гарри Поттер",
+    amountLabel: "Қанша төлейміз?",
+    customAmount: "Өз сомаң, ₸",
+    ownBookPreview: "{minutes} минут · {sessions} сессия 10 минуттан · {coins} монетаға дейін",
+    ownBookHint: "1 сағат оқу = 1000 ₸. Бала минутына ~{perMin} монета алады.",
+    minAmountWarn: "⚠️ Ең төменгі сома — 1000 ₸",
   },
 };
 
+// Экономика «своей книги» — зеркалит backend (payments.service.ts).
+const OWN_BOOK_MIN_TG = 1000;
+const OWN_BOOK_MINUTES_PER_1000 = 60;
+const OWN_BOOK_SESSION_MIN = 10;
+const OWN_BOOK_COINS_PER_MIN = 167;
+const OWN_BOOK_AMOUNTS = [1000, 2000, 3000];
+
+function ownBookCalc(amountTg: number) {
+  const minutes = Math.round((amountTg / 1000) * OWN_BOOK_MINUTES_PER_1000);
+  const sessions = Math.max(1, Math.round(minutes / OWN_BOOK_SESSION_MIN));
+  const coins = OWN_BOOK_COINS_PER_MIN * OWN_BOOK_SESSION_MIN * sessions;
+  return { minutes, sessions, coins };
+}
+
 const COIN_MAX = 50_000;
 const COIN_STEP = 1_000;
+
+// Крупная тач-кнопка −/+ (48×48) для удобного изменения суммы монет.
+const coinStepBtn = (disabled: boolean): React.CSSProperties => ({
+  flexShrink: 0,
+  width: 48,
+  height: 48,
+  borderRadius: 16,
+  border: "1px solid rgba(255,255,255,0.28)",
+  background: "rgba(255,255,255,0.16)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  cursor: disabled ? "default" : "pointer",
+  opacity: disabled ? 0.35 : 1,
+  transition: "transform 0.1s, opacity 0.15s, background 0.15s",
+  WebkitTapHighlightColor: "transparent",
+  touchAction: "manipulation",
+  fontFamily: "inherit",
+});
 const COMMISSION = 0.15;
 
 const AGE_FILTERS = [
@@ -162,6 +224,8 @@ function ChallengeCard({
   );
 }
 
+const KASPI_PAY_URL = "https://pay.kaspi.kz/pay/e50c7djs";
+
 function KaspiQrStep({
   total, onBack, onConfirm, isPending,
 }: {
@@ -171,6 +235,9 @@ function KaspiQrStep({
   isPending: boolean;
 }) {
   const t = useT(dict);
+  // «Я оплатил» разблокируется только после того, как родитель нажал «Оплатить онлайн».
+  const [payClicked, setPayClicked] = useState(false);
+  const confirmDisabled = isPending || !payClicked;
   return (
     <div style={{ padding: "16px 20px 32px", display: "flex", flexDirection: "column", gap: 16 }}>
       <button
@@ -185,21 +252,35 @@ function KaspiQrStep({
         <p style={{ margin: 0, fontWeight: 900, fontSize: 30, color: "#ffffff" }}>{total.toLocaleString()} ₸</p>
       </div>
 
-      <div style={{ background: "#ffffff", borderRadius: 20, padding: 12, alignSelf: "center" }}>
-        <img
-          src="/payments/kaspi-qr.png"
-          alt="Kaspi QR"
-          style={{ width: 220, height: "auto", display: "block", borderRadius: 12 }}
-        />
-      </div>
+      <a
+        href={KASPI_PAY_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={() => setPayClicked(true)}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "18px 20px",
+          borderRadius: 16,
+          background: "linear-gradient(135deg, #ff5a5f 0%, #f01f2c 100%)",
+          color: "#ffffff",
+          fontWeight: 900,
+          fontSize: 17,
+          textDecoration: "none",
+          boxShadow: "0 6px 18px rgba(240,31,44,0.35)",
+        }}
+      >
+        {t("payOnline")}
+      </a>
 
-      <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.65)", textAlign: "center", lineHeight: 1.5 }}>
-        {t("qrInstructions", { total: total.toLocaleString() })}
+      <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.7)", textAlign: "center", lineHeight: 1.5 }}>
+        {t("payHint")}
       </p>
 
       <button
         onClick={onConfirm}
-        disabled={isPending}
+        disabled={confirmDisabled}
         style={{
           padding: "16px 20px",
           borderRadius: 16,
@@ -208,13 +289,20 @@ function KaspiQrStep({
           color: "#4776e6",
           fontWeight: 900,
           fontSize: 15,
-          cursor: "pointer",
+          cursor: confirmDisabled ? "not-allowed" : "pointer",
           fontFamily: "inherit",
-          opacity: isPending ? 0.6 : 1,
+          opacity: confirmDisabled ? 0.5 : 1,
+          transition: "opacity 0.2s",
         }}
       >
         {isPending ? t("processing") : t("confirmPaid")}
       </button>
+
+      {!payClicked && (
+        <p style={{ margin: "-6px 0 0", fontSize: 12, color: "rgba(255,255,255,0.5)", textAlign: "center", lineHeight: 1.4 }}>
+          {t("confirmLocked")}
+        </p>
+      )}
     </div>
   );
 }
@@ -321,23 +409,49 @@ function PurchaseModal({
             <p style={{ margin: 0, fontWeight: 900, fontSize: 22, color: "#ffffff" }}>{challenge.price.toLocaleString()} ₸</p>
           </div>
 
-          {/* Coins slider */}
+          {/* Coins stepper + slider */}
           <div className="glass-sm" style={{ padding: 16 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
               <p style={{ margin: 0, fontWeight: 800, fontSize: 14, color: "#ffffff" }}>{t("coinsForChild")} <CoinIcon size={13} /></p>
-              <p style={{ margin: 0, fontWeight: 900, fontSize: 18, color: "#ffd200" }}>{coinsAmount.toLocaleString()}</p>
+              <p key={coinsAmount} className="coin-pop" style={{ margin: 0, fontWeight: 900, fontSize: 18, color: "#ffd200" }}>{coinsAmount.toLocaleString()}</p>
             </div>
-            <p style={{ margin: "0 0 12px", fontSize: 12, color: "rgba(255,255,255,0.55)" }}>+ {coinsTg.toLocaleString()} ₸</p>
-            <input
-              type="range"
-              min={0}
-              max={COIN_MAX}
-              step={COIN_STEP}
-              value={coinsAmount}
-              onChange={(e) => setCoinsAmount(Number(e.target.value))}
-              style={{ width: "100%", accentColor: "#ffd200" }}
-            />
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 4 }}>
+            <p style={{ margin: "0 0 14px", fontSize: 12, color: "rgba(255,255,255,0.55)" }}>+ {coinsTg.toLocaleString()} ₸</p>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <button
+                type="button"
+                aria-label="−"
+                className="coin-step-btn"
+                onClick={() => setCoinsAmount((v) => Math.max(0, v - COIN_STEP))}
+                disabled={coinsAmount <= 0}
+                style={coinStepBtn(coinsAmount <= 0)}
+              >
+                <Minus size={22} strokeWidth={3} color="#ffffff" />
+              </button>
+              <input
+                type="range"
+                className="coin-range"
+                min={0}
+                max={COIN_MAX}
+                step={COIN_STEP}
+                value={coinsAmount}
+                onChange={(e) => setCoinsAmount(Number(e.target.value))}
+                style={{
+                  flex: 1,
+                  background: `linear-gradient(to right, #ffd200 ${(coinsAmount / COIN_MAX) * 100}%, rgba(255,255,255,0.2) ${(coinsAmount / COIN_MAX) * 100}%)`,
+                }}
+              />
+              <button
+                type="button"
+                aria-label="+"
+                className="coin-step-btn"
+                onClick={() => setCoinsAmount((v) => Math.min(COIN_MAX, v + COIN_STEP))}
+                disabled={coinsAmount >= COIN_MAX}
+                style={coinStepBtn(coinsAmount >= COIN_MAX)}
+              >
+                <Plus size={22} strokeWidth={3} color="#ffffff" />
+              </button>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 8 }}>
               <span>0</span>
               <span>{t("maxCoins")}</span>
             </div>
@@ -408,6 +522,162 @@ function SuccessModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+function OwnBookModal({
+  children, onClose, onSuccess,
+}: {
+  children: Child[];
+  onClose: () => void;
+  onSuccess: (payment: Payment) => void;
+}) {
+  const t = useT(dict);
+  const [childId, setChildId] = useState("");
+  const [bookTitle, setBookTitle] = useState("");
+  const [amountTg, setAmountTg] = useState(OWN_BOOK_AMOUNTS[0]);
+  const [step, setStep] = useState<"form" | "qr">("form");
+
+  const { minutes, sessions, coins } = ownBookCalc(amountTg);
+  const canPay = !!childId && amountTg >= OWN_BOOK_MIN_TG;
+
+  const createMutation = useMutation({
+    mutationFn: () => paymentsApi.createOwnBook({ childId, bookTitle, amountTg }),
+    onSuccess: (res: any) => onSuccess(res?.payment ?? res),
+    onError: (err: any) => { toast.error(err?.response?.data?.message || t("orderError")); },
+  });
+
+  return (
+    <Portal>
+    <div
+      style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "flex-end", justifyContent: "center", background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div style={{ width: "100%", maxWidth: 480, maxHeight: "92dvh", overflowY: "auto", background: "rgba(30,20,80,0.92)", backdropFilter: "blur(30px)", WebkitBackdropFilter: "blur(30px)", border: "1px solid rgba(255,255,255,0.18)", borderRadius: "28px 28px 0 0" }}>
+        {/* Hero cover */}
+        <div style={{ height: 150, background: `url(/books/own-book.jpg) center/cover`, position: "relative", borderRadius: "28px 28px 0 0", display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "flex-end", padding: "16px 20px" }}>
+          <div style={{ position: "absolute", inset: 0, borderRadius: "28px 28px 0 0", background: "linear-gradient(to top, rgba(30,20,80,0.85), rgba(30,20,80,0) 60%)" }} />
+          <button
+            onClick={onClose}
+            style={{ position: "absolute", top: 16, right: 16, width: 32, height: 32, borderRadius: "50%", background: "rgba(0,0,0,0.35)", border: "none", color: "#ffffff", fontSize: 16, fontWeight: 900, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1 }}
+          >
+            ✕
+          </button>
+          <h2 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: "#ffffff", lineHeight: 1.2, position: "relative" }}>📖 {t("ownBookModalTitle")}</h2>
+        </div>
+
+        {step === "qr" ? (
+          <KaspiQrStep
+            total={amountTg}
+            onBack={() => setStep("form")}
+            onConfirm={() => createMutation.mutate()}
+            isPending={createMutation.isPending}
+          />
+        ) : (
+        <div style={{ padding: "20px 20px max(32px, env(safe-area-inset-bottom))", display: "flex", flexDirection: "column", gap: 16 }}>
+          {/* Child selector */}
+          <div>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.65)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              {t("forWhom")}
+            </label>
+            {children.length === 0 ? (
+              <p style={{ fontSize: 14, textAlign: "center", padding: "12px 0", color: "rgba(255,255,255,0.55)" }}>{t("noChildren")}</p>
+            ) : (
+              <select
+                value={childId}
+                onChange={(e) => setChildId(e.target.value)}
+                className="glass-input"
+                style={{ appearance: "none", cursor: "pointer", border: !childId ? "1px solid rgba(255,200,0,0.6)" : undefined }}
+              >
+                <option value="" style={{ background: "#2a1a60" }}>{t("selectChild")}</option>
+                {children.map((ch) => (
+                  <option key={ch.id} value={ch.id} style={{ background: "#2a1a60" }}>
+                    {t("childOption", { name: ch.name, age: ch.age })}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {/* Book title */}
+          <div>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.65)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              {t("bookNameLabel")}
+            </label>
+            <input
+              value={bookTitle}
+              onChange={(e) => setBookTitle(e.target.value)}
+              placeholder={t("bookNamePlaceholder")}
+              className="glass-input"
+            />
+          </div>
+
+          {/* Amount chips + custom */}
+          <div>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.65)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              {t("amountLabel")}
+            </label>
+            <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+              {OWN_BOOK_AMOUNTS.map((a) => {
+                const active = amountTg === a;
+                return (
+                  <button
+                    key={a}
+                    type="button"
+                    onClick={() => setAmountTg(a)}
+                    style={{ flex: 1, padding: "12px 0", borderRadius: 14, border: active ? "none" : "1px solid rgba(255,255,255,0.22)", background: active ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.1)", color: active ? "#4776e6" : "rgba(255,255,255,0.85)", fontWeight: 900, fontSize: 15, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" }}
+                  >
+                    {a.toLocaleString()} ₸
+                  </button>
+                );
+              })}
+            </div>
+            <input
+              type="number"
+              min={OWN_BOOK_MIN_TG}
+              step={500}
+              value={amountTg}
+              onChange={(e) => setAmountTg(Math.max(0, Number(e.target.value) || 0))}
+              placeholder={t("customAmount")}
+              className="glass-input"
+            />
+          </div>
+
+          {/* Preview */}
+          <div className="glass-sm" style={{ padding: "14px 16px" }}>
+            <p style={{ margin: 0, fontWeight: 800, fontSize: 14, color: "#ffffff", display: "flex", alignItems: "center", gap: 6 }}>
+              {t("ownBookPreview", { minutes, sessions, coins: coins.toLocaleString() })} <CoinIcon size={13} />
+            </p>
+            <p style={{ margin: "6px 0 0", fontSize: 12, color: "rgba(255,255,255,0.55)" }}>
+              {t("ownBookHint", { perMin: OWN_BOOK_COINS_PER_MIN })}
+            </p>
+          </div>
+
+          {/* Total + pay */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 4 }}>
+            <div>
+              <p style={{ margin: 0, fontSize: 12, color: "rgba(255,255,255,0.55)" }}>{t("total")}</p>
+              <p style={{ margin: "2px 0 0", fontWeight: 900, fontSize: 26, color: "#ffffff" }}>{amountTg.toLocaleString()} ₸</p>
+            </div>
+            <button
+              onClick={() => setStep("qr")}
+              disabled={!canPay}
+              style={{ padding: "16px 20px", borderRadius: 16, border: "none", background: "rgba(255,255,255,0.9)", color: "#4776e6", fontWeight: 900, fontSize: 14, cursor: canPay ? "pointer" : "not-allowed", fontFamily: "inherit", opacity: canPay ? 1 : 0.45, transition: "opacity 0.15s" }}
+            >
+              {t("payBtn")}
+            </button>
+          </div>
+          {!childId && children.length > 0 && (
+            <p style={{ margin: "-8px 0 0", fontSize: 12.5, fontWeight: 700, color: "#ffd200", textAlign: "right" }}>{t("selectChildWarn")}</p>
+          )}
+          {childId && amountTg < OWN_BOOK_MIN_TG && (
+            <p style={{ margin: "-8px 0 0", fontSize: 12.5, fontWeight: 700, color: "#ffd200", textAlign: "right" }}>{t("minAmountWarn")}</p>
+          )}
+        </div>
+        )}
+      </div>
+    </div>
+    </Portal>
+  );
+}
+
 export default function ParentHomePage() {
   const t = useT(dict);
   const router = useRouter();
@@ -415,6 +685,7 @@ export default function ParentHomePage() {
 
   const [ageFilter, setAgeFilter] = useState("");
   const [selectedChallenge, setSelectedChallenge] = useState<(Challenge & { author?: { name?: string } }) | null>(null);
+  const [showOwnBook, setShowOwnBook] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
   const { data: challenges = [], isLoading: loadingChallenges } = useQuery<Challenge[]>({
@@ -512,6 +783,23 @@ export default function ParentHomePage() {
         </div>
       )}
 
+      {/* Своя книжка — приоритетный сценарий, крупная карточка над каталогом */}
+      <div style={{ padding: "16px 20px 0" }}>
+        <button
+          onClick={() => setShowOwnBook(true)}
+          style={{ display: "block", width: "100%", padding: 0, border: "none", borderRadius: 24, overflow: "hidden", cursor: "pointer", fontFamily: "inherit", textAlign: "left", position: "relative", boxShadow: "0 8px 24px rgba(0,0,0,0.25)" }}
+        >
+          <div style={{ height: 360, background: `url(/books/own-book.jpg) center/cover`, position: "relative" }}>
+            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(20,12,55,0.94) 14%, rgba(20,12,55,0.1) 62%)" }} />
+            <div style={{ position: "absolute", left: 20, right: 20, bottom: 20 }}>
+              <p style={{ margin: 0, fontSize: 28, fontWeight: 900, color: "#ffffff", textShadow: "0 2px 12px rgba(0,0,0,0.4)" }}>📖 {t("ownBookTitle")}</p>
+              <p style={{ margin: "8px 0 14px", fontSize: 14.5, fontWeight: 600, color: "rgba(255,255,255,0.9)", lineHeight: 1.4, textShadow: "0 1px 8px rgba(0,0,0,0.5)" }}>{t("ownBookSubtitle")}</p>
+              <span style={{ display: "inline-block", padding: "12px 22px", borderRadius: 9999, background: "rgba(255,255,255,0.95)", color: "#4776e6", fontWeight: 900, fontSize: 15 }}>{t("ownBookCta")} →</span>
+            </div>
+          </div>
+        </button>
+      </div>
+
       <div style={{ padding: "16px 20px 0" }}>
         {loadingChallenges ? (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -542,6 +830,14 @@ export default function ParentHomePage() {
           children={children}
           onClose={() => setSelectedChallenge(null)}
           onSuccess={handlePurchaseSuccess}
+        />
+      )}
+
+      {showOwnBook && (
+        <OwnBookModal
+          children={children}
+          onClose={() => setShowOwnBook(false)}
+          onSuccess={() => { setShowOwnBook(false); setShowSuccess(true); queryClient.invalidateQueries({ queryKey: ["payments"] }); }}
         />
       )}
 

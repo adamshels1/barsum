@@ -50,6 +50,24 @@ export class PaymentsController {
     });
   }
 
+  @Post('own-book')
+  async createOwnBook(
+    @Request() req: any,
+    @Body()
+    body: {
+      childId: string;
+      bookTitle: string;
+      amountTg: number;
+    },
+  ) {
+    return this.paymentsService.createOwnBook({
+      parentId: req.user.sub,
+      childId: body.childId,
+      bookTitle: body.bookTitle,
+      amountTg: body.amountTg,
+    });
+  }
+
   @Post(':id/receipt')
   @UseInterceptors(FileInterceptor('receipt'))
   async uploadReceipt(

@@ -6,6 +6,11 @@ export const paymentsApi = {
     challengeId: string;
     coinsAmount: number;
   }) => apiClient.post("/payments", data).then((r) => r.data),
+  createOwnBook: (data: {
+    childId: string;
+    bookTitle: string;
+    amountTg: number;
+  }) => apiClient.post("/payments/own-book", data).then((r) => r.data),
   uploadReceipt: (id: string, file: File) => {
     const form = new FormData();
     form.append("receipt", file);

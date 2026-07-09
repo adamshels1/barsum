@@ -71,6 +71,15 @@ export class SessionsController {
     return this.sessionsService.analyze(id, req.user.sub, bookTitle);
   }
 
+  @Post(':id/parent-confirm')
+  parentConfirm(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body('approve') approve: boolean,
+  ) {
+    return this.sessionsService.parentConfirmOwnBook(id, req.user.sub, approve !== false);
+  }
+
   @Post(':id/answer')
   answer(
     @Request() req: any,
