@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { enablePush, isPushSubscribed, pushSupported } from "@/lib/push-client";
+import { pushApi } from "@/lib/api/push";
 
 const DISMISS_KEY = "barsum-push-dismissed";
 
@@ -35,6 +36,8 @@ export function PushEnable() {
         toast.success("Уведомления включены 🔔");
         setShow(false);
         localStorage.setItem(DISMISS_KEY, "1");
+        // Сразу шлём приветственный пуш — подтверждение, что всё работает.
+        pushApi.test().catch(() => {});
       } else {
         toast.error("Разрешение не выдано");
       }

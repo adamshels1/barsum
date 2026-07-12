@@ -40,10 +40,10 @@ export class PushController {
   test(@Request() req: any) {
     return this.pushService
       .sendToUser(req.user.sub, {
-        title: 'Barsum',
-        body: 'Тестовое уведомление 🎉',
-        url: '/',
-        tag: 'test',
+        title: '🔔 Уведомления включены',
+        body: 'Будем сообщать, когда ребёнок просит награду или заканчивает чтение.',
+        url: '/parent/cabinet',
+        tag: 'welcome',
       })
       .then(() => ({ ok: true }));
   }
