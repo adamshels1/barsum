@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { toast } from "sonner";
 import { challengesApi } from "@/lib/api/challenges";
+import { expertsApi } from "@/lib/api/experts";
 import { apiClient } from "@/lib/api/client";
 import { useT, type Dict } from "@/i18n/useT";
 
@@ -53,7 +54,7 @@ const dict: Dict = {
     back: "← Назад",
     priceField: "Стоимость задания для родителя",
     yourEarning: "Ваш заработок",
-    percentOfPrice: "15% от стоимости",
+    percentOfPrice: "{p}% от стоимости",
     cardPreview: "Предпросмотр карточки",
     bookTitleFallback: "Название книги",
     taskNameFallback: "Название задания",
@@ -70,7 +71,7 @@ const dict: Dict = {
     sumTotalPages: "Всего страниц",
     sumPagesPerPart: "Страниц в части",
     sumPrice: "Цена",
-    sumEarning: "Ваш заработок (15%)",
+    sumEarning: "Ваш заработок ({p}%)",
     ageRange: "{a}–{b} лет",
     moderationNote: "После отправки задание попадёт на модерацию. Обычно это занимает 1–2 дня.",
     sending: "Отправка...",
@@ -123,7 +124,7 @@ const dict: Dict = {
     back: "← Артқа",
     priceField: "Ата-ана үшін тапсырма құны",
     yourEarning: "Сіздің табысыңыз",
-    percentOfPrice: "Құнның 15%",
+    percentOfPrice: "Құнның {p}%",
     cardPreview: "Карточканы алдын ала қарау",
     bookTitleFallback: "Кітап атауы",
     taskNameFallback: "Тапсырма атауы",
@@ -140,7 +141,7 @@ const dict: Dict = {
     sumTotalPages: "Барлық беттер",
     sumPagesPerPart: "Бөлімдегі беттер",
     sumPrice: "Баға",
-    sumEarning: "Сіздің табысыңыз (15%)",
+    sumEarning: "Сіздің табысыңыз ({p}%)",
     ageRange: "{a}–{b} жаста",
     moderationNote: "Жіберілгеннен кейін тапсырма модерацияға түседі. Әдетте бұл 1–2 күн алады.",
     sending: "Жіберілуде...",
@@ -719,13 +720,15 @@ function Step3({
   update,
   onNext,
   onBack,
+  commissionPct,
 }: {
   data: FormData;
   update: (d: Partial<FormData>) => void;
   onNext: () => void;
   onBack: () => void;
+  commissionPct: number;
 }) {
-  const earning = Math.round(data.price * 0.15);
+  const earning = Math.round((data.price * commissionPct) / 100);
   const t = useT(dict);
 
   return (
@@ -745,7 +748,7 @@ function Step3({
             {t("yourEarning")}
           </p>
           <p style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", margin: "2px 0 0" }}>
-            {t("percentOfPrice")}
+            {t("percentOfPrice", { p: commissionPct })}
           </p>
         </div>
         <p style={{ fontSize: 26, fontWeight: 900, color: "#ffffff", margin: 0 }}>
@@ -821,6 +824,7 @@ function Step4({
   isLoading,
   isSuccess,
   onGoToBooks,
+  commissionPct,
 }: {
   data: FormData;
   onBack: () => void;
@@ -828,6 +832,7 @@ function Step4({
   isLoading: boolean;
   isSuccess: boolean;
   onGoToBooks: () => void;
+  commissionPct: number;
 }) {
   const t = useT(dict);
   if (isSuccess) {
@@ -869,7 +874,7 @@ function Step4({
           [t("sumTotalPages"), `${data.pagesTotal}`],
           [t("sumPagesPerPart"), `${data.pagesPerPart}`],
           [t("sumPrice"), `${data.price.toLocaleString("ru-RU")} ₸`],
-          [t("sumEarning"), `${Math.round(data.price * 0.15).toLocaleString("ru-RU")} ₸`],
+          [t("sumEarning", { p: commissionPct }), `${Math.round((data.price * commissionPct) / 100).toLocaleString("ru-RU")} ₸`],
         ].map(([key, val]) => (
           <div
             key={key}
@@ -925,6 +930,10 @@ function ExpertCreateInner() {
     queryKey: ["book-catalog"],
     queryFn: () => challengesApi.bookCatalog(),
   });
+
+  // Доля эксперта (%) — задаётся админом на профиле эксперта.
+  const { data: me } = useQuery({ queryKey: ["expert-me"], queryFn: expertsApi.me });
+  const commissionPct = me?.commissionPct ?? 15;
 
   useQuery({
     queryKey: ["challenge-edit", editId],
@@ -1022,6 +1031,7 @@ function ExpertCreateInner() {
               update={update}
               onNext={() => setStep(3)}
               onBack={() => setStep(1)}
+              commissionPct={commissionPct}
             />
           )}
           {step === 3 && (
@@ -1032,6 +1042,7 @@ function ExpertCreateInner() {
               isLoading={publishMutation.isPending}
               isSuccess={success}
               onGoToBooks={() => router.push("/expert/books")}
+              commissionPct={commissionPct}
             />
           )}
         </div>

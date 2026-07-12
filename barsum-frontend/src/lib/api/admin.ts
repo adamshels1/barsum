@@ -20,6 +20,10 @@ export const adminApi = {
     apiClient.post(`/experts/${id}/approve`).then((r) => r.data),
   rejectExpert: (id: string, reason: string) =>
     apiClient.post(`/experts/${id}/reject`, { reason }).then((r) => r.data),
+  setExpertCommission: (id: string, commissionPct: number) =>
+    apiClient
+      .post(`/admin/experts/${id}/commission`, { commissionPct })
+      .then((r) => r.data),
   challenges: (status?: string) =>
     apiClient
       .get("/admin/challenges", { params: { status } })

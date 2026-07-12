@@ -56,6 +56,14 @@ export class ExpertsService {
     return this.expertRepo.save(expert);
   }
 
+  async setCommission(id: string, commissionPct: number): Promise<Expert> {
+    const expert = await this.findById(id);
+    if (!expert) throw new NotFoundException('Expert not found');
+    // Ограничиваем 0–100, округляем до целого процента.
+    expert.commissionPct = Math.max(0, Math.min(100, Math.round(commissionPct)));
+    return this.expertRepo.save(expert);
+  }
+
   async updateProfile(userId: string, dto: { specialization?: string; bio?: string; whatsapp?: string }): Promise<Expert> {
     const expert = await this.findByUserId(userId);
     if (!expert) throw new NotFoundException('Expert not found');
@@ -79,16 +87,33 @@ export class ExpertsService {
     return this.expertRepo.find({ where: { status } });
   }
 
+  // Для админки: список экспертов со связанным пользователем (имя/почта), без хэша пароля.
+  async findByStatusWithUser(status: ExpertStatus): Promise<Expert[]> {
+    const experts = await this.expertRepo.find({
+      where: { status },
+      relations: ['user'],
+      order: { createdAt: 'DESC' },
+    });
+    for (const e of experts) {
+      if (e.user) delete (e.user as any).password;
+    }
+    return experts;
+  }
+
   async getStats(userId: string): Promise<{ challenges: number; students: number; revenueTg: number }> {
+    // Метрики считаем независимыми подзапросами: join и enrollments, и payments
+    // в одном запросе давал бы декартово произведение и удваивал суммы.
     const result = await this.expertRepo.manager.query(
       `SELECT
-        COUNT(DISTINCT c.id)::int AS challenges,
-        COUNT(DISTINCT e.id)::int AS students,
-        COALESCE(SUM(p."coinsTg"), 0)::int AS "revenueTg"
-       FROM challenges c
-       LEFT JOIN challenge_enrollments e ON e."challengeId" = c.id
-       LEFT JOIN payments p ON p."challengeId" = c.id AND p.status = 'confirmed'
-       WHERE c."authorId" = $1`,
+        (SELECT COUNT(*) FROM challenges c WHERE c."authorId" = $1)::int AS challenges,
+        (SELECT COUNT(DISTINCT e."childId")
+           FROM challenge_enrollments e
+           JOIN challenges c ON c.id = e."challengeId"
+          WHERE c."authorId" = $1)::int AS students,
+        (SELECT COALESCE(SUM(p."expertShare"), 0)
+           FROM payments p
+           JOIN challenges c ON c.id = p."challengeId"
+          WHERE c."authorId" = $1 AND p.status = 'confirmed')::int AS "revenueTg"`,
       [userId],
     );
     const row = result[0] || { challenges: 0, students: 0, revenueTg: 0 };

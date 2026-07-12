@@ -29,6 +29,8 @@ export class ChallengesService {
     if (filters?.age) {
       qb.andWhere('c.ageMin <= :age AND c.ageMax >= :age', { age: filters.age });
     }
+    // Новые книги — сверху.
+    qb.orderBy('c.createdAt', 'DESC');
     return qb.getMany();
   }
 

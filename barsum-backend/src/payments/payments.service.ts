@@ -13,6 +13,7 @@ import { User } from '../users/entities/user.entity';
 import { Child } from '../children/entities/child.entity';
 import { ChallengeEnrollment } from '../sessions/entities/enrollment.entity';
 import { Challenge } from '../challenges/entities/challenge.entity';
+import { Expert } from '../experts/entities/expert.entity';
 import { CoinsService } from '../coins/coins.service';
 import {
   PaymentStatus,
@@ -57,6 +58,25 @@ export class PaymentsService {
     );
   }
 
+  // Доля эксперта на момент оплаты: процент берём с профиля автора книги (снимок),
+  // чтобы позднее изменение % админом не переписывало историю выплат.
+  private async resolveExpertSplit(
+    challengeId: string,
+    price: number,
+  ): Promise<{ expertShare: number; platformFee: number; expertCommissionPct: number }> {
+    const challenge = await this.challengeRepo.findOne({ where: { id: challengeId } });
+    let pct = 0;
+    if (challenge?.authorId) {
+      const expert = await this.dataSource
+        .getRepository(Expert)
+        .findOne({ where: { userId: challenge.authorId } });
+      // Нет профиля эксперта (напр. «своя книга») → доли нет.
+      pct = expert?.commissionPct ?? 0;
+    }
+    const expertShare = Math.round((price * pct) / 100);
+    return { expertShare, platformFee: price - expertShare, expertCommissionPct: pct };
+  }
+
   async create(dto: {
     parentId: string;
     childId: string;
@@ -68,6 +88,7 @@ export class PaymentsService {
     // цену книги, ребёнок получает столько же монет — без доплаты за монеты.
     const coinsTg = 0;
     const total = dto.challengePrice;
+    const split = await this.resolveExpertSplit(dto.challengeId, dto.challengePrice);
 
     // Оплата подтверждается родителем на слово (QR Kaspi, без загрузки чека) —
     // сразу помечаем как confirmed и открываем доступ к заданию.
@@ -75,6 +96,7 @@ export class PaymentsService {
       ...dto,
       coinsTg,
       total,
+      ...split,
       status: PaymentStatus.CONFIRMED,
       resolvedAt: new Date(),
     });

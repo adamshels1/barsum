@@ -42,6 +42,16 @@ export class Payment {
   @Column({ default: 0 })
   total: number;
 
+  // Сплит выручки, зафиксированный на момент оплаты (снимок процента эксперта).
+  @Column({ default: 0 })
+  expertShare: number;
+
+  @Column({ default: 0 })
+  platformFee: number;
+
+  @Column({ default: 0 })
+  expertCommissionPct: number;
+
   @Column({ nullable: true })
   receiptUrl: string;
 

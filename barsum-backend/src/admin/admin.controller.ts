@@ -68,9 +68,26 @@ export class AdminController {
   }
 
   @Get('experts')
-  getExperts(@Request() req: any) {
+  getExperts(@Request() req: any, @Query('status') status?: string) {
     this.guard(req);
-    return this.expertsService.findByStatus(ExpertStatus.REVIEW);
+    const map: Record<string, ExpertStatus> = {
+      new: ExpertStatus.NEW,
+      review: ExpertStatus.REVIEW,
+      approved: ExpertStatus.APPROVED,
+      // Отклонённые эксперты возвращаются в статус NEW с причиной.
+      rejected: ExpertStatus.NEW,
+    };
+    return this.expertsService.findByStatusWithUser(map[status ?? ''] ?? ExpertStatus.REVIEW);
+  }
+
+  @Post('experts/:id/commission')
+  setExpertCommission(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body('commissionPct') commissionPct: number,
+  ) {
+    this.guard(req);
+    return this.expertsService.setCommission(id, commissionPct);
   }
 
   @Post('experts/:id/approve')

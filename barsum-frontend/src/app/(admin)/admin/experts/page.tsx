@@ -29,6 +29,10 @@ const dict: Dict = {
     rejecting: "Отклоняем...",
     confirmReject: "Подтвердить отклонение",
     cancel: "Отмена",
+    commission: "Доля эксперта",
+    commissionHint: "% от цены книги. Остальное — комиссия платформы.",
+    save: "Сохранить",
+    saved: "Сохранено",
   },
   kk: {
     tabReview: "Қаралуда",
@@ -51,6 +55,10 @@ const dict: Dict = {
     rejecting: "Қабылданбауда...",
     confirmReject: "Қабылдамауды растау",
     cancel: "Бас тарту",
+    commission: "Сарапшы үлесі",
+    commissionHint: "Кітап бағасынан %. Қалғаны — платформа комиссиясы.",
+    save: "Сақтау",
+    saved: "Сақталды",
   },
 };
 
@@ -63,6 +71,8 @@ interface Expert {
   specialization?: string;
   whatsapp?: string;
   bio?: string;
+  commissionPct?: number;
+  user?: { name?: string; email?: string };
 }
 
 function statusBadgeStyle(status: string): React.CSSProperties {
@@ -88,6 +98,7 @@ export default function AdminExpertsPage() {
   const [activeTab, setActiveTab] = useState<ExpertStatus>("review");
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
+  const [commissionEdits, setCommissionEdits] = useState<Record<string, string>>({});
 
   const TABS: { key: ExpertStatus; label: string }[] = [
     { key: "review", label: t("tabReview") },
@@ -121,6 +132,19 @@ export default function AdminExpertsPage() {
       queryClient.invalidateQueries({ queryKey: ["admin-experts"] });
       setRejectingId(null);
       setRejectReason("");
+    },
+  });
+
+  const commissionMutation = useMutation({
+    mutationFn: ({ id, pct }: { id: string; pct: number }) =>
+      adminApi.setExpertCommission(id, pct),
+    onSuccess: (_data, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-experts"] });
+      setCommissionEdits((prev) => {
+        const next = { ...prev };
+        delete next[vars.id];
+        return next;
+      });
     },
   });
 
@@ -197,6 +221,14 @@ export default function AdminExpertsPage() {
                     <p style={{ margin: "4px 0 0", fontSize: 13, fontFamily: "monospace", fontWeight: 700, color: "#ffffff", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {expert.userId}
                     </p>
+                    {expert.user?.name && (
+                      <p style={{ margin: "4px 0 0", fontSize: 14, fontWeight: 800, color: "#ffffff" }}>
+                        {expert.user.name}
+                        {expert.user.email && (
+                          <span style={{ fontWeight: 500, color: "rgba(255,255,255,0.55)", fontSize: 12 }}> · {expert.user.email}</span>
+                        )}
+                      </p>
+                    )}
                   </div>
                   <span style={statusBadgeStyle(expert.status)}>{statusLabel(expert.status)}</span>
                 </div>
@@ -233,6 +265,40 @@ export default function AdminExpertsPage() {
                     </p>
                   </div>
                 )}
+
+                {/* Commission editor */}
+                <div style={{ marginBottom: 12, marginTop: 4, background: "rgba(0,200,100,0.1)", border: "1px solid rgba(100,255,150,0.2)", borderRadius: 14, padding: 12 }}>
+                  <p style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.55)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>{t("commission")}</p>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={commissionEdits[expert.id] ?? String(expert.commissionPct ?? 15)}
+                      onChange={(e) => setCommissionEdits((prev) => ({ ...prev, [expert.id]: e.target.value }))}
+                      className="glass-input"
+                      style={{ width: 90, textAlign: "center", fontWeight: 800, fontSize: 16 }}
+                    />
+                    <span style={{ fontSize: 16, fontWeight: 800, color: "#ffffff" }}>%</span>
+                    {(() => {
+                      const raw = commissionEdits[expert.id];
+                      const parsed = raw === undefined ? (expert.commissionPct ?? 15) : Number(raw);
+                      const valid = Number.isFinite(parsed) && parsed >= 0 && parsed <= 100;
+                      const changed = raw !== undefined && parsed !== (expert.commissionPct ?? 15);
+                      const isSaving = commissionMutation.isPending && commissionMutation.variables?.id === expert.id;
+                      return (
+                        <button
+                          onClick={() => commissionMutation.mutate({ id: expert.id, pct: Math.round(parsed) })}
+                          disabled={!valid || !changed || isSaving}
+                          style={{ marginLeft: "auto", padding: "8px 16px", borderRadius: 9999, border: "1px solid rgba(100,255,150,0.35)", background: "rgba(0,200,100,0.25)", color: "#ffffff", fontWeight: 700, fontSize: 13, cursor: valid && changed && !isSaving ? "pointer" : "not-allowed", fontFamily: "inherit", opacity: valid && changed && !isSaving ? 1 : 0.45 }}
+                        >
+                          {isSaving ? "…" : changed ? t("save") : t("saved")}
+                        </button>
+                      );
+                    })()}
+                  </div>
+                  <p style={{ margin: "8px 0 0", fontSize: 11, color: "rgba(255,255,255,0.5)", lineHeight: 1.4 }}>{t("commissionHint")}</p>
+                </div>
 
                 {/* Actions for review status */}
                 {expert.status === "review" && rejectingId !== expert.id && (

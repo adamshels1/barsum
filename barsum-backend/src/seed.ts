@@ -7,9 +7,11 @@ import { UserRole, ExpertStatus, ChallengeStatus, ChallengeCategory, EnrollmentS
 import * as bcrypt from 'bcrypt';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Challenge } from './challenges/entities/challenge.entity';
+import { User } from './users/entities/user.entity';
 import { Reward } from './rewards/entities/reward.entity';
 import { ChallengeEnrollment } from './sessions/entities/enrollment.entity';
 import { Repository } from 'typeorm';
+import { BARSUM_COLLECTION_PARTS } from './challenges/barsum-collection';
 
 async function seed() {
   const app = await NestFactory.createApplicationContext(AppModule, { logger: ['error'] });
@@ -87,6 +89,48 @@ async function seed() {
     console.log('✓ Approved expert');
   }
 
+  // Реальный эксперт-автор сборника «Мейірімді бала» с долей 30%.
+  const AIGUL_NAME = 'Дана Аманжолқызы';
+  const AIGUL_EMAIL = 'dana@barsum.app';
+  const AIGUL_LEGACY_EMAIL = 'aigul@barsum.kz';
+  const userRepo = app.get<Repository<User>>(getRepositoryToken(User));
+
+  let aigulUser =
+    (await usersService.findByEmail(AIGUL_EMAIL)) ||
+    (await usersService.findByEmail(AIGUL_LEGACY_EMAIL));
+  if (!aigulUser) {
+    aigulUser = await usersService.create({
+      email: AIGUL_EMAIL,
+      password: await bcrypt.hash('test123', 10),
+      name: AIGUL_NAME,
+      role: UserRole.EXPERT,
+    });
+    console.log('✓ Created expert user:', aigulUser.email);
+  } else if (aigulUser.email !== AIGUL_EMAIL || aigulUser.name !== AIGUL_NAME) {
+    // Мигрируем существующего пользователя (тот же id — книга остаётся за ним).
+    aigulUser.email = AIGUL_EMAIL;
+    aigulUser.name = AIGUL_NAME;
+    await userRepo.save(aigulUser);
+    console.log('✓ Updated expert user →', AIGUL_NAME, AIGUL_EMAIL);
+  } else {
+    console.log('~ Expert user already exists:', aigulUser.email);
+  }
+
+  let aigul = await expertsService.findByUserId(aigulUser.id);
+  if (!aigul) {
+    aigul = await expertsService.createForUser(aigulUser.id);
+  }
+  await expertsService.updateProfile(aigulUser.id, {
+    specialization: 'Балалар әдебиеті және оқу сауаттылығы',
+    whatsapp: '+7 701 234 5678',
+    bio: '10 жылдан астам тәжірибесі бар бастауыш сынып мұғалімі. Балаларды қазақ тілінде мәнерлеп оқуға және мәтінді өз сөзімен айтуға үйретеді.',
+  });
+  if (aigul.status !== ExpertStatus.APPROVED) {
+    await expertsService.updateStatus(aigul.id, ExpertStatus.APPROVED);
+  }
+  await expertsService.setCommission(aigul.id, 30);
+  console.log('✓ Expert Айгүл ready (approved, 30%)');
+
   // Challenges
   const challengeData = [
     {
@@ -145,6 +189,37 @@ async function seed() {
     } else {
       console.log('~ Challenge already exists:', data.title);
     }
+  }
+
+  // Книга-сборник «Мейірімді бала» — 9 рассказов, цена 10 000 ₸, с пересказом, автор — Айгүл (30%).
+  const collectionTitle = 'Мейірімді бала: әңгімелер жинағы';
+  const existingCollection = await challengeRepo.findOne({ where: { title: collectionTitle } });
+  if (!existingCollection) {
+    const collection = challengeRepo.create({
+      title: collectionTitle,
+      bookTitle: 'Мейірімді бала',
+      bookAuthor: 'Ы. Алтынсарин, Л. Толстой және т.б.',
+      description:
+        '9 қазақ әңгімесінен тұратын жинақ: мейірім, достық, еңбекқорлық және адалдық туралы. Әр бөлім — жеке әңгіме. Оқып болған соң бала оны өз сөзімен айтып береді, ал AI бағалайды.',
+      pagesTotal: 18,
+      pagesPerPart: 2,
+      totalParts: BARSUM_COLLECTION_PARTS.length,
+      partTexts: BARSUM_COLLECTION_PARTS,
+      coverImage: '/books/barsum-collection.jpg',
+      price: 10000,
+      coinsReward: 500,
+      ageMin: 7,
+      ageMax: 12,
+      retellRequired: true,
+      category: ChallengeCategory.READING,
+      status: ChallengeStatus.PUBLISHED,
+      authorId: aigulUser.id,
+      membersCount: 0,
+    });
+    await challengeRepo.save(collection);
+    console.log('✓ Created collection book:', collectionTitle, `(${BARSUM_COLLECTION_PARTS.length} parts, 10000₸)`);
+  } else {
+    console.log('~ Collection book already exists:', collectionTitle);
   }
 
   // Rewards for test parent

@@ -26,6 +26,10 @@ export class Expert {
   @Column({ nullable: true })
   whatsapp: string;
 
+  // Доля эксперта в % от цены книги (остальное — комиссия платформы). Настраивает админ.
+  @Column({ type: 'int', default: 15 })
+  commissionPct: number;
+
   @Column({ nullable: true })
   rejectedReason: string;
 

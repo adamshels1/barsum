@@ -65,6 +65,7 @@ interface Challenge {
   status: "draft" | "moderation" | "published" | "rejected";
   rejectedReason?: string;
   membersCount: number;
+  coverImage?: string | null;
 }
 
 type FilterStatus = "all" | "draft" | "moderation" | "published" | "rejected";
@@ -199,26 +200,41 @@ export default function ExpertBooksPage() {
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {filtered.map((challenge) => (
               <div key={challenge.id} className="glass" style={{ padding: 16 }}>
-                {/* Top row */}
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
+                {/* Top row with cover */}
+                <div style={{ display: "flex", gap: 12, marginBottom: 10 }}>
+                  {/* Cover thumbnail */}
+                  {challenge.coverImage ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={challenge.coverImage}
+                      alt={challenge.bookTitle || challenge.title}
+                      style={{ width: 54, height: 72, borderRadius: 12, objectFit: "cover", flexShrink: 0, background: "rgba(255,255,255,0.1)" }}
+                    />
+                  ) : (
+                    <div style={{ width: 54, height: 72, borderRadius: 12, flexShrink: 0, background: "rgba(255,255,255,0.14)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <BookMarked size={22} color="rgba(255,255,255,0.7)" strokeWidth={2} />
+                    </div>
+                  )}
+
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ margin: 0, fontWeight: 900, fontSize: 14, color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {challenge.title}
-                    </p>
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+                      <p style={{ margin: 0, fontWeight: 900, fontSize: 14, color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {challenge.title}
+                      </p>
+                      <span style={statusBadgeStyle(challenge.status)}>{statusBadgeLabel(challenge.status, t)}</span>
+                    </div>
                     <p style={{ margin: "3px 0 0", fontSize: 12, color: "rgba(255,255,255,0.6)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {challenge.bookTitle}{challenge.bookAuthor ? ` · ${challenge.bookAuthor}` : ""}
                     </p>
+                    {/* Meta row */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 12, color: "rgba(255,255,255,0.6)", marginTop: 8, flexWrap: "wrap" }}>
+                      <span>📚 {t("partsCount", { n: challenge.totalParts })}</span>
+                      <span>💰 {challenge.price.toLocaleString("ru-RU")} ₸</span>
+                      <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        <Users2 size={12} /> {challenge.membersCount}
+                      </span>
+                    </div>
                   </div>
-                  <span style={statusBadgeStyle(challenge.status)}>{statusBadgeLabel(challenge.status, t)}</span>
-                </div>
-
-                {/* Meta row */}
-                <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 12, color: "rgba(255,255,255,0.6)", marginBottom: 10 }}>
-                  <span>📚 {t("partsCount", { n: challenge.totalParts })}</span>
-                  <span>💰 {challenge.price.toLocaleString("ru-RU")} ₸</span>
-                  <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                    <Users2 size={12} /> {challenge.membersCount}
-                  </span>
                 </div>
 
                 {/* Rejected reason */}

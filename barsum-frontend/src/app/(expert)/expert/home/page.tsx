@@ -1,14 +1,13 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookMarked, CheckCircle, LogOut, Plus, TrendingUp, Users2, XCircle } from "lucide-react";
+import { BookMarked, CheckCircle, ChevronRight, LogOut, Plus, TrendingUp, Users2, XCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { challengesApi } from "@/lib/api/challenges";
 import { expertsApi } from "@/lib/api/experts";
 import { sessionsApi } from "@/lib/api/sessions";
 import { useAuthStore } from "@/stores/auth-store";
-import { CoinIcon } from "@/components/CoinIcon";
+import { childPhotoUrl } from "@/lib/media";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useT, type Dict } from "@/i18n/useT";
 import { useState } from "react";
@@ -45,9 +44,14 @@ const dict: Dict = {
     create: "Создать",
     myTasks: "Мои задания",
     inReview: "На проверке",
-    published: "Опубликованные",
-    noPublished: "Нет опубликованных",
-    createFirst: "Создайте первое задание для учеников",
+    students: "Ученики",
+    noStudents: "Учеников пока нет",
+    noStudentsHint: "Здесь появятся дети, которых родители запишут на ваши книги",
+    yearsOld: "{n} лет",
+    bookOne: "книга",
+    bookMany: "книги",
+    partsWord: "частей",
+    lastActivity: "акт.",
     partsCount: "{n} частей",
   },
   kk: {
@@ -79,27 +83,33 @@ const dict: Dict = {
     create: "Құру",
     myTasks: "Менің тапсырмаларым",
     inReview: "Тексеруде",
-    published: "Жарияланғандар",
-    noPublished: "Жарияланғандар жоқ",
-    createFirst: "Оқушыларға арналған алғашқы тапсырманы құрыңыз",
+    students: "Оқушылар",
+    noStudents: "Әзірге оқушылар жоқ",
+    noStudentsHint: "Мұнда ата-аналар кітаптарыңызға жазатын балалар пайда болады",
+    yearsOld: "{n} жаста",
+    bookOne: "кітап",
+    bookMany: "кітап",
+    partsWord: "бөлім",
+    lastActivity: "белс.",
     partsCount: "{n} бөлім",
   },
 };
 
-interface Challenge {
-  id: string; title: string; bookTitle: string; bookAuthor: string;
-  totalParts: number; price: number; coinsReward: number;
-  ageMin: number; ageMax: number;
-  status: "draft" | "moderation" | "published" | "rejected";
-  membersCount: number;
+interface Student {
+  childId: string;
+  name: string;
+  age: number;
+  photoUrl?: string | null;
+  streak: number;
+  booksCount: number;
+  completedParts: number;
+  totalParts: number;
+  lastActivityAt: string | null;
 }
 
-const STATUS: Record<string, { labelKey: string; color: string; bg: string }> = {
-  draft:      { labelKey: "statusDraft",      color: "rgba(255,255,255,0.6)",  bg: "rgba(255,255,255,0.1)" },
-  moderation: { labelKey: "statusModeration", color: "#ffffff",               bg: "rgba(255,255,255,0.2)" },
-  published:  { labelKey: "statusPublished",  color: "#4776e6",               bg: "rgba(255,255,255,0.85)" },
-  rejected:   { labelKey: "statusRejected",   color: "#ffffff",               bg: "rgba(200,0,0,0.35)" },
-};
+function formatShortDate(iso: string) {
+  return new Date(iso).toLocaleDateString("ru-RU", { day: "2-digit", month: "short" });
+}
 
 const stats_config = [
   { key: "challenges", labelKey: "statChallenges", Icon: BookMarked },
@@ -201,9 +211,9 @@ export default function ExpertHomePage() {
 
   const queryClient = useQueryClient();
   const { data: stats } = useQuery({ queryKey: ["expert-stats"], queryFn: expertsApi.stats });
-  const { data: challenges = [], isLoading } = useQuery({
-    queryKey: ["challenges-list"],
-    queryFn: () => challengesApi.list(),
+  const { data: students = [], isLoading } = useQuery<Student[]>({
+    queryKey: ["expert-students"],
+    queryFn: sessionsApi.listStudents,
   });
   const { data: reviewQueue = [] } = useQuery({
     queryKey: ["review-queue"],
@@ -225,8 +235,6 @@ export default function ExpertHomePage() {
       toast.success(t("rejectedToast"));
     },
   });
-
-  const publishedChallenges = (challenges as Challenge[]).filter((c) => c.status === "published");
 
   return (
     <main style={{ minHeight: "100dvh", padding: "0 0 32px" }}>
@@ -357,15 +365,15 @@ export default function ExpertHomePage() {
           </div>
         )}
 
-        {/* Published list */}
+        {/* Students list */}
         <div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
             <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              {t("published")}
+              {t("students")}
             </p>
-            {publishedChallenges.length > 0 && (
+            {students.length > 0 && (
               <span className="glass-chip" style={{ padding: "3px 10px", fontSize: 12, fontWeight: 900, color: "#ffffff" }}>
-                {publishedChallenges.length}
+                {students.length}
               </span>
             )}
           </div>
@@ -373,46 +381,53 @@ export default function ExpertHomePage() {
           {isLoading ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {[1, 2].map((i) => (
-                <div key={i} className="glass" style={{ height: 80, borderRadius: 16, animation: "pulse 2s infinite" }} />
+                <div key={i} className="glass" style={{ height: 84, borderRadius: 18, animation: "pulse 2s infinite" }} />
               ))}
             </div>
-          ) : publishedChallenges.length === 0 ? (
+          ) : students.length === 0 ? (
             <div className="glass" style={{ padding: 40, textAlign: "center" }}>
               <div style={{ width: 56, height: 56, borderRadius: 18, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-                <BookMarked size={24} color="#ffffff" strokeWidth={2} />
+                <Users2 size={24} color="#ffffff" strokeWidth={2} />
               </div>
-              <p style={{ margin: 0, fontWeight: 900, color: "#ffffff" }}>{t("noPublished")}</p>
+              <p style={{ margin: 0, fontWeight: 900, color: "#ffffff" }}>{t("noStudents")}</p>
               <p style={{ margin: "6px 0 0", fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.55)" }}>
-                {t("createFirst")}
+                {t("noStudentsHint")}
               </p>
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {publishedChallenges.map((c) => {
-                const s = STATUS[c.status] ?? STATUS.published;
+              {students.map((s) => {
+                const progress = s.totalParts > 0 ? Math.min((s.completedParts / s.totalParts) * 100, 100) : 0;
                 return (
-                  <div key={c.id} className="glass" style={{ padding: 16, borderRadius: 16 }}>
-                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ margin: 0, fontWeight: 900, fontSize: 14, color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.title}</p>
-                        <p style={{ margin: "3px 0 0", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.55)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {c.bookTitle} · {t("partsCount", { n: c.totalParts })}
-                        </p>
+                  <button
+                    key={s.childId}
+                    onClick={() => router.push(`/expert/students/${s.childId}`)}
+                    className="glass"
+                    style={{ width: "100%", padding: "14px 16px", display: "flex", alignItems: "center", gap: 14, textAlign: "left", border: "1px solid rgba(255,255,255,0.2)", cursor: "pointer", fontFamily: "inherit", borderRadius: 18 }}
+                  >
+                    {s.photoUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={childPhotoUrl({ id: s.childId, photoUrl: s.photoUrl })} alt={s.name} style={{ width: 52, height: 52, borderRadius: 16, objectFit: "cover", flexShrink: 0 }} />
+                    ) : (
+                      <div style={{ width: 52, height: 52, borderRadius: 16, background: "rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 900, color: "#ffffff", flexShrink: 0 }}>
+                        {s.name[0]}
                       </div>
-                      <span style={{ fontSize: 11, padding: "4px 10px", borderRadius: 9999, fontWeight: 800, flexShrink: 0, background: s.bg, color: s.color }}>
-                        {t(s.labelKey)}
-                      </span>
+                    )}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ margin: 0, fontWeight: 800, color: "#ffffff", fontSize: 15 }}>{s.name}</p>
+                      <p style={{ margin: "2px 0 6px", fontSize: 12, color: "rgba(255,255,255,0.6)" }}>
+                        {t("yearsOld", { n: s.age })} · {s.booksCount} {s.booksCount === 1 ? t("bookOne") : t("bookMany")} · 🔥 {s.streak}
+                      </p>
+                      <div style={{ height: 5, borderRadius: 9999, background: "rgba(255,255,255,0.15)", overflow: "hidden", marginBottom: 4 }}>
+                        <div style={{ height: "100%", width: `${progress}%`, background: "rgba(255,255,255,0.85)", borderRadius: 9999 }} />
+                      </div>
+                      <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.5)" }}>
+                        {s.completedParts}/{s.totalParts} {t("partsWord")}
+                        {s.lastActivityAt ? ` · ${t("lastActivity")} ${formatShortDate(s.lastActivityAt)}` : ""}
+                      </p>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 12 }}>
-                      <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.55)" }}>
-                        <Users2 size={12} /> {c.membersCount}
-                      </span>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.55)" }}><CoinIcon size={12} /> {c.coinsReward}</span>
-                      <span style={{ fontSize: 14, fontWeight: 900, color: "#4776e6", background: "rgba(255,255,255,0.85)", borderRadius: 9999, padding: "3px 10px", marginLeft: "auto" }}>
-                        {c.price.toLocaleString("ru-RU")} ₸
-                      </span>
-                    </div>
-                  </div>
+                    <ChevronRight size={18} color="rgba(255,255,255,0.4)" style={{ flexShrink: 0 }} />
+                  </button>
                 );
               })}
             </div>
