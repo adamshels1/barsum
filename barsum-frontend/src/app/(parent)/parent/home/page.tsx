@@ -52,6 +52,8 @@ const dict: Dict = {
     ownBookMinutesRead: " · прочитано ~{n} мин",
     ownBookReasonTooShort: "Запись слишком короткая — подтвердите, что ребёнок читал",
     ownBookReasonNoSpeech: "Не распознали речь — послушайте и решите сами",
+    expertConfirmDesc: "«{book}» · часть {part} · оценка {score}/10",
+    expertReasonReview: "Чтение на проверке эксперта — можете засчитать сами",
     ownBookApprove: "✅ Засчитать",
     ownBookReject: "Отклонить",
     ownBookApproved: "Чтение засчитано!",
@@ -107,6 +109,8 @@ const dict: Dict = {
     ownBookMinutesRead: " · ~{n} мин оқыды",
     ownBookReasonTooShort: "Жазба тым қысқа — баланың оқығанын растаңыз",
     ownBookReasonNoSpeech: "Сөзді танымадық — тыңдап, өзіңіз шешіңіз",
+    expertConfirmDesc: "«{book}» · {part}-бөлім · баға {score}/10",
+    expertReasonReview: "Оқу сарапшы тексеруінде — өзіңіз де есептей аласыз",
     ownBookApprove: "✅ Есептеу",
     ownBookReject: "Бас тарту",
     ownBookApproved: "Оқу есептелді!",
@@ -655,11 +659,17 @@ function OwnBookConfirmCard({ session, childName }: { session: any; childName?: 
     onError: () => toast.error(t("ownBookConfirmError")),
   });
 
+  const isOwnBook = session.enrollment?.challenge?.category === "own_book";
   const book = session.enrollment?.challenge?.bookTitle || session.enrollment?.challenge?.title || t("ownBookTitle");
   const minutesSec = session.audioDurationSec ?? 0;
   const minutes = minutesSec > 0 ? Math.max(1, Math.round(minutesSec / 60)) : 0;
   const minutesLabel = minutes > 0 ? t("ownBookMinutesRead", { n: minutes }) : "";
-  const reason = session.reviewReason === "no_speech" ? t("ownBookReasonNoSpeech") : t("ownBookReasonTooShort");
+  const desc = isOwnBook
+    ? t("ownBookConfirmDesc", { book, part: session.partNumber, minutes: minutesLabel })
+    : t("expertConfirmDesc", { book, part: session.partNumber, score: session.aiScore ?? "—" });
+  const reason = isOwnBook
+    ? (session.reviewReason === "no_speech" ? t("ownBookReasonNoSpeech") : t("ownBookReasonTooShort"))
+    : t("expertReasonReview");
 
   return (
     <div className="glass-card" style={{ padding: "14px 16px", border: "1px solid rgba(255,210,0,0.4)" }}>
@@ -667,7 +677,7 @@ function OwnBookConfirmCard({ session, childName }: { session: any; childName?: 
         <p style={{ margin: 0, fontWeight: 900, fontSize: 15, color: "#ffffff" }}>{childName || "—"}</p>
         <span style={{ fontSize: 12, color: "rgba(255,255,255,0.6)" }}>📖</span>
       </div>
-      <p style={{ margin: "0 0 4px", fontSize: 13, color: "rgba(255,255,255,0.85)" }}>{t("ownBookConfirmDesc", { book, part: session.partNumber, minutes: minutesLabel })}</p>
+      <p style={{ margin: "0 0 4px", fontSize: 13, color: "rgba(255,255,255,0.85)" }}>{desc}</p>
       <p style={{ margin: "0 0 12px", fontSize: 12.5, color: "rgba(255,255,255,0.6)", lineHeight: 1.4 }}>{reason}</p>
       <div style={{ display: "flex", gap: 8 }}>
         <button

@@ -36,7 +36,7 @@ export class SessionsController {
 
   @Get('parent-pending')
   parentPending(@Request() req: any) {
-    return this.sessionsService.findPendingOwnBookForParent(req.user.sub);
+    return this.sessionsService.findPendingForParent(req.user.sub);
   }
 
   @Get(':id/text')
@@ -99,7 +99,7 @@ export class SessionsController {
     @Param('id') id: string,
     @Body('approve') approve: boolean,
   ) {
-    return this.sessionsService.parentConfirmOwnBook(id, req.user.sub, approve !== false);
+    return this.sessionsService.parentConfirmSession(id, req.user.sub, approve !== false);
   }
 
   @Post(':id/answer')

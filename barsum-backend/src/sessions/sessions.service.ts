@@ -157,14 +157,14 @@ export class SessionsService {
   // Спорные сессии «своей книжки», ожидающие подтверждения родителя.
   // Это родительский аналог очереди эксперта — фронт родителя опрашивает его,
   // чтобы показать блок «нужно подтвердить чтение».
-  async findPendingOwnBookForParent(parentId: string): Promise<Session[]> {
+  async findPendingForParent(parentId: string): Promise<Session[]> {
+    // Settled-but-unconfirmed сессии ребёнка: и «своя книжка» (спорные записи),
+    // и экспертские книги, ожидающие проверки — родитель может подтвердить оба.
     return this.sessionRepo.find({
       where: {
         status: SessionStatus.PENDING,
-        enrollment: {
-          parentId,
-          challenge: { category: ChallengeCategory.OWN_BOOK },
-        },
+        phase: SessionPhase.DONE,
+        enrollment: { parentId },
       },
       relations: ['enrollment', 'enrollment.challenge'],
       order: { createdAt: 'DESC' },
@@ -323,8 +323,9 @@ export class SessionsService {
     return saved;
   }
 
-  // Родитель подтверждает или отклоняет спорную сессию своей книги.
-  async parentConfirmOwnBook(
+  // Родитель подтверждает/отклоняет спорную сессию. Работает и для «своей книжки»,
+  // и для экспертских книг (родитель может подтвердить вместо эксперта).
+  async parentConfirmSession(
     sessionId: string,
     parentId: string,
     approve: boolean,
@@ -338,35 +339,67 @@ export class SessionsService {
     if (!enrollment || enrollment.parentId !== parentId) {
       throw new ForbiddenException('Not your session');
     }
-    if (enrollment.challenge?.category !== ChallengeCategory.OWN_BOOK) {
-      throw new BadRequestException('Not an own-book session');
+    if (session.status === SessionStatus.COMPLETED || session.status === SessionStatus.FAILED) {
+      return session;
     }
-    if (session.status === SessionStatus.COMPLETED) return session;
 
-    if (!approve) {
-      session.status = SessionStatus.FAILED;
+    const isOwnBook = enrollment.challenge?.category === ChallengeCategory.OWN_BOOK;
+
+    if (isOwnBook) {
+      if (!approve) {
+        session.status = SessionStatus.FAILED;
+        return this.sessionRepo.save(session);
+      }
+      const cappedSec = Math.min(session.audioDurationSec ?? 0, OWN_BOOK_SESSION_MAX_SEC);
+      const minutes = Math.max(1, Math.round(cappedSec / 60));
+      const coins = (enrollment.coinsPerMinute || 0) * minutes;
+      session.status = SessionStatus.COMPLETED;
+      session.phase = SessionPhase.DONE;
+      session.aiFeedback = `Подтверждено родителем: ${minutes} мин — ${coins} монет.`;
+      if (coins > 0) {
+        await this.coinsService.transfer({
+          fromId: 'system',
+          fromType: 'system',
+          toId: session.childId,
+          toType: 'child',
+          amount: coins,
+          type: CoinTransactionType.EARN,
+          referenceId: `session-earn-${session.id}`,
+        });
+        await this.childrenService.incrementStreak(session.childId);
+      }
       return this.sessionRepo.save(session);
     }
 
-    const cappedSec = Math.min(session.audioDurationSec ?? 0, OWN_BOOK_SESSION_MAX_SEC);
-    const minutes = Math.max(1, Math.round(cappedSec / 60));
-    const coins = (enrollment.coinsPerMinute || 0) * minutes;
-    session.status = SessionStatus.COMPLETED;
-    session.phase = SessionPhase.DONE;
-    session.aiFeedback = `Подтверждено родителем: ${minutes} мин — ${coins} монет.`;
-    if (coins > 0) {
-      await this.coinsService.transfer({
-        fromId: 'system',
-        fromType: 'system',
-        toId: session.childId,
-        toType: 'child',
-        amount: coins,
-        type: CoinTransactionType.EARN,
-        referenceId: `session-earn-${session.id}`,
-      });
+    // Экспертская книга: родитель подтверждает вместо эксперта.
+    if (!approve) {
+      session.status = SessionStatus.FAILED;
+      session.expertReport = (session.expertReport || 'Отклонено родителем.').trim();
+      await this.sessionRepo.save(session);
+    } else {
+      session.status = SessionStatus.COMPLETED;
+      session.phase = SessionPhase.DONE;
+      session.expertReport = (session.expertReport || 'Подтверждено родителем.').trim();
+      await this.sessionRepo.save(session);
+      if (enrollment.coinsPerPart > 0) {
+        await this.coinsService.transfer({
+          fromId: 'system',
+          fromType: 'system',
+          toId: session.childId,
+          toType: 'child',
+          amount: enrollment.coinsPerPart,
+          type: CoinTransactionType.EARN,
+          referenceId: `parent-approve-${session.id}`,
+        });
+      }
       await this.childrenService.incrementStreak(session.childId);
     }
-    return this.sessionRepo.save(session);
+    // Закрываем очередь эксперта по этой сессии, чтобы не подтверждали дважды.
+    await this.reviewQueueRepo.update(
+      { sessionId: session.id, resolved: false },
+      { resolved: true, resolvedAt: new Date() },
+    );
+    return session;
   }
 
   async transcribe(id: string, childId: string): Promise<Session> {
