@@ -1,5 +1,5 @@
 // Barsum service worker — минимальный: даёт установимость (PWA) + базовый офлайн.
-const CACHE = "barsum-v1";
+const CACHE = "barsum-v2";
 
 self.addEventListener("install", () => {
   self.skipWaiting();
@@ -28,7 +28,7 @@ self.addEventListener("push", (event) => {
     self.registration.showNotification(data.title, {
       body: data.body,
       icon: "/icons/icon-192.png",
-      badge: "/icons/icon-192.png",
+      badge: "/icons/badge-96.png",
       tag: data.tag,
       data: { url: data.url || "/" },
       vibrate: [80, 40, 80],
