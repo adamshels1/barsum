@@ -235,6 +235,19 @@ export class SessionsService {
     session.lastError = null;
     await this.sessionRepo.save(session);
 
+    const rvChild = await this.childrenService.findById(session.childId).catch(() => null);
+    const rvBook = enrollment?.challenge?.bookTitle;
+
+    // Пуш родителю: ребёнок прочитал часть (даже если чтение ушло на проверку эксперта).
+    if (enrollment?.parentId) {
+      void this.push.sendToUser(enrollment.parentId, {
+        title: '📖 Ребёнок читает!',
+        body: `${rvChild?.name ?? 'Ребёнок'} прочитал(а) часть ${session.partNumber}${rvBook ? ` «${rvBook}»` : ''} — на проверке у эксперта`,
+        url: '/parent/cabinet',
+        tag: `read-${session.childId}`,
+      });
+    }
+
     const authorId = enrollment?.challenge?.authorId;
     if (!authorId) return; // нет эксперта у челленджа — оставляем в pending
     const existing = await this.reviewQueueRepo.findOne({ where: { sessionId: session.id } });
@@ -245,8 +258,6 @@ export class SessionsService {
     }
 
     // Пуш эксперту: ребёнок закончил чтение — есть что проверить.
-    const rvChild = await this.childrenService.findById(session.childId).catch(() => null);
-    const rvBook = enrollment?.challenge?.bookTitle;
     void this.push.sendToUser(authorId, {
       title: '🎧 Новая работа на проверке',
       body: `${rvChild?.name ?? 'Ребёнок'} прочитал(а) часть ${session.partNumber}${rvBook ? ` «${rvBook}»` : ''}`,
