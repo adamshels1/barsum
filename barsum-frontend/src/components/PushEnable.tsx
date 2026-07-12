@@ -7,7 +7,11 @@ import { pushApi } from "@/lib/api/push";
 
 const DISMISS_KEY = "barsum-push-dismissed";
 
-export function PushEnable() {
+export function PushEnable({
+  subtitle = "Узнавайте сразу, когда ребёнок просит награду или заканчивает чтение",
+}: {
+  subtitle?: string;
+}) {
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -78,7 +82,7 @@ export function PushEnable() {
           Включить уведомления
         </p>
         <p style={{ margin: "2px 0 0", fontSize: 12, color: "rgba(255,255,255,0.75)", lineHeight: 1.35 }}>
-          Узнавайте сразу, когда ребёнок просит награду или заканчивает чтение
+          {subtitle}
         </p>
       </div>
       <button

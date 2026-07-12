@@ -17,6 +17,7 @@ import { FilesService, BUCKET_AUDIO, parseStoredFileUrl, audioMimeFromUrl } from
 import { SessionPhase, SessionStatus, EnrollmentStatus, CoinTransactionType, ChallengeCategory } from '../common/enums';
 import { assessReading, readingAdvice } from './reading-assessment';
 import { TelegramService, esc } from '../notifications/telegram.service';
+import { PushService } from '../push/push.service';
 
 // Порог автозачёта (0–10). Ниже — уходит эксперту на ручную проверку.
 const AUTO_CREDIT_SCORE = 7;
@@ -45,6 +46,7 @@ export class SessionsService {
     private aiService: AiService,
     private filesService: FilesService,
     private telegram: TelegramService,
+    private push: PushService,
   ) {}
 
   async create(enrollmentId: string, childId: string): Promise<Session> {
@@ -241,6 +243,16 @@ export class SessionsService {
         this.reviewQueueRepo.create({ sessionId: session.id, expertId: authorId, resolved: false }),
       );
     }
+
+    // Пуш эксперту: ребёнок закончил чтение — есть что проверить.
+    const rvChild = await this.childrenService.findById(session.childId).catch(() => null);
+    const rvBook = enrollment?.challenge?.bookTitle;
+    void this.push.sendToUser(authorId, {
+      title: '🎧 Новая работа на проверке',
+      body: `${rvChild?.name ?? 'Ребёнок'} прочитал(а) часть ${session.partNumber}${rvBook ? ` «${rvBook}»` : ''}`,
+      url: '/expert/home',
+      tag: 'review',
+    });
   }
 
   // «Своя книжка»: спорную сессию (нет речи / слишком коротко) не теряем и не гоняем
@@ -496,6 +508,16 @@ export class SessionsService {
         `📖 <b>Чтение засчитано</b>\n🧒 ${esc(child?.name ?? 'Ребёнок')} (${esc(childId)}) — часть ${session.partNumber}, оценка ${session.aiScore}/10` +
           (enrollment?.coinsPerPart ? ` (+${enrollment.coinsPerPart} монет)` : ''),
       );
+      // Пуш родителю: ребёнок прочитал часть.
+      if (enrollment?.parentId) {
+        void this.push.sendToUser(enrollment.parentId, {
+          title: '📖 Ребёнок читает!',
+          body: `${child?.name ?? 'Ребёнок'} прочитал(а) часть ${session.partNumber} — оценка ${session.aiScore}/10` +
+            (enrollment?.coinsPerPart ? ` (+${enrollment.coinsPerPart} монет)` : ''),
+          url: '/parent/cabinet',
+          tag: `read-${childId}`,
+        });
+      }
       return savedSession;
     }
 
@@ -831,6 +853,17 @@ export class SessionsService {
         });
       }
       await this.childrenService.incrementStreak(item.session.childId);
+
+      // Пуш родителю: эксперт засчитал чтение ребёнка.
+      if (enrollment.parentId) {
+        const apChild = await this.childrenService.findById(item.session.childId).catch(() => null);
+        void this.push.sendToUser(enrollment.parentId, {
+          title: '✅ Чтение засчитано экспертом',
+          body: `${apChild?.name ?? 'Ребёнок'} — часть ${item.session.partNumber} проверена экспертом`,
+          url: '/parent/cabinet',
+          tag: `read-${item.session.childId}`,
+        });
+      }
     }
 
     item.resolved = true;

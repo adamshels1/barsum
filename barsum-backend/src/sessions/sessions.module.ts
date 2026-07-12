@@ -12,6 +12,7 @@ import { CoinsModule } from '../coins/coins.module';
 import { ChildrenModule } from '../children/children.module';
 import { AiModule } from '../ai/ai.module';
 import { FilesModule } from '../files/files.module';
+import { PushModule } from '../push/push.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { FilesModule } from '../files/files.module';
     ChildrenModule,
     AiModule,
     FilesModule,
+    PushModule,
   ],
   controllers: [SessionsController, PublicSessionsController, EnrollmentsController, ReviewQueueController],
   providers: [SessionsService],
