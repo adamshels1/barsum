@@ -8,6 +8,7 @@ import { CoinsService } from '../coins/coins.service';
 import { ChildrenService } from '../children/children.service';
 import { AiService } from '../ai/ai.service';
 import { FilesService } from '../files/files.service';
+import { TelegramService } from '../notifications/telegram.service';
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { SessionPhase, SessionStatus, EnrollmentStatus } from '../common/enums';
 
@@ -31,7 +32,10 @@ const mockReviewRepo = {
   save: jest.fn(),
 };
 const mockCoins = { transfer: jest.fn().mockResolvedValue({ id: 'tx1' }) };
-const mockChildren = { incrementStreak: jest.fn().mockResolvedValue(undefined) };
+const mockChildren = {
+  incrementStreak: jest.fn().mockResolvedValue(undefined),
+  findById: jest.fn().mockResolvedValue({ id: 'c1', name: 'Test' }),
+};
 const mockAi = {
   transcribeAudio: jest.fn().mockResolvedValue({ text: 'Test text', confidence: 0.9 }),
   analyzeRetelling: jest.fn().mockResolvedValue({ score: 85, feedback: 'Good', questions: ['Q1?', 'Q2?', 'Q3?'] }),
@@ -40,6 +44,7 @@ const mockFiles = {
   uploadAudio: jest.fn().mockResolvedValue('http://audio-url/session1/test.webm'),
   getBuffer: jest.fn().mockResolvedValue(Buffer.from('audio')),
 };
+const mockTelegram = { send: jest.fn() };
 
 describe('SessionsService', () => {
   let service: SessionsService;
@@ -55,6 +60,7 @@ describe('SessionsService', () => {
         { provide: ChildrenService, useValue: mockChildren },
         { provide: AiService, useValue: mockAi },
         { provide: FilesService, useValue: mockFiles },
+        { provide: TelegramService, useValue: mockTelegram },
       ],
     }).compile();
     service = module.get<SessionsService>(SessionsService);

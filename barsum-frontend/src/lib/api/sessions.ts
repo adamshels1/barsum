@@ -28,6 +28,16 @@ export const sessionsApi = {
       })
       .then((r) => r.data);
   },
+  uploadRetell: (id: string, file: File, durationSec?: number) => {
+    const form = new FormData();
+    form.append("audio", file);
+    if (durationSec && durationSec > 0) form.append("durationSec", String(durationSec));
+    return apiClient
+      .post(`/sessions/${id}/upload-retell-audio`, form, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
+      .then((r) => r.data);
+  },
   transcribe: (id: string) =>
     apiClient.post(`/sessions/${id}/transcribe`).then((r) => r.data),
   analyze: (id: string) =>

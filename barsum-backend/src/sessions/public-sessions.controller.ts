@@ -20,4 +20,14 @@ export class PublicSessionsController {
     res.setHeader('Accept-Ranges', 'none');
     res.end(buffer);
   }
+
+  @Get(':id/retell-audio')
+  async streamRetellAudio(@Param('id') id: string, @Res() res: Response): Promise<void> {
+    const { buffer, contentType } = await this.sessionsService.getRetellAudio(id);
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Length', buffer.length);
+    res.setHeader('Cache-Control', 'private, max-age=3600');
+    res.setHeader('Accept-Ranges', 'none');
+    res.end(buffer);
+  }
 }

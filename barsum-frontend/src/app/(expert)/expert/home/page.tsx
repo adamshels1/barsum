@@ -31,6 +31,8 @@ const dict: Dict = {
     bookFallback: "Книга",
     part: "Часть",
     readingRecord: "Запись чтения",
+    retellRecord: "Пересказ ребёнка",
+    retellScoreLabel: "Оценка пересказа: {score}/10",
     parentReport: "Отчёт родителю",
     reportPlaceholder: "Короткий отчёт для родителя...",
     approve: "Засчитать",
@@ -63,6 +65,8 @@ const dict: Dict = {
     bookFallback: "Кітап",
     part: "Бөлім",
     readingRecord: "Оқу жазбасы",
+    retellRecord: "Баланың пересказы",
+    retellScoreLabel: "Пересказ бағасы: {score}/10",
     parentReport: "Ата-анаға есеп",
     reportPlaceholder: "Ата-анаға қысқаша есеп...",
     approve: "Есептеу",
@@ -139,6 +143,21 @@ function ReviewCard({ item, busy, onApprove, onReject }: {
           <p style={{ margin: "0 0 5px", fontSize: 10.5, fontWeight: 800, color: "rgba(255,255,255,0.45)", textTransform: "uppercase" }}>{t("readingRecord")}</p>
           {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
           <audio controls src={`${API_BASE}/sessions/${s.id}/audio`} style={{ width: "100%", height: 34 }} />
+        </div>
+      )}
+
+      {/* Пересказ ребёнка — аудио + AI-оценка (если книга требует пересказ) */}
+      {s?.retellAudioUrl && (
+        <div style={{ marginBottom: 10 }}>
+          <p style={{ margin: "0 0 5px", fontSize: 10.5, fontWeight: 800, color: "rgba(180,160,255,0.8)", textTransform: "uppercase" }}>
+            {t("retellRecord")}
+            {s?.retellScore != null ? ` · ${t("retellScoreLabel", { score: Math.round(Number(s.retellScore)) })}` : ""}
+          </p>
+          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+          <audio controls src={`${API_BASE}/sessions/${s.id}/retell-audio`} style={{ width: "100%", height: 34 }} />
+          {s?.retellFeedback && (
+            <p style={{ margin: "6px 0 0", fontSize: 12, color: "rgba(255,255,255,0.65)", lineHeight: 1.4 }}>{s.retellFeedback}</p>
+          )}
         </div>
       )}
 

@@ -39,6 +39,20 @@ const dict: Dict = {
     ownBookRead: "Читай свою книгу вслух",
     ownBookHint: "Таймер идёт — читай до 10 минут. Чем дольше читаешь, тем больше монет!",
     perMin: "/мин",
+    retellHeader: "Пересказ",
+    retellTitle: "Расскажи своими словами!",
+    retellSubtitle: "Закрой книгу и расскажи, о чём ты только что прочитал 🎤",
+    retellPromptsTitle: "Можешь ответить на это:",
+    retellPrompt1: "Кто главный герой?",
+    retellPrompt2: "Что случилось?",
+    retellPrompt3: "Чем всё закончилось?",
+    retellStart: "Начать рассказ",
+    retellNow: "Рассказываю...",
+    retellStop: "Закончил рассказ",
+    retellSend: "Отправить пересказ",
+    retellAgain: "Рассказать заново",
+    retellListening: "Слушаем твой пересказ...",
+    retellScoreLabel: "Пересказ: {score}/10",
   },
   kk: {
     recordFail: "Жазу қатесі. Қайта байқап көр.",
@@ -70,6 +84,20 @@ const dict: Dict = {
     ownBookRead: "Өз кітабыңды дауыстап оқы",
     ownBookHint: "Таймер жүріп жатыр — 10 минутқа дейін оқы. Неғұрлым ұзақ оқысаң, соғұрлым көп монета!",
     perMin: "/мин",
+    retellHeader: "Пересказ",
+    retellTitle: "Өз сөзіңмен айтып бер!",
+    retellSubtitle: "Кітапты жауып, жаңа не оқығаныңды айтып бер 🎤",
+    retellPromptsTitle: "Мынаған жауап бере аласың:",
+    retellPrompt1: "Басты кейіпкер кім?",
+    retellPrompt2: "Не болды?",
+    retellPrompt3: "Немен аяқталды?",
+    retellStart: "Айтуды бастау",
+    retellNow: "Айтып жатырмын...",
+    retellStop: "Айтып болдым",
+    retellSend: "Пересказды жіберу",
+    retellAgain: "Қайта айту",
+    retellListening: "Пересказыңды тыңдап жатырмыз...",
+    retellScoreLabel: "Пересказ: {score}/10",
   },
 };
 
@@ -78,7 +106,7 @@ interface Session {
   enrollmentId: string;
   childId: string;
   partNumber: number;
-  phase: "read" | "recording" | "transcribing" | "analyzing" | "done";
+  phase: "read" | "recording" | "transcribing" | "analyzing" | "retell" | "retell_transcribing" | "retell_analyzing" | "done";
   audioUrl?: string;
   transcription?: string;
   aiScore?: number;
@@ -90,6 +118,9 @@ interface Session {
   createdAt: string;
   lastError?: string | null;
   aiFeedback?: string | null;
+  retellRequired?: boolean;
+  retellScore?: number | null;
+  retellFeedback?: string | null;
 }
 
 function PulsingDots() {
@@ -130,6 +161,81 @@ function toReadingParagraphs(raw: string): { text: string; isDialogue: boolean }
 }
 
 const MAX_RECORDING_SECONDS = 600; // 10 минут
+const MAX_RETELL_SECONDS = 120; // пересказ короткий — до 2 минут
+
+function fmtTime(secs: number) {
+  const m = Math.floor(secs / 60).toString().padStart(2, "0");
+  const s = (secs % 60).toString().padStart(2, "0");
+  return `${m}:${s}`;
+}
+
+// Голосовая запись через MediaRecorder — общий хук (для пересказа).
+function useAudioRecorder(maxSeconds: number, msgs: { recordFail: string; noMic: string }) {
+  const [stage, setStage] = useState<"before" | "recording" | "recorded">("before");
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const mimeRef = useRef<string>("audio/webm");
+
+  const pickMimeType = () => {
+    const candidates = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/mpeg"];
+    if (typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported) {
+      for (const c of candidates) if (MediaRecorder.isTypeSupported(c)) return c;
+    }
+    return "";
+  };
+  const extForMime = (mime: string) => {
+    if (mime.includes("mp4") || mime.includes("mpeg") || mime.includes("m4a")) return "mp4";
+    if (mime.includes("ogg")) return "ogg";
+    return "webm";
+  };
+
+  const stop = () => {
+    mediaRecorderRef.current?.stop();
+    if (timerRef.current) clearInterval(timerRef.current);
+  };
+
+  const start = async () => {
+    try {
+      setError(null);
+      setRecordingTime(0);
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const preferred = pickMimeType();
+      const mr = preferred ? new MediaRecorder(stream, { mimeType: preferred }) : new MediaRecorder(stream);
+      mimeRef.current = (mr.mimeType || preferred || "audio/webm").split(";")[0];
+      chunksRef.current = [];
+      mr.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      mr.onerror = () => { setError(msgs.recordFail); stop(); };
+      mr.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: mimeRef.current });
+        setAudioBlob(blob);
+        setStage("recorded");
+        stream.getTracks().forEach((tr) => tr.stop());
+      };
+      stream.getAudioTracks().forEach((tr) => {
+        tr.onended = () => { if (mr.state === "recording") stop(); };
+      });
+      mr.start(1000);
+      mediaRecorderRef.current = mr;
+      setStage("recording");
+      timerRef.current = setInterval(() => {
+        setRecordingTime((v) => {
+          if (v >= maxSeconds - 1) { stop(); return maxSeconds; }
+          return v + 1;
+        });
+      }, 1000);
+    } catch {
+      setError(msgs.noMic);
+    }
+  };
+
+  const reset = () => { setAudioBlob(null); setStage("before"); setRecordingTime(0); };
+
+  return { stage, recordingTime, audioBlob, error, mimeRef, extForMime, start, stop, reset };
+}
 
 // ─── Phase: read + record together ────────────────────────────────────────────
 function PhaseRead({
@@ -431,6 +537,109 @@ function PhaseRead({
   );
 }
 
+// ─── Phase: retell (расскажи своими словами) ──────────────────────────────────
+function PhaseRetell({ session, onUploaded }: { session: Session; onUploaded: () => void }) {
+  const t = useT(dict);
+  const rec = useAudioRecorder(MAX_RETELL_SECONDS, { recordFail: t("recordFail"), noMic: t("noMic") });
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const handleUpload = async () => {
+    if (!rec.audioBlob) return;
+    setUploading(true);
+    setUploadError(null);
+    try {
+      const type = rec.mimeRef.current || "audio/webm";
+      const file = new File([rec.audioBlob], `retell.${rec.extForMime(type)}`, { type });
+      await sessionsApi.uploadRetell(session.id, file, rec.recordingTime);
+      onUploaded();
+    } catch {
+      setUploadError(t("uploadFail"));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {/* Intro / prompts */}
+      <div className="glass" style={{ padding: 22, borderRadius: 20, textAlign: "center" }}>
+        <p style={{ fontSize: 44, margin: "0 0 8px" }}>🗣️</p>
+        <p style={{ fontSize: 20, fontWeight: 900, color: "#ffffff", margin: "0 0 6px" }}>{t("retellTitle")}</p>
+        <p style={{ fontSize: 14, color: "rgba(255,255,255,0.75)", margin: 0, lineHeight: 1.5 }}>{t("retellSubtitle")}</p>
+      </div>
+
+      {/* Recorder */}
+      {rec.stage === "before" && (
+        <button
+          onClick={rec.start}
+          style={{ width: "100%", padding: "18px 0", borderRadius: 9999, background: "rgba(255,255,255,0.9)", color: "#4776e6", fontWeight: 900, fontSize: 16, border: "none", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}
+        >
+          <Mic size={20} strokeWidth={2.5} />
+          {t("retellStart")}
+        </button>
+      )}
+
+      {rec.stage === "recording" && (
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+          <div className="glass" style={{ width: "100%", padding: 16, borderRadius: 20, display: "flex", alignItems: "center", justifyContent: "center", gap: 12, background: "rgba(220,0,0,0.2)", border: "1px solid rgba(255,100,100,0.35)" }}>
+            <span style={{ fontSize: 22, fontWeight: 900, fontVariantNumeric: "tabular-nums", color: "#ffaaaa" }}>● {fmtTime(rec.recordingTime)}</span>
+            <span style={{ fontSize: 14, color: "#ffbbbb" }}>{t("retellNow")}</span>
+          </div>
+          <button
+            onClick={rec.stop}
+            style={{ width: "100%", padding: "18px 0", borderRadius: 9999, background: "rgba(220,0,0,0.3)", border: "1px solid rgba(255,100,100,0.4)", color: "#ffffff", fontWeight: 900, fontSize: 16, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}
+          >
+            <MicOff size={20} strokeWidth={2.5} />
+            {t("retellStop")}
+          </button>
+        </div>
+      )}
+
+      {rec.stage === "recorded" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div className="glass" style={{ padding: 16, borderRadius: 20, textAlign: "center", background: "rgba(0,200,100,0.2)", border: "1px solid rgba(100,255,150,0.3)" }}>
+            <p style={{ fontSize: 14, fontWeight: 700, color: "#aaffcc", margin: 0 }}>{t("recordReady", { time: fmtTime(rec.recordingTime) })}</p>
+          </div>
+          <button
+            onClick={handleUpload}
+            disabled={uploading}
+            style={{ width: "100%", padding: "18px 0", borderRadius: 9999, background: uploading ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.9)", color: "#4776e6", fontWeight: 900, fontSize: 16, border: "none", cursor: uploading ? "not-allowed" : "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}
+          >
+            <Send size={18} strokeWidth={2.5} />
+            {uploading ? t("sending") : t("retellSend")}
+          </button>
+          <button
+            onClick={rec.reset}
+            className="glass-chip"
+            style={{ width: "100%", padding: "14px 0", border: "1px solid rgba(255,255,255,0.25)", cursor: "pointer", fontFamily: "inherit", color: "#ffffff", fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+          >
+            <RotateCcw size={15} strokeWidth={2.5} />
+            {t("retellAgain")}
+          </button>
+        </div>
+      )}
+
+      {(rec.error || uploadError) && (
+        <p style={{ fontSize: 14, fontWeight: 700, textAlign: "center", color: "#ffd6d6", margin: 0 }}>{rec.error || uploadError}</p>
+      )}
+
+      {/* Guiding prompts */}
+      <div className="glass" style={{ padding: 20, borderRadius: 20 }}>
+        <p style={{ fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 12px" }}>{t("retellPromptsTitle")}</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {[t("retellPrompt1"), t("retellPrompt2"), t("retellPrompt3")].map((q, i) => (
+            <p key={i} style={{ fontSize: 15, color: "rgba(255,255,255,0.9)", margin: 0, display: "flex", gap: 8 }}>
+              <span>{["🦸", "❓", "🏁"][i]}</span>
+              <span>{q}</span>
+            </p>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Phase: processing (transcribing / analyzing) ─────────────────────────────
 function PhaseProcessing() {
   const t = useT(dict);
@@ -527,6 +736,14 @@ function PhaseDone({ session, coinsPerPart, ownBook }: { session: Session; coins
               {t("streakGoes")}
             </p>
           </div>
+          {session.retellScore != null && (
+            <div className="glass" style={{ width: "100%", padding: 16, borderRadius: 16, background: "rgba(120,97,255,0.18)", border: "1px solid rgba(150,130,255,0.3)" }}>
+              <p style={{ fontSize: 14, fontWeight: 900, color: "#ffffff", margin: 0 }}>🗣️ {t("retellScoreLabel", { score: Math.round(Number(session.retellScore)) })}</p>
+              {session.retellFeedback && (
+                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", margin: "6px 0 0", lineHeight: 1.4 }}>{session.retellFeedback}</p>
+              )}
+            </div>
+          )}
         </>
       ) : (
         <>
@@ -573,7 +790,10 @@ export default function SessionPage() {
   const t = useT(dict);
 
   const isPolling = (data: Session | undefined) =>
-    data?.phase === "transcribing" || data?.phase === "analyzing";
+    data?.phase === "transcribing" ||
+    data?.phase === "analyzing" ||
+    data?.phase === "retell_transcribing" ||
+    data?.phase === "retell_analyzing";
 
   const { data: session, isLoading } = useQuery<Session>({
     queryKey: ["session", id],
@@ -637,7 +857,9 @@ export default function SessionPage() {
             {ownBook ? t("ownBook") : t("part", { n: session.partNumber })}
           </p>
           <p style={{ fontWeight: 900, fontSize: 16, color: "#ffffff", margin: "2px 0 0" }}>
-            {t("readingAloud")}
+            {session.phase === "retell" || session.phase === "retell_transcribing" || session.phase === "retell_analyzing"
+              ? t("retellHeader")
+              : t("readingAloud")}
           </p>
         </div>
         {ownBook && (session.coinsPerMinute ?? 0) > 0 ? (
@@ -662,9 +884,11 @@ export default function SessionPage() {
           onUploaded={refetch}
         />
       )}
-      {(session.phase === "transcribing" || session.phase === "analyzing") && (
-        <PhaseProcessing />
-      )}
+      {(session.phase === "transcribing" ||
+        session.phase === "analyzing" ||
+        session.phase === "retell_transcribing" ||
+        session.phase === "retell_analyzing") && <PhaseProcessing />}
+      {session.phase === "retell" && <PhaseRetell session={session} onUploaded={refetch} />}
       {session.phase === "done" && <PhaseDone session={session} coinsPerPart={session.coinsPerPart ?? 0} ownBook={ownBook} />}
     </main>
   );

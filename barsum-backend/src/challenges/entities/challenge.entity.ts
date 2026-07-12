@@ -59,6 +59,10 @@ export class Challenge {
   @Column({ default: 0 })
   coinsReward: number;
 
+  // Требовать пересказ после каждой прочитанной части (настраивает эксперт).
+  @Column({ default: false })
+  retellRequired: boolean;
+
   @Column({ type: 'enum', enum: ChallengeStatus, default: ChallengeStatus.DRAFT })
   status: ChallengeStatus;
 

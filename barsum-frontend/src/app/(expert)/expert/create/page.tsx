@@ -42,6 +42,8 @@ const dict: Dict = {
     pagesPerPartAuto: "≈ {n} стр/часть",
     customPlaceholder: "Своё",
     autoFormula: "Авто = {total} ÷ {parts} = {ppp}. Можно задать своё значение справа.",
+    retellToggle: "Требовать пересказ",
+    retellHint: "После каждой части ребёнок расскажет своими словами, что прочитал. AI оценит пересказ, а ребёнок получит бонус-монеты.",
     preview: "👀 Предпросмотр",
     previewPrefix: "Книга разбита на ",
     previewParts: "{n} частей",
@@ -110,6 +112,8 @@ const dict: Dict = {
     pagesPerPartAuto: "≈ {n} бет/бөлім",
     customPlaceholder: "Өз",
     autoFormula: "Авто = {total} ÷ {parts} = {ppp}. Оң жақта өз мәніңізді қоюға болады.",
+    retellToggle: "Пересказды талап ету",
+    retellHint: "Әр бөлімнен кейін бала оқығанын өз сөзімен айтады. AI пересказды бағалайды, ал бала бонус-монета алады.",
     preview: "👀 Алдын ала қарау",
     previewPrefix: "Кітап ",
     previewParts: "{n} бөлімге",
@@ -172,6 +176,7 @@ interface FormData {
   pagesPerPart: number;
   coinsReward: number;
   price: number;
+  retellRequired: boolean;
 }
 
 const DEFAULT: FormData = {
@@ -187,6 +192,7 @@ const DEFAULT: FormData = {
   pagesPerPart: 10,
   coinsReward: 500,
   price: 2990,
+  retellRequired: true,
 };
 
 const INACTIVE_CATEGORIES = ["catMusic", "catDrawing", "catMath"];
@@ -657,6 +663,44 @@ function Step2({
         </p>
       </div>
 
+      {/* Пересказ — переключатель эксперта */}
+      <button
+        type="button"
+        onClick={() => update({ retellRequired: !data.retellRequired })}
+        className="glass-sm"
+        style={{ padding: 16, borderRadius: 16, border: "none", cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%", display: "flex", alignItems: "flex-start", gap: 12 }}
+      >
+        <div
+          style={{
+            width: 46,
+            height: 28,
+            borderRadius: 9999,
+            flexShrink: 0,
+            marginTop: 2,
+            background: data.retellRequired ? "rgba(120,255,170,0.55)" : "rgba(255,255,255,0.2)",
+            position: "relative",
+            transition: "background 0.2s",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              top: 3,
+              left: data.retellRequired ? 21 : 3,
+              width: 22,
+              height: 22,
+              borderRadius: "50%",
+              background: "#ffffff",
+              transition: "left 0.2s",
+            }}
+          />
+        </div>
+        <div style={{ flex: 1 }}>
+          <p style={{ margin: 0, fontWeight: 800, fontSize: 14, color: "#ffffff" }}>🗣️ {t("retellToggle")}</p>
+          <p style={{ margin: "4px 0 0", fontSize: 12, color: "rgba(255,255,255,0.6)", lineHeight: 1.4 }}>{t("retellHint")}</p>
+        </div>
+      </button>
+
       <div style={{ display: "flex", gap: 12, paddingTop: 8 }}>
         <button onClick={onBack} className="btn-glass" style={{ flex: 1 }}>
           {t("back")}
@@ -902,6 +946,7 @@ function ExpertCreateInner() {
         pagesPerPart: data.pagesPerPart ?? 10,
         coinsReward: data.coinsReward ?? 5,
         price: data.price ?? 2500,
+        retellRequired: data.retellRequired ?? false,
       });
       return data;
     },

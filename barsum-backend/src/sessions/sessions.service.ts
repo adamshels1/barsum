@@ -26,6 +26,9 @@ const OWN_BOOK_SESSION_MAX_SEC = 600;
 // Минимум, чтобы сессия засчиталась автоматически (иначе — на подтверждение родителю).
 const OWN_BOOK_MIN_SEC = 60;
 
+// Бонус за пересказ: до 30% от монет за часть, пропорционально оценке пересказа (0–10).
+const RETELL_BONUS_FRACTION = 0.3;
+
 @Injectable()
 export class SessionsService {
   private readonly logger = new Logger(SessionsService.name);
@@ -87,6 +90,7 @@ export class SessionsService {
       coinsPerMinute?: number;
       category?: ChallengeCategory;
       bookTitle?: string;
+      retellRequired?: boolean;
     }
   > {
     const s = await this.sessionRepo.findOne({ where: { id } });
@@ -101,6 +105,7 @@ export class SessionsService {
       coinsPerMinute: enrollment?.coinsPerMinute ?? 0,
       category: enrollment?.challenge?.category,
       bookTitle: enrollment?.challenge?.bookTitle,
+      retellRequired: enrollment?.challenge?.retellRequired ?? false,
     };
   }
 
@@ -113,6 +118,16 @@ export class SessionsService {
     if (!parsed) throw new NotFoundException('Audio not found');
     const buffer = await this.filesService.getBuffer(parsed.key, parsed.bucket);
     return { buffer, contentType: audioMimeFromUrl(s.audioUrl) };
+  }
+
+  // Аудиозапись пересказа — тот же прокси, что и getAudio.
+  async getRetellAudio(id: string): Promise<{ buffer: Buffer; contentType: string }> {
+    const s = await this.sessionRepo.findOne({ where: { id } });
+    if (!s?.retellAudioUrl) throw new NotFoundException('Retell audio not found');
+    const parsed = parseStoredFileUrl(s.retellAudioUrl);
+    if (!parsed) throw new NotFoundException('Retell audio not found');
+    const buffer = await this.filesService.getBuffer(parsed.key, parsed.bucket);
+    return { buffer, contentType: audioMimeFromUrl(s.retellAudioUrl) };
   }
 
   async findByChild(childId: string): Promise<Session[]> {
@@ -431,8 +446,35 @@ export class SessionsService {
       expertDraft = result.feedback || 'Послушайте запись и оцените чтение.';
     }
 
+    session.aiScore = score;
+    session.expertReportDraft = expertDraft;
+
+    // Пересказ включён экспертом и есть эталонный текст части — сначала просим
+    // ребёнка пересказать; финализацию чтения (зачёт/эксперт) откладываем до конца.
+    const needRetell =
+      enrollment?.challenge?.category === ChallengeCategory.READING &&
+      !!enrollment?.challenge?.retellRequired &&
+      referenceText.trim().length > 0 &&
+      !session.retellTranscription &&
+      session.retellScore == null;
+    if (needRetell) {
+      session.phase = SessionPhase.RETELL;
+      return this.sessionRepo.save(session);
+    }
+
+    return this.finalizeReading(session, enrollment);
+  }
+
+  // Финализация чтения: авто-зачёт при хорошей оценке, иначе — эксперту.
+  // Вызывается либо сразу из analyze (если пересказ не нужен), либо после пересказа.
+  private async finalizeReading(
+    session: Session,
+    enrollment: ChallengeEnrollment | null,
+  ): Promise<Session> {
+    const childId = session.childId;
+    const score = Number(session.aiScore ?? 0);
+
     if (score >= AUTO_CREDIT_SCORE) {
-      // AI справился и чтение хорошее — авто-зачёт, без людей.
       session.phase = SessionPhase.DONE;
       session.status = SessionStatus.COMPLETED;
       if (enrollment && enrollment.coinsPerPart > 0) {
@@ -443,7 +485,7 @@ export class SessionsService {
           toType: 'child',
           amount: enrollment.coinsPerPart,
           type: CoinTransactionType.EARN,
-          referenceId: `session-earn-${id}`,
+          referenceId: `session-earn-${session.id}`,
         });
         await this.childrenService.incrementStreak(childId);
       }
@@ -458,13 +500,127 @@ export class SessionsService {
     }
 
     // Слабое чтение — решение принимает эксперт (не родитель), с готовым AI-черновиком.
-    await this.routeToExpert(session, enrollment, 'low_score', expertDraft);
+    await this.routeToExpert(
+      session,
+      enrollment,
+      'low_score',
+      session.expertReportDraft || 'Послушайте запись и оцените чтение.',
+    );
     const child = await this.childrenService.findById(childId).catch(() => null);
     this.telegram.send(
       'other',
       `📖 <b>Чтение на проверке эксперта</b>\n🧒 ${esc(child?.name ?? 'Ребёнок')} (${esc(childId)}) — часть ${session.partNumber}, оценка ${session.aiScore}/10`,
     );
     return session;
+  }
+
+  // ── Пересказ: ребёнок записывает пересказ прочитанного ────────────────────────
+  async uploadRetellAudio(
+    id: string,
+    childId: string,
+    file: Express.Multer.File,
+    durationSec?: number,
+  ): Promise<Session> {
+    const session = await this.sessionRepo.findOne({ where: { id } });
+    if (!session) throw new NotFoundException('Session not found');
+    if (session.childId !== childId) throw new ForbiddenException('Not your session');
+    if (session.phase !== SessionPhase.RETELL) {
+      throw new BadRequestException('Session is not awaiting retell');
+    }
+
+    const audioUrl = await this.filesService.uploadAudio(file, `${id}-retell`);
+    session.retellAudioUrl = audioUrl;
+    if (durationSec && durationSec > 0) session.retellDurationSec = durationSec;
+    session.phase = SessionPhase.RETELL_TRANSCRIBING;
+    session.lastError = null;
+    const saved = await this.sessionRepo.save(session);
+
+    setImmediate(() => {
+      this.transcribeRetell(id, childId).catch((err) => {
+        this.logger.error(`Retell processing failed for session ${id}: ${err?.message}`);
+        // Пересказ не критичен — не теряем чтение, финализируем его.
+        this.finalizeReadingById(id).catch((e) =>
+          this.logger.error(`finalizeReading fallback failed ${id}: ${e?.message}`),
+        );
+      });
+    });
+
+    return saved;
+  }
+
+  private async transcribeRetell(id: string, childId: string): Promise<Session> {
+    const session = await this.sessionRepo.findOne({ where: { id } });
+    if (!session) throw new NotFoundException('Session not found');
+    if (!session.retellAudioUrl) throw new BadRequestException('No retell audio');
+
+    const parsed = parseStoredFileUrl(session.retellAudioUrl);
+    const bucket = parsed?.bucket ?? BUCKET_AUDIO;
+    const objectPath = parsed?.key ?? new URL(session.retellAudioUrl).pathname.replace(/^\/+/, '');
+    const mimeType = audioMimeFromUrl(session.retellAudioUrl);
+
+    const audioBuffer = await this.filesService.getBuffer(objectPath, bucket);
+    const result = await this.aiService.transcribeAudio(audioBuffer, objectPath, mimeType);
+    session.retellTranscription = result.text ?? '';
+    session.phase = SessionPhase.RETELL_ANALYZING;
+    await this.sessionRepo.save(session);
+    return this.analyzeRetell(id, childId);
+  }
+
+  private async analyzeRetell(id: string, childId: string): Promise<Session> {
+    const session = await this.sessionRepo.findOne({ where: { id } });
+    if (!session) throw new NotFoundException('Session not found');
+    const enrollment = await this.enrollmentRepo.findOne({
+      where: { id: session.enrollmentId },
+      relations: ['challenge'],
+    });
+    const referenceText = enrollment?.challenge?.partTexts?.[session.partNumber - 1] ?? '';
+    const bookTitle = enrollment?.challenge?.bookTitle ?? '';
+    const text = (session.retellTranscription ?? '').trim();
+
+    if (text) {
+      try {
+        const result = await this.aiService.analyzeRetelling(text, bookTitle, referenceText);
+        const raw = Number(result.score ?? 0);
+        const normalized = raw > 10 ? raw / 10 : raw; // на случай если модель вернёт 0–100
+        session.retellScore = Math.max(0, Math.min(10, Math.round(normalized)));
+        session.retellFeedback = result.feedback ?? null;
+
+        // Бонус за пересказ — сразу, отдельной транзакцией (не зависит от исхода чтения).
+        const bonus =
+          enrollment && enrollment.coinsPerPart > 0
+            ? Math.round(enrollment.coinsPerPart * (session.retellScore / 10) * RETELL_BONUS_FRACTION)
+            : 0;
+        if (bonus > 0) {
+          await this.coinsService.transfer({
+            fromId: 'system',
+            fromType: 'system',
+            toId: childId,
+            toType: 'child',
+            amount: bonus,
+            type: CoinTransactionType.EARN,
+            referenceId: `session-retell-${id}`,
+          });
+        }
+      } catch (err: any) {
+        this.logger.error(`analyzeRetelling failed for ${id}: ${err?.message}`);
+        session.retellFeedback = 'Пересказ записан. Оценить автоматически не удалось.';
+      }
+    } else {
+      session.retellFeedback = 'Пересказ не распознан.';
+    }
+
+    await this.sessionRepo.save(session);
+    return this.finalizeReading(session, enrollment);
+  }
+
+  private async finalizeReadingById(id: string): Promise<Session | void> {
+    const session = await this.sessionRepo.findOne({ where: { id } });
+    if (!session) return;
+    const enrollment = await this.enrollmentRepo.findOne({
+      where: { id: session.enrollmentId },
+      relations: ['challenge'],
+    });
+    return this.finalizeReading(session, enrollment);
   }
 
   async answer(id: string, childId: string, answers: Record<string, string>): Promise<Session> {
@@ -617,6 +773,16 @@ export class SessionsService {
           status: s.status,
           aiScore: s.aiScore,
           createdAt: s.createdAt,
+          audioUrl: s.audioUrl,
+          aiFeedback: s.aiFeedback,
+          readingAccuracy: s.readingAccuracy,
+          readingCompleteness: s.readingCompleteness,
+          readingSpeedWpm: s.readingSpeedWpm,
+          errorWords: s.errorWords,
+          expertReport: s.expertReport,
+          retellAudioUrl: s.retellAudioUrl,
+          retellScore: s.retellScore,
+          retellFeedback: s.retellFeedback,
         })),
       };
     });

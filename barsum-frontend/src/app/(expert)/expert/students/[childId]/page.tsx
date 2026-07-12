@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { sessionsApi } from "@/lib/api/sessions";
 import { childPhotoUrl } from "@/lib/media";
+import { SessionResult, type SessionResultData } from "@/components/SessionResult";
 import { useT, type Dict } from "@/i18n/useT";
 
 const dict: Dict = {
@@ -41,7 +42,7 @@ const dict: Dict = {
   },
 };
 
-interface StudentSession {
+interface StudentSession extends SessionResultData {
   id: string;
   partNumber: number;
   status: "pending" | "completed" | "failed";
@@ -74,6 +75,34 @@ const STATUS_CONFIG = {
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("ru-RU", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+function SessionItem({ session: s }: { session: StudentSession }) {
+  const t = useT(dict);
+  const [open, setOpen] = useState(false);
+  const cfg = STATUS_CONFIG[s.status] ?? STATUS_CONFIG.pending;
+  return (
+    <div style={{ marginTop: 10, background: "rgba(255,255,255,0.08)", borderRadius: 12, overflow: "hidden" }}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "transparent", border: "none", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}
+      >
+        <span style={{ fontSize: 16 }}>{cfg.icon}</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ margin: 0, fontWeight: 700, fontSize: 13, color: "#ffffff" }}>{t("part")} {s.partNumber}</p>
+          <p style={{ margin: "2px 0 0", fontSize: 11, color: "rgba(255,255,255,0.55)" }}>{formatDate(s.createdAt)}</p>
+        </div>
+        {s.aiScore != null && <span style={{ fontSize: 12, fontWeight: 800, color: "#ffd200" }}>AI: {Math.round(Number(s.aiScore))}/10</span>}
+        <span style={{ fontSize: 10.5, padding: "3px 8px", borderRadius: 9999, fontWeight: 800, background: cfg.bg, color: cfg.color, flexShrink: 0 }}>{t(cfg.labelKey)}</span>
+        <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, flexShrink: 0 }}>{open ? "▲" : "▼"}</span>
+      </button>
+      {open && (
+        <div style={{ padding: "0 12px 12px", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+          <SessionResult session={s} />
+        </div>
+      )}
+    </div>
+  );
 }
 
 function BookCard({ book }: { book: StudentBook }) {
@@ -110,22 +139,7 @@ function BookCard({ book }: { book: StudentBook }) {
           {sortedSessions.length === 0 ? (
             <p style={{ margin: "12px 0 0", fontSize: 13, color: "rgba(255,255,255,0.5)" }}>{t("noActivity")}</p>
           ) : (
-            sortedSessions.map((s) => {
-              const cfg = STATUS_CONFIG[s.status] ?? STATUS_CONFIG.pending;
-              return (
-                <div key={s.id} style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 10, background: "rgba(255,255,255,0.08)", borderRadius: 12, padding: "10px 12px" }}>
-                  <span style={{ fontSize: 16 }}>{cfg.icon}</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ margin: 0, fontWeight: 700, fontSize: 13, color: "#ffffff" }}>{t("part")} {s.partNumber}</p>
-                    <p style={{ margin: "2px 0 0", fontSize: 11, color: "rgba(255,255,255,0.55)" }}>{formatDate(s.createdAt)}</p>
-                  </div>
-                  {s.aiScore != null && (
-                    <span style={{ fontSize: 12, fontWeight: 800, color: "#ffd200" }}>AI: {Number(s.aiScore)}/10</span>
-                  )}
-                  <span style={{ fontSize: 10.5, padding: "3px 8px", borderRadius: 9999, fontWeight: 800, background: cfg.bg, color: cfg.color, flexShrink: 0 }}>{t(cfg.labelKey)}</span>
-                </div>
-              );
-            })
+            sortedSessions.map((s) => <SessionItem key={s.id} session={s} />)
           )}
         </div>
       )}

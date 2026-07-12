@@ -71,6 +71,23 @@ export class SessionsController {
     return this.sessionsService.transcribe(id, req.user.sub);
   }
 
+  @Post(':id/upload-retell-audio')
+  @UseInterceptors(FileInterceptor('audio'))
+  uploadRetellAudio(
+    @Request() req: any,
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body('durationSec') durationSec?: string,
+  ) {
+    const dur = durationSec ? parseInt(durationSec, 10) : undefined;
+    return this.sessionsService.uploadRetellAudio(
+      id,
+      req.user.sub,
+      file,
+      Number.isFinite(dur as number) ? dur : undefined,
+    );
+  }
+
   @Post(':id/analyze')
   analyze(@Request() req: any, @Param('id') id: string, @Body('bookTitle') bookTitle: string) {
     return this.sessionsService.analyze(id, req.user.sub, bookTitle);

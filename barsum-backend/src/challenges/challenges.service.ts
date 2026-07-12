@@ -81,6 +81,7 @@ export class ChallengesService {
       totalParts: number;
       price: number;
       coinsReward: number;
+      retellRequired?: boolean;
     },
     authorId: string,
     expertStatus: string,

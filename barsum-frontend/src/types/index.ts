@@ -76,13 +76,16 @@ export interface Session {
   enrollment?: ChallengeEnrollment;
   childId: string;
   partNumber: number;
-  phase: "read" | "recording" | "transcribing" | "analyzing" | "done";
+  phase: "read" | "recording" | "transcribing" | "analyzing" | "retell" | "retell_transcribing" | "retell_analyzing" | "done";
   audioUrl?: string;
   transcription?: string;
   aiScore?: number;
   aiFeedback?: string;
   aiQuestions?: string[];
   aiAnswers?: Record<string, string>;
+  retellAudioUrl?: string | null;
+  retellScore?: number | null;
+  retellFeedback?: string | null;
   readingAccuracy?: number | null;
   readingCompleteness?: number | null;
   readingSpeedWpm?: number | null;

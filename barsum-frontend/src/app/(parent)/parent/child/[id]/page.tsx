@@ -37,6 +37,8 @@ const dict: Dict = {
     book: "Книга",
     partN: "часть {n}",
     recordingTitle: "Запись чтения",
+    retellTitle: "Пересказ ребёнка",
+    retellScoreLabel: "Оценка пересказа: {score}/10",
     recordingUnavailable: "Запись недоступна",
     expertReport: "Отчёт эксперта",
     aiReport: "AI-отчёт",
@@ -49,6 +51,7 @@ const dict: Dict = {
     metricAccuracy: "Точность",
     metricSpeed: "Скорость",
     metricCompleteness: "Полнота",
+    metricRetell: "Пересказ",
     wpmUnit: "{n}/мин",
     stumbled: "🔴 Споткнулся: {words}",
     expertPrefix: "Эксперт:",
@@ -134,6 +137,8 @@ const dict: Dict = {
     book: "Кітап",
     partN: "{n}-бөлім",
     recordingTitle: "Оқу жазбасы",
+    retellTitle: "Баланың пересказы",
+    retellScoreLabel: "Пересказ бағасы: {score}/10",
     recordingUnavailable: "Жазба қолжетімсіз",
     expertReport: "Сарапшы есебі",
     aiReport: "AI-есеп",
@@ -146,6 +151,7 @@ const dict: Dict = {
     metricAccuracy: "Дәлдік",
     metricSpeed: "Жылдамдық",
     metricCompleteness: "Толықтық",
+    metricRetell: "Пересказ",
     wpmUnit: "{n}/мин",
     stumbled: "🔴 Мүдірген сөздер: {words}",
     expertPrefix: "Сарапшы:",
@@ -298,6 +304,10 @@ function ReadingReport({ session }: { session: Session }) {
       <MetricBar label={t("metricAccuracy")} light={lightFor(acc, 85, 70)} fillPct={acc ?? 0} valueText={acc != null ? `${acc}%` : "—"} />
       <MetricBar label={t("metricSpeed")} light={lightFor(wpm, 90, 60)} fillPct={wpm != null ? (wpm / 150) * 100 : 0} valueText={wpm != null ? t("wpmUnit", { n: wpm }) : "—"} />
       <MetricBar label={t("metricCompleteness")} light={lightFor(comp, 75, 40)} fillPct={comp ?? 0} valueText={comp != null ? `${comp}%` : "—"} />
+      {session.retellScore != null && (() => {
+        const rs = Math.round(Number(session.retellScore));
+        return <MetricBar label={t("metricRetell")} light={lightFor(rs, 8, 5)} fillPct={rs * 10} valueText={`${rs}/10`} />;
+      })()}
       {errors.length > 0 && (
         <p style={{ margin: "8px 0 0", fontSize: 12.5, color: "rgba(255,255,255,0.75)" }}>
           {t("stumbled", { words: errors.map((w) => `«${w}»`).join(", ") })}
@@ -347,6 +357,18 @@ function SessionRow({ session, defaultOpen }: { session: Session; defaultOpen?: 
             </div>
           ) : (
             <p style={{ margin: "10px 0 0", fontSize: 13, color: "rgba(255,255,255,0.5)" }}>{t("recordingUnavailable")}</p>
+          )}
+          {session.retellAudioUrl && (
+            <div style={{ margin: "10px 0" }}>
+              <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 700, color: "rgba(180,160,255,0.85)", textTransform: "uppercase" }}>
+                {t("retellTitle")}
+              </p>
+              {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+              <audio controls src={`${API_BASE}/sessions/${session.id}/retell-audio`} style={{ width: "100%", height: 36 }} />
+              {session.retellFeedback && (
+                <p style={{ margin: "6px 0 0", fontSize: 12.5, color: "rgba(255,255,255,0.7)", lineHeight: 1.45 }}>{session.retellFeedback}</p>
+              )}
+            </div>
           )}
           {session.readingAccuracy != null ? (
             <ReadingReport session={session} />
