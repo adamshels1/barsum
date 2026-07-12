@@ -13,6 +13,7 @@ import { CoinsService } from '../coins/coins.service';
 import { RewardRequestStatus, RewardType, CoinTransactionType } from '../common/enums';
 import { FilesService, parseStoredFileUrl, imageMimeFromUrl } from '../files/files.service';
 import { TelegramService, esc } from '../notifications/telegram.service';
+import { PushService } from '../push/push.service';
 
 @Injectable()
 export class RewardsService {
@@ -24,6 +25,7 @@ export class RewardsService {
     private coinsService: CoinsService,
     private filesService: FilesService,
     private telegram: TelegramService,
+    private push: PushService,
     private dataSource: DataSource,
   ) {}
 
@@ -85,6 +87,14 @@ export class RewardsService {
         `Награда: ${esc(reward.name)} (${reward.cost} монет)\n` +
         `👤 Родитель: ${esc(parent?.name ?? '—')} (${esc(parentId)})`,
     );
+
+    // Веб-пуш родителю: ребёнок просит награду.
+    void this.push.sendToUser(parentId, {
+      title: '🎁 Запрос награды',
+      body: `${child?.name ?? 'Ребёнок'} просит: ${reward.name} (${reward.cost} монет)`,
+      url: '/parent/rewards',
+      tag: 'reward-request',
+    });
 
     return saved;
   }

@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { rewardsApi } from "@/lib/api/rewards";
 import type { RewardRequest } from "@/types";
 import { useT, type Dict } from "@/i18n/useT";
+import { PushEnable } from "@/components/PushEnable";
 
 const dict: Dict = {
   ru: {
@@ -53,6 +54,8 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
       <div style={{ position: "fixed", bottom: "-10%", left: "-8%", width: 200, height: 200, borderRadius: "50%", background: "rgba(0,0,0,0.15)", filter: "blur(60px)", pointerEvents: "none", zIndex: 0 }} />
 
       <div style={{ position: "relative", zIndex: 1, paddingBottom: hideNav ? 0 : 92 }}>{children}</div>
+
+      {!hideNav && <PushEnable />}
 
       {!hideNav && (
         <div

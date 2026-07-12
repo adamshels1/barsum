@@ -8,9 +8,10 @@ import { Reward } from './entities/reward.entity';
 import { RewardRequest } from './entities/reward-request.entity';
 import { CoinsModule } from '../coins/coins.module';
 import { FilesModule } from '../files/files.module';
+import { PushModule } from '../push/push.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Reward, RewardRequest]), CoinsModule, FilesModule],
+  imports: [TypeOrmModule.forFeature([Reward, RewardRequest]), CoinsModule, FilesModule, PushModule],
   controllers: [RewardsController, PublicRewardsController, RewardRequestsController],
   providers: [RewardsService],
   exports: [RewardsService],

@@ -19,6 +19,7 @@ import { PaymentsModule } from './payments/payments.module';
 import { DreamsModule } from './dreams/dreams.module';
 import { AdminModule } from './admin/admin.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { PushModule } from './push/push.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     PaymentsModule,
     DreamsModule,
     AdminModule,
+    PushModule,
   ],
   controllers: [AppController],
   providers: [AppService],
