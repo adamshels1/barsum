@@ -406,13 +406,18 @@ export default function ParentCabinetPage() {
                     { name: "age", placeholder: t("agePlaceholder"), type: "number" },
                     { name: "login", placeholder: t("loginPlaceholder"), type: "text" },
                     { name: "password", placeholder: t("password"), type: "password" },
-                  ].map((f) => (
+                  ].map((f) => {
+                    const reg = register(f.name as keyof ChildForm);
+                    const isLogin = f.name === "login";
+                    return (
                     <div key={f.name}>
                       <input
-                        {...register(f.name as keyof ChildForm)}
+                        {...reg}
+                        onChange={isLogin ? (e) => { e.target.value = e.target.value.toLowerCase(); reg.onChange(e); } : reg.onChange}
                         placeholder={f.placeholder}
                         type={f.type}
                         className="glass-input"
+                        {...(isLogin ? { autoCapitalize: "none", autoCorrect: "off", spellCheck: false } : {})}
                       />
                       {errors[f.name as keyof ChildForm] && (
                         <p style={{ color: "#ffd6d6", fontSize: 12, fontWeight: 600, marginTop: 4 }}>
@@ -420,7 +425,8 @@ export default function ParentCabinetPage() {
                         </p>
                       )}
                     </div>
-                  ))}
+                    );
+                  })}
                   <button
                     type="submit"
                     disabled={isSubmitting || createMutation.isPending}

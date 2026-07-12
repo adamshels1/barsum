@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -37,6 +38,8 @@ const dict: Dict = {
     loading: "Загрузка...",
     signUp: "Зарегистрироваться",
     signIn: "Войти",
+    showPassword: "Показать пароль",
+    hidePassword: "Скрыть пароль",
   },
   kk: {
     enterEmailOrLogin: "Email немесе логинді енгізіңіз",
@@ -61,6 +64,8 @@ const dict: Dict = {
     loading: "Жүктелуде...",
     signUp: "Тіркелу",
     signIn: "Кіру",
+    showPassword: "Құпиясөзді көрсету",
+    hidePassword: "Құпиясөзді жасыру",
   },
 };
 
@@ -70,6 +75,7 @@ export default function ParentAuthPage() {
   const router = useRouter();
   const setAuth = useAuthStore((s) => s.setAuth);
   const [isRegister, setIsRegister] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const t = useT(dict);
 
   const loginSchema = z.object({
@@ -168,7 +174,17 @@ export default function ParentAuthPage() {
           </div>
           <div>
             <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.65)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>{t("password")}</label>
-            <input {...register("password")} type="password" placeholder={isRegister ? t("minSixPlaceholder") : t("yourPassword")} autoComplete={isRegister ? "new-password" : "current-password"} className="glass-input" />
+            <div style={{ position: "relative" }}>
+              <input {...register("password")} type={showPassword ? "text" : "password"} placeholder={isRegister ? t("minSixPlaceholder") : t("yourPassword")} autoComplete={isRegister ? "new-password" : "current-password"} className="glass-input" style={{ paddingRight: 48 }} />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? t("hidePassword") : t("showPassword")}
+                style={{ position: "absolute", top: "50%", right: 8, transform: "translateY(-50%)", background: "transparent", border: "none", cursor: "pointer", padding: 8, display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,0.7)" }}
+              >
+                {showPassword ? <EyeOff size={18} strokeWidth={2.5} /> : <Eye size={18} strokeWidth={2.5} />}
+              </button>
+            </div>
             {errors.password && <p style={{ color: "#ffd6d6", fontSize: 12, fontWeight: 600, marginTop: 6 }}>{errors.password.message}</p>}
           </div>
           <button type="submit" disabled={isSubmitting} className="btn-white" style={{ marginTop: 8, color: "#4776e6" }}>

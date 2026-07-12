@@ -18,7 +18,9 @@ export class ChildrenService {
   ) {}
 
   async findByLogin(login: string): Promise<Child | null> {
-    return this.childRepo.findOne({ where: { login } });
+    // Логин всегда храним и ищем в нижнем регистре — мобильные клавиатуры
+    // автокапитализируют первую букву, из-за чего вход не проходил.
+    return this.childRepo.findOne({ where: { login: (login ?? '').trim().toLowerCase() } });
   }
 
   async findById(id: string): Promise<Child | null> {
@@ -30,10 +32,11 @@ export class ChildrenService {
   }
 
   async create(dto: { name: string; age: number; login: string; password: string; parentId: string }): Promise<Child> {
-    const existing = await this.findByLogin(dto.login);
+    const login = (dto.login ?? '').trim().toLowerCase();
+    const existing = await this.findByLogin(login);
     if (existing) throw new ConflictException('Login already taken');
     const encrypted = encryptChildPassword(dto.password);
-    const child = this.childRepo.create({ ...dto, password: encrypted });
+    const child = this.childRepo.create({ ...dto, login, password: encrypted });
     const saved = await this.childRepo.save(child);
 
     const parent = await this.dataSource
@@ -52,10 +55,23 @@ export class ChildrenService {
     return saved;
   }
 
-  async update(id: string, parentId: string, dto: { name?: string; age?: number; password?: string; photoUrl?: string }): Promise<Child> {
+  async update(id: string, parentId: string, dto: { name?: string; age?: number; login?: string; password?: string; photoUrl?: string }): Promise<Child> {
     const child = await this.findById(id);
     if (!child) throw new NotFoundException('Child not found');
     if (child.parentId !== parentId) throw new ForbiddenException('Not your child');
+    if (dto.login !== undefined) {
+      // Родитель может исправить ошибочный логин ребёнка. Нормализуем в нижний
+      // регистр и проверяем уникальность (если логин действительно меняется).
+      const login = (dto.login ?? '').trim().toLowerCase();
+      if (!/^[a-z0-9_]{3,}$/.test(login)) {
+        throw new ConflictException('Некорректный логин (только a-z, 0-9, _, минимум 3 символа)');
+      }
+      if (login !== child.login) {
+        const existing = await this.findByLogin(login);
+        if (existing && existing.id !== id) throw new ConflictException('Login already taken');
+      }
+      dto.login = login;
+    }
     if (dto.password) {
       dto.password = encryptChildPassword(dto.password);
     }

@@ -54,7 +54,7 @@ export class ChildrenController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Обновить ребёнка' })
-  async update(@Request() req: any, @Param('id') id: string, @Body() body: { name?: string; age?: number; password?: string }) {
+  async update(@Request() req: any, @Param('id') id: string, @Body() body: { name?: string; age?: number; login?: string; password?: string }) {
     const child = await this.childrenService.update(id, req.user.sub, body);
     const { password, ...result } = child as any;
     return result;

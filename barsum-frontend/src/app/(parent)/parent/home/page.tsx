@@ -1,7 +1,6 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Minus, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -9,6 +8,7 @@ import { challengesApi } from "@/lib/api/challenges";
 import { childrenApi } from "@/lib/api/children";
 import { paymentsApi } from "@/lib/api/payments";
 import { rewardsApi } from "@/lib/api/rewards";
+import { sessionsApi } from "@/lib/api/sessions";
 import type { Challenge, Child, Payment, RewardRequest } from "@/types/index";
 import { CoinIcon } from "@/components/CoinIcon";
 import { RewardRequestCard } from "@/components/RewardRequestCard";
@@ -35,6 +35,7 @@ const dict: Dict = {
     childOption: "{name}, {age} лет",
     challengePrice: "Цена задания",
     coinsForChild: "Монеты для ребёнка",
+    coinsForChildHint: "Начислим монеты на сумму книги",
     maxCoins: "50 000 монет",
     total: "Итого",
     payBtn: "Оплатить 🚀",
@@ -46,6 +47,16 @@ const dict: Dict = {
     cabinet: "← Кабинет",
     allAges: "Все",
     childRequests: "🔔 Запросы детей",
+    ownBookConfirmTitle: "📖 Подтвердите чтение",
+    ownBookConfirmDesc: "«{book}» · сессия {part}{minutes}",
+    ownBookMinutesRead: " · прочитано ~{n} мин",
+    ownBookReasonTooShort: "Запись слишком короткая — подтвердите, что ребёнок читал",
+    ownBookReasonNoSpeech: "Не распознали речь — послушайте и решите сами",
+    ownBookApprove: "✅ Засчитать",
+    ownBookReject: "Отклонить",
+    ownBookApproved: "Чтение засчитано!",
+    ownBookRejected: "Сессия отклонена",
+    ownBookConfirmError: "Не удалось сохранить",
     noChallenges: "Нет заданий",
     tryChangeFilter: "Попробуйте изменить фильтр возраста",
     ownBookTitle: "Своя книжка",
@@ -79,6 +90,7 @@ const dict: Dict = {
     childOption: "{name}, {age} жас",
     challengePrice: "Тапсырма бағасы",
     coinsForChild: "Балаға монеталар",
+    coinsForChildHint: "Кітап бағасына тең монета береміз",
     maxCoins: "50 000 монета",
     total: "Барлығы",
     payBtn: "Төлеу 🚀",
@@ -90,6 +102,16 @@ const dict: Dict = {
     cabinet: "← Кабинет",
     allAges: "Барлығы",
     childRequests: "🔔 Балалардың сұраулары",
+    ownBookConfirmTitle: "📖 Оқуды растаңыз",
+    ownBookConfirmDesc: "«{book}» · сессия {part}{minutes}",
+    ownBookMinutesRead: " · ~{n} мин оқыды",
+    ownBookReasonTooShort: "Жазба тым қысқа — баланың оқығанын растаңыз",
+    ownBookReasonNoSpeech: "Сөзді танымадық — тыңдап, өзіңіз шешіңіз",
+    ownBookApprove: "✅ Есептеу",
+    ownBookReject: "Бас тарту",
+    ownBookApproved: "Оқу есептелді!",
+    ownBookRejected: "Сессия қабылданбады",
+    ownBookConfirmError: "Сақтау мүмкін болмады",
     noChallenges: "Тапсырмалар жоқ",
     tryChangeFilter: "Жас сүзгісін өзгертіп көріңіз",
     ownBookTitle: "Өз кітабы",
@@ -120,27 +142,6 @@ function ownBookCalc(amountTg: number) {
   return { minutes, sessions, coins };
 }
 
-const COIN_MAX = 50_000;
-const COIN_STEP = 1_000;
-
-// Крупная тач-кнопка −/+ (48×48) для удобного изменения суммы монет.
-const coinStepBtn = (disabled: boolean): React.CSSProperties => ({
-  flexShrink: 0,
-  width: 48,
-  height: 48,
-  borderRadius: 16,
-  border: "1px solid rgba(255,255,255,0.28)",
-  background: "rgba(255,255,255,0.16)",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  cursor: disabled ? "default" : "pointer",
-  opacity: disabled ? 0.35 : 1,
-  transition: "transform 0.1s, opacity 0.15s, background 0.15s",
-  WebkitTapHighlightColor: "transparent",
-  touchAction: "manipulation",
-  fontFamily: "inherit",
-});
 const COMMISSION = 0.15;
 
 const AGE_FILTERS = [
@@ -317,11 +318,11 @@ function PurchaseModal({
 }) {
   const t = useT(dict);
   const [childId, setChildId] = useState("");
-  const [coinsAmount, setCoinsAmount] = useState(0);
   const [step, setStep] = useState<"form" | "qr">("form");
 
-  const coinsTg = Math.round(coinsAmount / 10);
-  const total = challenge.price + coinsTg;
+  // Монеты для ребёнка равны цене книги (ползунок убран).
+  const coinsAmount = challenge.price;
+  const total = challenge.price;
 
   const createMutation = useMutation({
     mutationFn: () => paymentsApi.create({ childId, challengeId: challenge.id, coinsAmount }),
@@ -409,52 +410,15 @@ function PurchaseModal({
             <p style={{ margin: 0, fontWeight: 900, fontSize: 22, color: "#ffffff" }}>{challenge.price.toLocaleString()} ₸</p>
           </div>
 
-          {/* Coins stepper + slider */}
-          <div className="glass-sm" style={{ padding: 16 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
-              <p style={{ margin: 0, fontWeight: 800, fontSize: 14, color: "#ffffff" }}>{t("coinsForChild")} <CoinIcon size={13} /></p>
-              <p key={coinsAmount} className="coin-pop" style={{ margin: 0, fontWeight: 900, fontSize: 18, color: "#ffd200" }}>{coinsAmount.toLocaleString()}</p>
+          {/* Монеты для ребёнка = цена книги (фиксировано, без ползунка) */}
+          <div className="glass-sm" style={{ padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div>
+              <p style={{ margin: 0, fontWeight: 800, fontSize: 14, color: "#ffffff" }}>{t("coinsForChild")}</p>
+              <p style={{ margin: "3px 0 0", fontSize: 12, color: "rgba(255,255,255,0.55)" }}>{t("coinsForChildHint")}</p>
             </div>
-            <p style={{ margin: "0 0 14px", fontSize: 12, color: "rgba(255,255,255,0.55)" }}>+ {coinsTg.toLocaleString()} ₸</p>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <button
-                type="button"
-                aria-label="−"
-                className="coin-step-btn"
-                onClick={() => setCoinsAmount((v) => Math.max(0, v - COIN_STEP))}
-                disabled={coinsAmount <= 0}
-                style={coinStepBtn(coinsAmount <= 0)}
-              >
-                <Minus size={22} strokeWidth={3} color="#ffffff" />
-              </button>
-              <input
-                type="range"
-                className="coin-range"
-                min={0}
-                max={COIN_MAX}
-                step={COIN_STEP}
-                value={coinsAmount}
-                onChange={(e) => setCoinsAmount(Number(e.target.value))}
-                style={{
-                  flex: 1,
-                  background: `linear-gradient(to right, #ffd200 ${(coinsAmount / COIN_MAX) * 100}%, rgba(255,255,255,0.2) ${(coinsAmount / COIN_MAX) * 100}%)`,
-                }}
-              />
-              <button
-                type="button"
-                aria-label="+"
-                className="coin-step-btn"
-                onClick={() => setCoinsAmount((v) => Math.min(COIN_MAX, v + COIN_STEP))}
-                disabled={coinsAmount >= COIN_MAX}
-                style={coinStepBtn(coinsAmount >= COIN_MAX)}
-              >
-                <Plus size={22} strokeWidth={3} color="#ffffff" />
-              </button>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 8 }}>
-              <span>0</span>
-              <span>{t("maxCoins")}</span>
-            </div>
+            <p style={{ margin: 0, display: "flex", alignItems: "center", gap: 5, fontWeight: 900, fontSize: 22, color: "#ffd200" }}>
+              {coinsAmount.toLocaleString()} <CoinIcon size={18} />
+            </p>
           </div>
 
           {/* Total + buy */}
@@ -678,6 +642,53 @@ function OwnBookModal({
   );
 }
 
+function OwnBookConfirmCard({ session, childName }: { session: any; childName?: string }) {
+  const t = useT(dict);
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: (approve: boolean) => sessionsApi.parentConfirm(session.id, approve),
+    onSuccess: (_data, approve) => {
+      toast.success(approve ? t("ownBookApproved") : t("ownBookRejected"));
+      queryClient.invalidateQueries({ queryKey: ["own-book-pending"] });
+    },
+    onError: () => toast.error(t("ownBookConfirmError")),
+  });
+
+  const book = session.enrollment?.challenge?.bookTitle || session.enrollment?.challenge?.title || t("ownBookTitle");
+  const minutesSec = session.audioDurationSec ?? 0;
+  const minutes = minutesSec > 0 ? Math.max(1, Math.round(minutesSec / 60)) : 0;
+  const minutesLabel = minutes > 0 ? t("ownBookMinutesRead", { n: minutes }) : "";
+  const reason = session.reviewReason === "no_speech" ? t("ownBookReasonNoSpeech") : t("ownBookReasonTooShort");
+
+  return (
+    <div className="glass-card" style={{ padding: "14px 16px", border: "1px solid rgba(255,210,0,0.4)" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
+        <p style={{ margin: 0, fontWeight: 900, fontSize: 15, color: "#ffffff" }}>{childName || "—"}</p>
+        <span style={{ fontSize: 12, color: "rgba(255,255,255,0.6)" }}>📖</span>
+      </div>
+      <p style={{ margin: "0 0 4px", fontSize: 13, color: "rgba(255,255,255,0.85)" }}>{t("ownBookConfirmDesc", { book, part: session.partNumber, minutes: minutesLabel })}</p>
+      <p style={{ margin: "0 0 12px", fontSize: 12.5, color: "rgba(255,255,255,0.6)", lineHeight: 1.4 }}>{reason}</p>
+      <div style={{ display: "flex", gap: 8 }}>
+        <button
+          onClick={() => mutation.mutate(false)}
+          disabled={mutation.isPending}
+          style={{ flex: 1, padding: "11px 0", borderRadius: 12, border: "1px solid rgba(255,255,255,0.25)", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13.5, background: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.85)" }}
+        >
+          {t("ownBookReject")}
+        </button>
+        <button
+          onClick={() => mutation.mutate(true)}
+          disabled={mutation.isPending}
+          style={{ flex: 1.4, padding: "11px 0", borderRadius: 12, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 900, fontSize: 13.5, background: "rgba(255,255,255,0.92)", color: "#4776e6" }}
+        >
+          {t("ownBookApprove")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function ParentHomePage() {
   const t = useT(dict);
   const router = useRouter();
@@ -705,6 +716,14 @@ export default function ParentHomePage() {
     refetchOnWindowFocus: true,
   });
   const pendingRequests = requests.filter((r) => r.status === "pending");
+
+  // «Своя книжка»: спорные сессии, которые ждут подтверждения родителя.
+  const { data: ownBookPending = [] } = useQuery<any[]>({
+    queryKey: ["own-book-pending"],
+    queryFn: sessionsApi.parentPending,
+    refetchInterval: 15000,
+    refetchOnWindowFocus: true,
+  });
 
   const ageConfig = AGE_FILTERS.find((f) => f.value === ageFilter);
   const filteredChallenges = (challenges as any[]).filter((c) => {
@@ -767,6 +786,21 @@ export default function ParentHomePage() {
           })}
         </div>
       </div>
+
+      {/* «Своя книжка» — спорные сессии, ждущие подтверждения родителя (задача: проверка не приходила) */}
+      {ownBookPending.length > 0 && (
+        <div style={{ padding: "16px 20px 0" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 900, color: "#ffffff" }}>{t("ownBookConfirmTitle")}</h2>
+            <span style={{ fontSize: 12, fontWeight: 900, padding: "2px 9px", borderRadius: 9999, background: "#ef4444", color: "#ffffff" }}>{ownBookPending.length}</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {ownBookPending.map((s) => (
+              <OwnBookConfirmCard key={s.id} session={s} childName={children.find((c) => c.id === s.childId)?.name} />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Запросы детей — самый важный сценарий, вынесен на самый верх (задачи 9, 10) */}
       {pendingRequests.length > 0 && (

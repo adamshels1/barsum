@@ -34,6 +34,11 @@ export class SessionsController {
     return this.sessionsService.findByChild(req.user.sub);
   }
 
+  @Get('parent-pending')
+  parentPending(@Request() req: any) {
+    return this.sessionsService.findPendingOwnBookForParent(req.user.sub);
+  }
+
   @Get(':id/text')
   getPartText(@Request() req: any, @Param('id') id: string) {
     return this.sessionsService.getPartText(id, req.user.sub);

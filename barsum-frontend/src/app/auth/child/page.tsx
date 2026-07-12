@@ -1,7 +1,9 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -27,6 +29,8 @@ const dict: Dict = {
     loading: "Загрузка...",
     signIn: "Войти",
     parentHint: "Логин и пароль выдаёт родитель",
+    showPassword: "Показать пароль",
+    hidePassword: "Скрыть пароль",
   },
   kk: {
     enterLogin: "Логинді енгізіңіз",
@@ -42,6 +46,8 @@ const dict: Dict = {
     loading: "Жүктелуде...",
     signIn: "Кіру",
     parentHint: "Логин мен құпиясөзді ата-ана береді",
+    showPassword: "Құпиясөзді көрсету",
+    hidePassword: "Құпиясөзді жасыру",
   },
 };
 
@@ -61,10 +67,15 @@ export default function ChildAuthPage() {
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<Form>({
     resolver: zodResolver(schema),
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const identifierReg = register("identifier");
 
   const onSubmit = async (data: Form) => {
     try {
-      const res = await apiClient.post("/auth/login", data);
+      const res = await apiClient.post("/auth/login", {
+        ...data,
+        identifier: data.identifier.trim().toLowerCase(),
+      });
       const { access_token, role, user, child, expert } = res.data;
       setAuth(access_token, role, user ?? child, expert?.status);
       redirectByRole(role, expert?.status, router);
@@ -100,14 +111,24 @@ export default function ChildAuthPage() {
             <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
               {t("login")}
             </label>
-            <input {...register("identifier")} placeholder={t("loginPlaceholder")} autoComplete="username" className="glass-input" />
+            <input {...identifierReg} onChange={(e) => { e.target.value = e.target.value.toLowerCase(); identifierReg.onChange(e); }} placeholder={t("loginPlaceholder")} autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false} className="glass-input" />
             {errors.identifier && <p style={{ color: "#ffd6d6", fontSize: 12, fontWeight: 600, marginTop: 6 }}>{errors.identifier.message}</p>}
           </div>
           <div>
             <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
               {t("password")}
             </label>
-            <input {...register("password")} type="password" placeholder={t("passwordPlaceholder")} autoComplete="current-password" className="glass-input" />
+            <div style={{ position: "relative" }}>
+              <input {...register("password")} type={showPassword ? "text" : "password"} placeholder={t("passwordPlaceholder")} autoComplete="current-password" className="glass-input" style={{ paddingRight: 48 }} />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? t("hidePassword") : t("showPassword")}
+                style={{ position: "absolute", top: "50%", right: 8, transform: "translateY(-50%)", background: "transparent", border: "none", cursor: "pointer", padding: 8, display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,0.7)" }}
+              >
+                {showPassword ? <EyeOff size={18} strokeWidth={2.5} /> : <Eye size={18} strokeWidth={2.5} />}
+              </button>
+            </div>
             {errors.password && <p style={{ color: "#ffd6d6", fontSize: 12, fontWeight: 600, marginTop: 6 }}>{errors.password.message}</p>}
           </div>
           <button type="submit" disabled={isSubmitting} className="btn-white" style={{ marginTop: 8, color: "#4776e6" }}>

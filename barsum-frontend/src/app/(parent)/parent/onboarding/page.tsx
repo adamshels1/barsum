@@ -40,6 +40,8 @@ const dict: Dict = {
     copy: "Копировать",
     share: "Поделиться",
     next: "Далее →",
+    shareRequiredHint: "⚠️ Сначала скопируйте или отправьте данные ребёнку — без них он не войдёт",
+    shareFirst: "Поделитесь, чтобы продолжить",
     addChild: "Добавь ребёнка",
     createToStart: "Создай профиль, чтобы начать",
     childNamePlaceholder: "Имя ребёнка",
@@ -76,6 +78,8 @@ const dict: Dict = {
     copy: "Көшіру",
     share: "Бөлісу",
     next: "Әрі қарай →",
+    shareRequiredHint: "⚠️ Алдымен деректерді балаға көшіріп немесе жіберіңіз — онсыз ол кіре алмайды",
+    shareFirst: "Жалғастыру үшін бөлісіңіз",
     addChild: "Бала қосу",
     createToStart: "Бастау үшін профиль құрыңыз",
     childNamePlaceholder: "Баланың аты",
@@ -101,6 +105,9 @@ export default function ParentOnboardingPage() {
   const t = useT(dict);
   const router = useRouter();
   const [created, setCreated] = useState<{ login: string; password: string; name: string } | null>(null);
+  // Родитель обязан скопировать/отправить данные ребёнку прежде чем идти дальше —
+  // иначе многие забывают поделиться, и ребёнок не может войти.
+  const [shared, setShared] = useState(false);
   const [showShopStep, setShowShopStep] = useState(false);
   const [addedNames, setAddedNames] = useState<Set<string>>(new Set());
   const [pendingName, setPendingName] = useState<string | null>(null);
@@ -159,16 +166,16 @@ export default function ParentOnboardingPage() {
   const copyAll = () => {
     if (!created) return;
     const text = t("copyText", { login: created.login, password: created.password });
-    navigator.clipboard.writeText(text).then(() => toast.success(t("credsCopied")));
+    navigator.clipboard.writeText(text).then(() => { setShared(true); toast.success(t("credsCopied")); });
   };
 
   const shareAll = () => {
     if (!created) return;
     const text = t("shareText", { name: created.name, login: created.login, password: created.password });
     if (typeof navigator !== "undefined" && navigator.share) {
-      navigator.share({ title: t("shareTitle"), text });
+      navigator.share({ title: t("shareTitle"), text }).then(() => setShared(true)).catch(() => {});
     } else {
-      navigator.clipboard.writeText(text).then(() => toast.success(t("dataCopied")));
+      navigator.clipboard.writeText(text).then(() => { setShared(true); toast.success(t("dataCopied")); });
     }
   };
 
@@ -231,7 +238,7 @@ export default function ParentOnboardingPage() {
                 </div>
                 {copyKey && (
                   <button
-                    onClick={() => navigator.clipboard.writeText(copyKey).then(() => toast.success(t("copiedSuffix", { label })))}
+                    onClick={() => navigator.clipboard.writeText(copyKey).then(() => { setShared(true); toast.success(t("copiedSuffix", { label })); })}
                     style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 10, padding: "8px 10px", cursor: "pointer" }}
                   >
                     <ClipboardCopy size={16} color="rgba(255,255,255,0.8)" />
@@ -258,8 +265,18 @@ export default function ParentOnboardingPage() {
             </button>
           </div>
 
-          <button onClick={() => setShowShopStep(true)} className="btn-white" style={{ color: "#4776e6" }}>
-            {t("next")}
+          {!shared && (
+            <p style={{ margin: "0 0 10px", fontSize: 12.5, fontWeight: 700, color: "#ffd200", textAlign: "center", lineHeight: 1.4 }}>
+              {t("shareRequiredHint")}
+            </p>
+          )}
+          <button
+            onClick={() => shared && setShowShopStep(true)}
+            disabled={!shared}
+            className="btn-white"
+            style={{ color: "#4776e6", opacity: shared ? 1 : 0.45, cursor: shared ? "pointer" : "not-allowed" }}
+          >
+            {shared ? t("next") : t("shareFirst")}
           </button>
         </div>
       </main>
@@ -299,13 +316,18 @@ export default function ParentOnboardingPage() {
               { name: "age", placeholder: t("agePlaceholder"), type: "number" },
               { name: "login", placeholder: t("loginPlaceholder"), type: "text" },
               { name: "password", placeholder: t("passwordPlaceholder"), type: "password" },
-            ].map((f) => (
+            ].map((f) => {
+              const reg = register(f.name as keyof ChildForm);
+              const isLogin = f.name === "login";
+              return (
               <div key={f.name}>
                 <input
-                  {...register(f.name as keyof ChildForm)}
+                  {...reg}
+                  onChange={isLogin ? (e) => { e.target.value = e.target.value.toLowerCase(); reg.onChange(e); } : reg.onChange}
                   placeholder={f.placeholder}
                   type={f.type}
                   className="glass-input"
+                  {...(isLogin ? { autoCapitalize: "none", autoCorrect: "off", spellCheck: false } : {})}
                   {...(f.name === "age" ? { min: 4, max: 16 } : {})}
                 />
                 {errors[f.name as keyof ChildForm] && (
@@ -314,7 +336,7 @@ export default function ParentOnboardingPage() {
                   </p>
                 )}
               </div>
-            ))}
+            );})}
             <button type="submit" disabled={isSubmitting} className="btn-white" style={{ marginTop: 4, color: "#4776e6" }}>
               {isSubmitting ? t("creating") : t("createProfile")}
             </button>

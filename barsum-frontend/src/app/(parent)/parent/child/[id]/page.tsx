@@ -68,6 +68,9 @@ const dict: Dict = {
     editProfileTitle: "Редактировать профиль",
     namePlaceholder: "Имя",
     agePlaceholder: "Возраст",
+    loginPlaceholder: "Логин (a-z, 0-9, _)",
+    loginRule: "Логин: только a-z, 0-9, _, минимум 3 символа",
+    loginTakenError: "Такой логин уже занят",
     cancel: "Отмена",
     saving: "Сохранение...",
     save: "Сохранить",
@@ -162,6 +165,9 @@ const dict: Dict = {
     editProfileTitle: "Профильді өңдеу",
     namePlaceholder: "Аты",
     agePlaceholder: "Жасы",
+    loginPlaceholder: "Логин (a-z, 0-9, _)",
+    loginRule: "Логин: тек a-z, 0-9, _, кемінде 3 таңба",
+    loginTakenError: "Мұндай логин бос емес",
     cancel: "Бас тарту",
     saving: "Сақталуда...",
     save: "Сақтау",
@@ -439,6 +445,7 @@ function EditProfileSection({ child }: { child: Child }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(child.name);
   const [age, setAge] = useState(String(child.age));
+  const [login, setLogin] = useState(child.login);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -452,7 +459,10 @@ function EditProfileSection({ child }: { child: Child }) {
 
   const mutation = useMutation({
     mutationFn: async () => {
-      await childrenApi.update(child.id, { name: name.trim(), age: Number(age) });
+      const patch: { name: string; age: number; login?: string } = { name: name.trim(), age: Number(age) };
+      const normalizedLogin = login.trim().toLowerCase();
+      if (normalizedLogin !== child.login) patch.login = normalizedLogin;
+      await childrenApi.update(child.id, patch);
       if (photoFile) await childrenApi.uploadPhoto(child.id, photoFile);
     },
     onSuccess: () => {
@@ -463,10 +473,11 @@ function EditProfileSection({ child }: { child: Child }) {
       setPhotoFile(null);
       setPhotoPreview(null);
     },
-    onError: () => toast.error(t("saveError")),
+    onError: (err: any) => toast.error(err?.response?.data?.message || t("saveError")),
   });
 
-  const valid = name.trim().length >= 2 && Number(age) >= 4 && Number(age) <= 16;
+  const loginValid = /^[a-z0-9_]{3,}$/.test(login.trim().toLowerCase());
+  const valid = name.trim().length >= 2 && Number(age) >= 4 && Number(age) <= 16 && loginValid;
 
   if (!open) {
     return (
@@ -508,8 +519,20 @@ function EditProfileSection({ child }: { child: Child }) {
         </button>
         <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder={t("namePlaceholder")} className="glass-input" />
         <input type="number" min={4} max={16} value={age} onChange={(e) => setAge(e.target.value)} placeholder={t("agePlaceholder")} className="glass-input" />
+        <input
+          type="text"
+          value={login}
+          onChange={(e) => setLogin(e.target.value.toLowerCase())}
+          placeholder={t("loginPlaceholder")}
+          className="glass-input"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          style={login.trim() && !loginValid ? { borderColor: "rgba(239,68,68,0.6)" } : {}}
+        />
+        {login.trim() && !loginValid && <p style={{ margin: 0, fontSize: 12, color: "#ffd6d6" }}>{t("loginRule")}</p>}
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => { setOpen(false); setName(child.name); setAge(String(child.age)); setPhotoFile(null); setPhotoPreview(null); }} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13, background: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.7)" }}>{t("cancel")}</button>
+          <button onClick={() => { setOpen(false); setName(child.name); setAge(String(child.age)); setLogin(child.login); setPhotoFile(null); setPhotoPreview(null); }} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13, background: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.7)" }}>{t("cancel")}</button>
           <button onClick={() => mutation.mutate()} disabled={!valid || mutation.isPending} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 800, fontSize: 13, background: "rgba(255,255,255,0.9)", color: "#4776e6", opacity: !valid ? 0.5 : 1 }}>
             {mutation.isPending ? t("saving") : t("save")}
           </button>

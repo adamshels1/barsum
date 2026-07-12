@@ -35,6 +35,12 @@ export const sessionsApi = {
   answer: (id: string, answers: Record<string, string>) =>
     apiClient.post(`/sessions/${id}/answer`, { answers }).then((r) => r.data),
 
+  // «Своя книжка»: спорные сессии, ожидающие подтверждения родителя.
+  parentPending: () =>
+    apiClient.get("/sessions/parent-pending").then((r) => r.data),
+  parentConfirm: (id: string, approve: boolean) =>
+    apiClient.post(`/sessions/${id}/parent-confirm`, { approve }).then((r) => r.data),
+
   // Review queue (for expert)
   reviewQueue: () => apiClient.get("/review-queue").then((r) => r.data),
   approveReview: (id: string, report?: string) =>

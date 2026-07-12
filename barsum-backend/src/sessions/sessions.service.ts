@@ -137,6 +137,23 @@ export class SessionsService {
     });
   }
 
+  // Спорные сессии «своей книжки», ожидающие подтверждения родителя.
+  // Это родительский аналог очереди эксперта — фронт родителя опрашивает его,
+  // чтобы показать блок «нужно подтвердить чтение».
+  async findPendingOwnBookForParent(parentId: string): Promise<Session[]> {
+    return this.sessionRepo.find({
+      where: {
+        status: SessionStatus.PENDING,
+        enrollment: {
+          parentId,
+          challenge: { category: ChallengeCategory.OWN_BOOK },
+        },
+      },
+      relations: ['enrollment', 'enrollment.challenge'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
   async startRecording(id: string, childId: string): Promise<Session> {
     const session = await this.findById(id);
     if (session.childId !== childId) throw new ForbiddenException('Not your session');

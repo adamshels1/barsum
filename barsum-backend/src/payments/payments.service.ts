@@ -64,8 +64,10 @@ export class PaymentsService {
     challengePrice: number;
     coinsAmount: number;
   }): Promise<Payment> {
-    const coinsTg = Math.floor(dto.coinsAmount / 10);
-    const total = dto.challengePrice + coinsTg;
+    // Монеты для ребёнка теперь равны цене книги (ползунок убран): родитель платит
+    // цену книги, ребёнок получает столько же монет — без доплаты за монеты.
+    const coinsTg = 0;
+    const total = dto.challengePrice;
 
     // Оплата подтверждается родителем на слово (QR Kaspi, без загрузки чека) —
     // сразу помечаем как confirmed и открываем доступ к заданию.

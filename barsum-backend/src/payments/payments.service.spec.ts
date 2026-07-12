@@ -1,7 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 import { PaymentsService } from './payments.service';
 import { Payment } from './entities/payment.entity';
+import { ChallengeEnrollment } from '../sessions/entities/enrollment.entity';
+import { Challenge } from '../challenges/entities/challenge.entity';
+import { CoinsService } from '../coins/coins.service';
+import { TelegramService } from '../notifications/telegram.service';
 import {
   ConflictException,
   BadRequestException,
@@ -25,6 +30,23 @@ const mockRepo = {
   createQueryBuilder: jest.fn().mockReturnValue(mockQB),
 };
 
+const mockEnrollmentRepo = {
+  // Возвращаем существующий enrollment, чтобы activateEnrollment вышел раньше.
+  findOne: jest.fn().mockResolvedValue({ id: 'e1' }),
+  create: jest.fn((x) => x),
+  save: jest.fn(async (x) => x),
+};
+const mockChallengeRepo = {
+  findOne: jest.fn().mockResolvedValue({ id: 'ch1', totalParts: 1 }),
+  create: jest.fn((x) => x),
+  save: jest.fn(async (x) => x),
+};
+const mockCoinsService = { transfer: jest.fn().mockResolvedValue(undefined) };
+const mockTelegram = { send: jest.fn() };
+const mockDataSource = {
+  getRepository: jest.fn().mockReturnValue({ findOne: jest.fn().mockResolvedValue(null) }),
+};
+
 describe('PaymentsService', () => {
   let service: PaymentsService;
 
@@ -33,6 +55,11 @@ describe('PaymentsService', () => {
       providers: [
         PaymentsService,
         { provide: getRepositoryToken(Payment), useValue: mockRepo },
+        { provide: getRepositoryToken(ChallengeEnrollment), useValue: mockEnrollmentRepo },
+        { provide: getRepositoryToken(Challenge), useValue: mockChallengeRepo },
+        { provide: CoinsService, useValue: mockCoinsService },
+        { provide: TelegramService, useValue: mockTelegram },
+        { provide: DataSource, useValue: mockDataSource },
       ],
     }).compile();
     service = module.get<PaymentsService>(PaymentsService);
@@ -45,19 +72,18 @@ describe('PaymentsService', () => {
 
   it('should be defined', () => expect(service).toBeDefined());
 
-  it('create → calculates total correctly (1 coin = 0.1 tg)', async () => {
-    const payment = { id: 'p1', challengePrice: 1000, coinsAmount: 5000, coinsTg: 500, total: 1500 };
-    mockRepo.create.mockReturnValue(payment);
-    mockRepo.save.mockResolvedValue(payment);
+  it('create → total равен цене книги, монеты идут бонусом (ползунок убран)', async () => {
+    mockRepo.create.mockImplementation((x: any) => x);
+    mockRepo.save.mockImplementation(async (x: any) => ({ id: 'p1', ...x }));
     const result = await service.create({
       parentId: 'u1',
       childId: 'c1',
       challengeId: 'ch1',
       challengePrice: 1000,
-      coinsAmount: 5000,
+      coinsAmount: 1000,
     });
-    expect(result.total).toBe(1500);
-    expect(result.coinsTg).toBe(500);
+    expect(result.total).toBe(1000);
+    expect(result.coinsTg).toBe(0);
   });
 
   it('confirm → throws ConflictException if already confirmed', async () => {
