@@ -25,7 +25,7 @@ export class ExpertsController {
 
   @Patch('me')
   @ApiOperation({ summary: 'Обновить профиль эксперта' })
-  updateMe(@Request() req: any, @Body() body: { specialization?: string; bio?: string }) {
+  updateMe(@Request() req: any, @Body() body: { specialization?: string; bio?: string; whatsapp?: string }) {
     return this.expertsService.updateProfile(req.user.sub, body);
   }
 

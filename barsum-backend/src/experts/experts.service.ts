@@ -3,12 +3,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Expert } from './entities/expert.entity';
 import { ExpertStatus } from '../common/enums';
+import { TelegramService, esc } from '../notifications/telegram.service';
 
 @Injectable()
 export class ExpertsService {
   constructor(
     @InjectRepository(Expert)
     private expertRepo: Repository<Expert>,
+    private telegram: TelegramService,
   ) {}
 
   async findById(id: string): Promise<Expert | null> {
@@ -33,13 +35,28 @@ export class ExpertsService {
   }
 
   async apply(userId: string): Promise<Expert> {
-    const expert = await this.findByUserId(userId);
+    const expert = await this.expertRepo.findOne({ where: { userId }, relations: ['user'] });
     if (!expert) throw new NotFoundException('Expert not found');
     expert.status = ExpertStatus.REVIEW;
+
+    // Уведомляем команду в Telegram: поступила заявка эксперта на модерацию.
+    const lines = [
+      '📝 <b>Заявка эксперта на рассмотрение</b>',
+      `Имя: ${esc(expert.user?.name)}`,
+      `Email: ${esc(expert.user?.email)}`,
+      expert.whatsapp ? `WhatsApp: ${esc(expert.whatsapp)}` : null,
+      expert.specialization ? `Специализация: ${esc(expert.specialization)}` : null,
+      expert.bio ? `О себе: ${esc(expert.bio)}` : null,
+      `🆔 ${esc(expert.id)}`,
+    ].filter(Boolean);
+    this.telegram.send('registrations', lines.join('\n'));
+
+    // Не возвращаем связанного user (в нём хэш пароля) — сохраняем и отдаём чистого эксперта.
+    delete (expert as any).user;
     return this.expertRepo.save(expert);
   }
 
-  async updateProfile(userId: string, dto: { specialization?: string; bio?: string }): Promise<Expert> {
+  async updateProfile(userId: string, dto: { specialization?: string; bio?: string; whatsapp?: string }): Promise<Expert> {
     const expert = await this.findByUserId(userId);
     if (!expert) throw new NotFoundException('Expert not found');
     Object.assign(expert, dto);

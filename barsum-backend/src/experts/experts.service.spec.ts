@@ -4,6 +4,7 @@ import { ExpertsService } from './experts.service';
 import { Expert } from './entities/expert.entity';
 import { ExpertStatus } from '../common/enums';
 import { NotFoundException } from '@nestjs/common';
+import { TelegramService } from '../notifications/telegram.service';
 
 const mockRepo = {
   findOne: jest.fn(),
@@ -13,6 +14,8 @@ const mockRepo = {
   count: jest.fn(),
 };
 
+const mockTelegram = { send: jest.fn() };
+
 describe('ExpertsService', () => {
   let service: ExpertsService;
 
@@ -21,6 +24,7 @@ describe('ExpertsService', () => {
       providers: [
         ExpertsService,
         { provide: getRepositoryToken(Expert), useValue: mockRepo },
+        { provide: TelegramService, useValue: mockTelegram },
       ],
     }).compile();
     service = module.get<ExpertsService>(ExpertsService);

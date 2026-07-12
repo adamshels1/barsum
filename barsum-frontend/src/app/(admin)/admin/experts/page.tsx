@@ -21,6 +21,7 @@ const dict: Dict = {
     empty: "Нет заявок",
     userId: "ID пользователя",
     specialization: "Специализация",
+    whatsapp: "WhatsApp",
     about: "О себе",
     approve: "Одобрить",
     reject: "Отклонить",
@@ -42,6 +43,7 @@ const dict: Dict = {
     empty: "Өтінімдер жоқ",
     userId: "Пайдаланушы ID",
     specialization: "Мамандану",
+    whatsapp: "WhatsApp",
     about: "Өзі туралы",
     approve: "Мақұлдау",
     reject: "Қабылдамау",
@@ -59,6 +61,7 @@ interface Expert {
   userId: string;
   status: string;
   specialization?: string;
+  whatsapp?: string;
   bio?: string;
 }
 
@@ -203,6 +206,21 @@ export default function AdminExpertsPage() {
                   <div style={{ marginBottom: 8 }}>
                     <p style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.55)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>{t("specialization")}</p>
                     <p style={{ margin: "4px 0 0", fontSize: 14, fontWeight: 700, color: "#ffffff" }}>{expert.specialization}</p>
+                  </div>
+                )}
+
+                {/* WhatsApp */}
+                {expert.whatsapp && (
+                  <div style={{ marginBottom: 8 }}>
+                    <p style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.55)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>{t("whatsapp")}</p>
+                    <a
+                      href={`https://wa.me/${expert.whatsapp.replace(/[^\d]/g, "")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ display: "inline-block", margin: "4px 0 0", fontSize: 14, fontWeight: 700, color: "#aaffcc", textDecoration: "none" }}
+                    >
+                      {expert.whatsapp}
+                    </a>
                   </div>
                 )}
 

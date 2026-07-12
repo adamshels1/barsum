@@ -24,6 +24,9 @@ export class Expert {
   bio: string;
 
   @Column({ nullable: true })
+  whatsapp: string;
+
+  @Column({ nullable: true })
   rejectedReason: string;
 
   @CreateDateColumn()

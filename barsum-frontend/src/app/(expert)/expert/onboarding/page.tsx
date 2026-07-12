@@ -16,6 +16,7 @@ const dict: Dict = {
   ru: {
     minSpec: "Минимум 5 символов",
     minBio: "Расскажи о себе подробнее (мин. 20 символов)",
+    invalidWhatsapp: "Укажи номер WhatsApp (мин. 10 цифр)",
     stillReview: "Заявка всё ещё на рассмотрении",
     applyError: "Ошибка подачи заявки",
     redirecting: "Перенаправление...",
@@ -29,6 +30,9 @@ const dict: Dict = {
     rejected: "Ваша заявка была отклонена. Можно подать повторно.",
     specialization: "Специализация",
     specializationPlaceholder: "Детский психолог, логопед, педагог...",
+    whatsapp: "WhatsApp",
+    whatsappPlaceholder: "+7 700 123 45 67",
+    whatsappHint: "Так с вами свяжутся по заявке",
     about: "О себе",
     aboutPlaceholder: "Опиши свой опыт, квалификацию, подход к работе с детьми...",
     submitting: "Отправляем...",
@@ -37,6 +41,7 @@ const dict: Dict = {
   kk: {
     minSpec: "Кемінде 5 таңба",
     minBio: "Өзің туралы толығырақ жаз (кемінде 20 таңба)",
+    invalidWhatsapp: "WhatsApp нөмірін көрсет (кемінде 10 сан)",
     stillReview: "Өтінім әлі қаралуда",
     applyError: "Өтінім беру қатесі",
     redirecting: "Бағыттау...",
@@ -50,6 +55,9 @@ const dict: Dict = {
     rejected: "Өтініміңіз қабылданбады. Қайта беруге болады.",
     specialization: "Мамандандыру",
     specializationPlaceholder: "Балалар психологы, логопед, педагог...",
+    whatsapp: "WhatsApp",
+    whatsappPlaceholder: "+7 700 123 45 67",
+    whatsappHint: "Өтінім бойынша сізбен осы нөмірмен хабарласады",
     about: "Өзім туралы",
     aboutPlaceholder: "Тәжірибеңді, біліктілігіңді, балалармен жұмыс тәсіліңді сипатта...",
     submitting: "Жіберілуде...",
@@ -65,6 +73,7 @@ export default function ExpertOnboardingPage() {
 
   const applySchema = z.object({
     specialization: z.string().min(5, t("minSpec")),
+    whatsapp: z.string().regex(/^[+\d][\d\s()-]{9,}$/, t("invalidWhatsapp")),
     bio: z.string().min(20, t("minBio")),
   });
   type ApplyForm = z.infer<typeof applySchema>;
@@ -193,6 +202,29 @@ export default function ExpertOnboardingPage() {
               {errors.specialization && (
                 <p style={{ color: "#ffd6d6", fontSize: 12, fontWeight: 600, marginTop: 6 }}>
                   {errors.specialization.message}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                {t("whatsapp")}
+              </label>
+              <input
+                {...register("whatsapp")}
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                placeholder={t("whatsappPlaceholder")}
+                className="glass-input"
+              />
+              {errors.whatsapp ? (
+                <p style={{ color: "#ffd6d6", fontSize: 12, fontWeight: 600, marginTop: 6 }}>
+                  {errors.whatsapp.message}
+                </p>
+              ) : (
+                <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, fontWeight: 600, marginTop: 6 }}>
+                  {t("whatsappHint")}
                 </p>
               )}
             </div>
