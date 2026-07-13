@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Camera, Copy, Eye, EyeOff } from "lucide-react";
+import { Award, Camera, Copy, Eye, EyeOff } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
@@ -12,6 +12,7 @@ import { rewardsApi } from "@/lib/api/rewards";
 import { sessionsApi } from "@/lib/api/sessions";
 import type { Child, ChildStats, RewardRequest, Session } from "@/types";
 import { CoinIcon } from "@/components/CoinIcon";
+import { CertificateModal } from "@/components/CertificateModal";
 import { childPhotoUrl, dreamPhotoUrl, rewardPhotoUrl } from "@/lib/media";
 import { useT, type Dict } from "@/i18n/useT";
 
@@ -34,6 +35,8 @@ const dict: Dict = {
     statusCompleted: "Выполнено",
     statusPending: "В процессе",
     statusFailed: "Не выполнено",
+    certificatesTitle: "🏆 Сертификаты",
+    certificateBtn: "Сертификат",
     book: "Книга",
     partN: "часть {n}",
     recordingTitle: "Запись чтения",
@@ -134,6 +137,8 @@ const dict: Dict = {
     statusCompleted: "Орындалды",
     statusPending: "Орындалуда",
     statusFailed: "Орындалмады",
+    certificatesTitle: "🏆 Сертификаттар",
+    certificateBtn: "Сертификат",
     book: "Кітап",
     partN: "{n}-бөлім",
     recordingTitle: "Оқу жазбасы",
@@ -923,6 +928,50 @@ function TabBar({ active, onChange }: { active: TabKey; onChange: (key: TabKey) 
   );
 }
 
+// Сертификаты за полностью прочитанные книги ребёнка (родитель может скачать/поделиться).
+function CertificatesSection({ childId, childName }: { childId: string; childName: string }) {
+  const t = useT(dict);
+  const [certBook, setCertBook] = useState<string | null>(null);
+
+  const { data: enrollments = [] } = useQuery<any[]>({
+    queryKey: ["parent-enrollments"],
+    queryFn: sessionsApi.listParentEnrollments,
+  });
+
+  const completed = enrollments.filter((e) => {
+    const total = e.challenge?.totalParts ?? 0;
+    return e.childId === childId && total > 0 && (e.completedParts ?? 0) >= total;
+  });
+
+  if (completed.length === 0) return null;
+
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <p style={{ margin: "0 0 12px", fontSize: 16, fontWeight: 900, color: "#ffffff" }}>{t("certificatesTitle")}</p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {completed.map((e) => (
+          <div key={e.id} style={{ ...GLASS, padding: "12px 14px", display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={{ fontSize: 20 }}>📖</span>
+            <span style={{ flex: 1, minWidth: 0, fontWeight: 800, fontSize: 14, color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {e.challenge?.bookTitle || e.challenge?.title}
+            </span>
+            <button
+              onClick={() => setCertBook(e.challenge?.bookTitle || e.challenge?.title || "")}
+              style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0, padding: "9px 16px", borderRadius: 9999, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 800, fontSize: 13, background: "#ffffff", color: "#4776e6" }}
+            >
+              <Award size={15} strokeWidth={2.5} />
+              {t("certificateBtn")}
+            </button>
+          </div>
+        ))}
+      </div>
+      {certBook !== null && (
+        <CertificateModal childName={childName} bookTitle={certBook} onClose={() => setCertBook(null)} />
+      )}
+    </div>
+  );
+}
+
 export default function ParentChildProgressPage() {
   const t = useT(dict);
   const router = useRouter();
@@ -1010,6 +1059,8 @@ export default function ParentChildProgressPage() {
           <ChildDreamsSection childId={childId} />
 
           <DreamFulfillSection />
+
+          <CertificatesSection childId={childId} childName={child.name} />
 
           <TabBar active={activeTab} onChange={setActiveTab} />
 

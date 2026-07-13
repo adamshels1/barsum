@@ -1,9 +1,12 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, Lock } from "lucide-react";
+import { Award, ChevronLeft, Lock } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
 import { sessionsApi } from "@/lib/api/sessions";
+import { useAuthStore } from "@/stores/auth-store";
+import { CertificateModal } from "@/components/CertificateModal";
 import { useT, type Dict } from "@/i18n/useT";
 
 const dict: Dict = {
@@ -15,6 +18,7 @@ const dict: Dict = {
     partsOf: "{done} из {total} частей",
     bookDone: "Книга прочитана!",
     bookDoneSub: "Ты молодец — прочитал все части",
+    getCertificate: "🏆 Получить сертификат",
     partsHeading: "Части книги",
     part: "Часть {n}",
     pages: "стр. {start}–{end}",
@@ -32,6 +36,7 @@ const dict: Dict = {
     partsOf: "{total} бөлімнен {done}",
     bookDone: "Кітап оқып бітті!",
     bookDoneSub: "Жарайсың — барлық бөлімді оқып шықтың",
+    getCertificate: "🏆 Сертификат алу",
     partsHeading: "Кітап бөлімдері",
     part: "{n}-бөлім",
     pages: "бет. {start}–{end}",
@@ -89,6 +94,8 @@ export default function BookPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const t = useT(dict);
+  const user = useAuthStore((s) => s.user);
+  const [showCert, setShowCert] = useState(false);
 
   const { data: enrollments = [] } = useQuery<Enrollment[]>({
     queryKey: ["enrollments"],
@@ -184,8 +191,23 @@ export default function BookPage() {
         <div className="glass" style={{ padding: 20, borderRadius: 20, marginBottom: 20, textAlign: "center", background: "rgba(0,200,100,0.15)", border: "1px solid rgba(100,255,150,0.3)" }}>
           <p style={{ margin: 0, fontSize: 32 }}>🏆</p>
           <p style={{ margin: "8px 0 0", fontWeight: 900, fontSize: 18, color: "#ffffff" }}>{t("bookDone")}</p>
-          <p style={{ margin: "4px 0 0", fontSize: 13, color: "rgba(255,255,255,0.65)" }}>{t("bookDoneSub")}</p>
+          <p style={{ margin: "4px 0 12px", fontSize: 13, color: "rgba(255,255,255,0.65)" }}>{t("bookDoneSub")}</p>
+          <button
+            onClick={() => setShowCert(true)}
+            style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "12px 22px", borderRadius: 9999, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 900, fontSize: 15, background: "#ffffff", color: "#2ea36a" }}
+          >
+            <Award size={18} strokeWidth={2.5} />
+            {t("getCertificate")}
+          </button>
         </div>
+      )}
+
+      {showCert && (
+        <CertificateModal
+          childName={user?.name || ""}
+          bookTitle={ch?.bookTitle || ch?.title || ""}
+          onClose={() => setShowCert(false)}
+        />
       )}
 
       {/* Parts list */}

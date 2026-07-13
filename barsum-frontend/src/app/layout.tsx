@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Nunito } from "next/font/google";
+import { Manrope, Nunito, Playfair_Display } from "next/font/google";
 import { Toaster } from "sonner";
 import { QueryProvider } from "@/providers/query-provider";
 import { HtmlLangSync } from "@/i18n/HtmlLangSync";
@@ -11,6 +11,19 @@ const nunito = Nunito({
   subsets: ["latin", "cyrillic"],
   weight: ["400", "500", "600", "700", "800", "900"],
   variable: "--font-nunito",
+});
+
+// Шрифты сертификата читателя (макет заказчика).
+const playfair = Playfair_Display({
+  subsets: ["latin", "cyrillic"],
+  weight: ["600", "700", "800"],
+  variable: "--font-playfair",
+});
+
+const manrope = Manrope({
+  subsets: ["latin", "cyrillic"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-manrope",
 });
 
 export const metadata: Metadata = {
@@ -43,7 +56,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ru">
-      <body className={`${nunito.variable} font-sans`}>
+      <body className={`${nunito.variable} ${playfair.variable} ${manrope.variable} font-sans`}>
         <QueryProvider>
           <HtmlLangSync />
           {children}
