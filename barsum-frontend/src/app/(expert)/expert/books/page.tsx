@@ -199,7 +199,14 @@ export default function ExpertBooksPage() {
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {filtered.map((challenge) => (
-              <div key={challenge.id} className="glass" style={{ padding: 16 }}>
+              <div
+                key={challenge.id}
+                className="glass"
+                onClick={() => router.push(`/expert/books/${challenge.id}`)}
+                role="button"
+                tabIndex={0}
+                style={{ padding: 16, cursor: "pointer" }}
+              >
                 {/* Top row with cover */}
                 <div style={{ display: "flex", gap: 12, marginBottom: 10 }}>
                   {/* Cover thumbnail */}
@@ -247,7 +254,7 @@ export default function ExpertBooksPage() {
 
                 {/* Action buttons */}
                 {(challenge.status === "draft" || challenge.status === "rejected") && (
-                  <div style={{ display: "flex", gap: 8 }}>
+                  <div style={{ display: "flex", gap: 8 }} onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => router.push(`/expert/create?edit=${challenge.id}`)}
                       className="glass-chip"
