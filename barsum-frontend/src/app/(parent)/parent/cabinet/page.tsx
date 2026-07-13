@@ -16,6 +16,7 @@ import { CoinIcon } from "@/components/CoinIcon";
 import { Portal } from "@/components/Portal";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ChildRequestsInbox } from "@/components/ChildRequestsInbox";
+import { OwnBookConfirmInbox } from "@/components/OwnBookConfirmInbox";
 import type { Payment } from "@/types";
 import { childPhotoUrl } from "@/lib/media";
 import { useT, type Dict } from "@/i18n/useT";
@@ -230,6 +231,9 @@ export default function ParentCabinetPage() {
           </button>
         </div>
       </div>
+
+      {/* Подтверждение чтения (спорные/экспертские сессии) — на главной, с аудиозаписью */}
+      <OwnBookConfirmInbox />
 
       {/* Запросы от детей — награды + мечты (задача: всё на главной) */}
       <ChildRequestsInbox />
