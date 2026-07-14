@@ -231,12 +231,15 @@ function ChallengeCard({
 const KASPI_PAY_URL = "https://pay.kaspi.kz/pay/e50c7djs";
 
 function KaspiQrStep({
-  total, onBack, onConfirm, isPending,
+  total, onBack, onConfirm, isPending, onPayClick,
 }: {
   total: number;
   onBack: () => void;
   onConfirm: () => void;
   isPending: boolean;
+  // Вызывается при клике «Оплатить через Kaspi» — тут создаётся черновик оплаты (intent),
+  // чтобы незавершённая покупка не потерялась, если родитель забудет подтвердить.
+  onPayClick?: () => void;
 }) {
   const t = useT(dict);
   // «Я оплатил» разблокируется только после того, как родитель нажал «Оплатить онлайн».
@@ -260,7 +263,7 @@ function KaspiQrStep({
         href={KASPI_PAY_URL}
         target="_blank"
         rel="noopener noreferrer"
-        onClick={() => setPayClicked(true)}
+        onClick={() => { setPayClicked(true); onPayClick?.(); }}
         style={{
           display: "flex",
           alignItems: "center",
@@ -322,16 +325,42 @@ function PurchaseModal({
   const t = useT(dict);
   const [childId, setChildId] = useState("");
   const [step, setStep] = useState<"form" | "qr">("form");
+  // id черновика оплаты (intent), созданного при клике «Оплатить через Kaspi».
+  const [intentId, setIntentId] = useState<string | null>(null);
 
   // Монеты для ребёнка равны цене книги (ползунок убран).
   const coinsAmount = challenge.price;
   const total = challenge.price;
 
+  // Фаза 1: клик «Оплатить через Kaspi» → создаём незавершённый платёж (pending),
+  // чтобы покупка не потерялась, если родитель забудет подтвердить.
+  const intentMutation = useMutation({
+    mutationFn: () => paymentsApi.createIntent({ childId, challengeId: challenge.id, coinsAmount }),
+    onSuccess: (payment: Payment) => setIntentId(payment.id),
+    // Тихо: даже если черновик не создался, «Я оплатил» ниже сработает через fallback.
+    onError: () => {},
+  });
+
+  // Фаза 2: «Я оплатил» → подтверждаем черновик (pending → confirmed + доступ).
+  const confirmMutation = useMutation({
+    mutationFn: () => paymentsApi.confirmMine(intentId as string),
+    onSuccess: (payment: Payment) => onSuccess(payment),
+    onError: (err: any) => { toast.error(err?.response?.data?.message || t("orderError")); },
+  });
+
+  // Fallback: если черновик по какой-то причине не создался — создаём сразу confirmed
+  // (старое поведение), чтобы кнопка «Я оплатил» не оказалась мёртвой.
   const createMutation = useMutation({
     mutationFn: () => paymentsApi.create({ childId, challengeId: challenge.id, coinsAmount }),
     onSuccess: (payment: Payment) => onSuccess(payment),
     onError: (err: any) => { toast.error(err?.response?.data?.message || t("orderError")); },
   });
+
+  const handleConfirm = () => {
+    if (intentId) confirmMutation.mutate();
+    else createMutation.mutate();
+  };
+  const confirmPending = confirmMutation.isPending || createMutation.isPending;
 
   const colorIdx = challenge.title.charCodeAt(0) % CARD_GRADS.length;
   const grad = CARD_GRADS[colorIdx];
@@ -373,8 +402,9 @@ function PurchaseModal({
           <KaspiQrStep
             total={total}
             onBack={() => setStep("form")}
-            onConfirm={() => createMutation.mutate()}
-            isPending={createMutation.isPending}
+            onPayClick={() => { if (!intentId) intentMutation.mutate(); }}
+            onConfirm={handleConfirm}
+            isPending={confirmPending}
           />
         ) : (
         <div style={{ padding: "20px 20px max(32px, env(safe-area-inset-bottom))", display: "flex", flexDirection: "column", gap: 16 }}>

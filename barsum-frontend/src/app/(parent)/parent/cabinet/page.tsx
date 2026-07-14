@@ -48,6 +48,13 @@ const dict: Dict = {
     forChild: "Для {name} · {date}",
     childFallback: "ребёнка",
     noPurchases: "Покупок пока нет",
+    unfinishedTitle: "Незавершённые оплаты",
+    unfinishedHint: "Вы начали оплату, но не подтвердили. Если оплатили в Kaspi — подтвердите, и книга откроется ребёнку.",
+    confirmPaidBtn: "Я оплатил, подтвердить",
+    cancelBtn: "Отменить",
+    confirmedToast: "Оплата подтверждена — книга открыта!",
+    cancelledToast: "Оплата отменена",
+    actionError: "Не удалось выполнить, попробуйте ещё раз",
     profileCreated: "Профиль создан!",
     name: "Имя",
     login: "Логин",
@@ -87,6 +94,13 @@ const dict: Dict = {
     forChild: "{name} үшін · {date}",
     childFallback: "бала",
     noPurchases: "Әзірге сатып алулар жоқ",
+    unfinishedTitle: "Аяқталмаған төлемдер",
+    unfinishedHint: "Төлемді бастадыңыз, бірақ растамадыңыз. Kaspi-де төлеген болсаңыз — растаңыз, сонда кітап балаға ашылады.",
+    confirmPaidBtn: "Төледім, растаймын",
+    cancelBtn: "Болдырмау",
+    confirmedToast: "Төлем расталды — кітап ашылды!",
+    cancelledToast: "Төлем болдырылмады",
+    actionError: "Орындау мүмкін болмады, қайталап көріңіз",
     profileCreated: "Профиль құрылды!",
     name: "Аты",
     login: "Логин",
@@ -199,6 +213,33 @@ export default function ParentCabinetPage() {
     },
   });
 
+  // Незавершённые (pending) платежи — их можно добить: подтвердить или отменить.
+  const pendingPayments = payments.filter((p) => p.status === "pending");
+  const finishedPayments = payments.filter((p) => p.status !== "pending");
+
+  const refreshAfterPayment = () => {
+    queryClient.invalidateQueries({ queryKey: ["payments"] });
+    queryClient.invalidateQueries({ queryKey: ["children"] });
+    queryClient.invalidateQueries({ queryKey: ["parent-balance"] });
+  };
+
+  const confirmPaymentMutation = useMutation({
+    mutationFn: (id: string) => paymentsApi.confirmMine(id),
+    onSuccess: () => { toast.success(t("confirmedToast")); refreshAfterPayment(); },
+    onError: (err: any) => { toast.error(err?.response?.data?.message || t("actionError")); },
+  });
+
+  const cancelPaymentMutation = useMutation({
+    mutationFn: (id: string) => paymentsApi.cancelMine(id),
+    onSuccess: () => { toast.success(t("cancelledToast")); refreshAfterPayment(); },
+    onError: (err: any) => { toast.error(err?.response?.data?.message || t("actionError")); },
+  });
+
+  const busyPaymentId =
+    (confirmPaymentMutation.isPending && confirmPaymentMutation.variables) ||
+    (cancelPaymentMutation.isPending && cancelPaymentMutation.variables) ||
+    null;
+
   const handleLogout = () => {
     clearAuth();
     router.push("/");
@@ -310,6 +351,57 @@ export default function ParentCabinetPage() {
           </div>
         )}
 
+        {/* Незавершённые оплаты — родитель начал оплату, но не подтвердил. Можно добить. */}
+        {pendingPayments.length > 0 && (
+          <div style={{ margin: "24px 0 0" }}>
+            <p style={{ margin: "0 0 12px", fontSize: 11, fontWeight: 800, color: "#ffd200", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              ⏳ {t("unfinishedTitle")}
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {pendingPayments.map((payment) => {
+                const busy = busyPaymentId === payment.id;
+                return (
+                  <div key={payment.id} style={{ ...GLASS, padding: "14px 16px", border: "1px solid rgba(255,210,0,0.45)", background: "rgba(255,210,0,0.10)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
+                        📚
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ margin: 0, fontWeight: 800, color: "#ffffff", fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {payment.challenge?.bookTitle || payment.challenge?.title || t("challengeFallback")}
+                        </p>
+                        <p style={{ margin: "2px 0 0", fontSize: 12.5, color: "rgba(255,255,255,0.6)" }}>
+                          {t("forChild", { name: payment.child?.name ?? t("childFallback"), date: formatDate(payment.createdAt) })}
+                        </p>
+                      </div>
+                      <p style={{ margin: 0, fontWeight: 900, color: "#ffffff", fontSize: 15, flexShrink: 0 }}>{payment.total.toLocaleString()} ₸</p>
+                    </div>
+                    <p style={{ margin: "10px 0 12px", fontSize: 12.5, color: "rgba(255,255,255,0.7)", lineHeight: 1.45 }}>
+                      {t("unfinishedHint")}
+                    </p>
+                    <div style={{ display: "flex", gap: 10 }}>
+                      <button
+                        onClick={() => confirmPaymentMutation.mutate(payment.id)}
+                        disabled={busy}
+                        style={{ flex: 1, padding: "12px 14px", borderRadius: 14, border: "none", background: "rgba(255,255,255,0.92)", color: "#4776e6", fontWeight: 900, fontSize: 13.5, cursor: busy ? "default" : "pointer", fontFamily: "inherit", opacity: busy ? 0.6 : 1 }}
+                      >
+                        ✅ {t("confirmPaidBtn")}
+                      </button>
+                      <button
+                        onClick={() => cancelPaymentMutation.mutate(payment.id)}
+                        disabled={busy}
+                        style={{ padding: "12px 14px", borderRadius: 14, border: "1px solid rgba(255,255,255,0.25)", background: "transparent", color: "rgba(255,255,255,0.8)", fontWeight: 700, fontSize: 13.5, cursor: busy ? "default" : "pointer", fontFamily: "inherit", opacity: busy ? 0.6 : 1 }}
+                      >
+                        {t("cancelBtn")}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Purchases section */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "24px 0 12px" }}>
           <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
@@ -317,14 +409,14 @@ export default function ParentCabinetPage() {
           </p>
         </div>
 
-        {payments.length === 0 ? (
+        {finishedPayments.length === 0 ? (
           <div style={{ ...GLASS, padding: 28, textAlign: "center" }}>
             <ShoppingBag size={32} color="rgba(255,255,255,0.5)" strokeWidth={1.5} style={{ margin: "0 auto 8px" }} />
             <p style={{ margin: 0, color: "rgba(255,255,255,0.7)", fontSize: 14 }}>{t("noPurchases")}</p>
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {payments.map((payment) => (
+            {finishedPayments.map((payment) => (
               <div key={payment.id} style={{ ...GLASS, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, border: "1px solid rgba(255,255,255,0.2)" }}>
                 <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
                   📚

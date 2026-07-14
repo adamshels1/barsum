@@ -50,6 +50,33 @@ export class PaymentsController {
     });
   }
 
+  // Черновик оплаты — создаётся при клике «Оплатить через Kaspi» (до перехода в Kaspi).
+  @Post('intent')
+  async createIntent(
+    @Request() req: any,
+    @Body() body: { childId: string; challengeId: string; coinsAmount: number },
+  ) {
+    const challenge = await this.challengeRepo.findOne({ where: { id: body.challengeId } });
+    if (!challenge) throw new NotFoundException('Challenge not found');
+    return this.paymentsService.createIntent({
+      ...body,
+      parentId: req.user.sub,
+      challengePrice: challenge.price,
+    });
+  }
+
+  // Родитель подтверждает свой незавершённый платёж («Я оплатил» / кабинет).
+  @Post(':id/confirm')
+  confirmMine(@Request() req: any, @Param('id') id: string) {
+    return this.paymentsService.confirmByParent(id, req.user.sub);
+  }
+
+  // Родитель отменяет свой незавершённый платёж.
+  @Post(':id/cancel')
+  cancelMine(@Request() req: any, @Param('id') id: string) {
+    return this.paymentsService.cancelByParent(id, req.user.sub);
+  }
+
   @Post('own-book')
   async createOwnBook(
     @Request() req: any,

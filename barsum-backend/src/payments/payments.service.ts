@@ -112,6 +112,86 @@ export class PaymentsService {
     return saved;
   }
 
+  // Черновик оплаты (intent): создаётся в момент клика «Оплатить через Kaspi»,
+  // ДО перехода в Kaspi. Статус pending, доступ (enrollment) НЕ выдаётся — только
+  // когда родитель (или админ) подтвердит оплату. Это ловит кейс «оплатил в Kaspi,
+  // но забыл нажать "Я оплатил"»: незавершённая покупка не теряется, её можно добить.
+  async createIntent(dto: {
+    parentId: string;
+    childId: string;
+    challengeId: string;
+    challengePrice: number;
+    coinsAmount: number;
+  }): Promise<Payment> {
+    // Дедуп: если для этой пары ребёнок+книга уже есть незавершённый черновик —
+    // переиспользуем его, чтобы повторные клики «Оплатить» не плодили дубли.
+    const existing = await this.paymentRepo.findOne({
+      where: {
+        parentId: dto.parentId,
+        childId: dto.childId,
+        challengeId: dto.challengeId,
+        status: PaymentStatus.PENDING,
+      },
+      order: { createdAt: 'DESC' },
+    });
+    if (existing) return existing;
+
+    const total = dto.challengePrice;
+    const split = await this.resolveExpertSplit(dto.challengeId, dto.challengePrice);
+    const payment = this.paymentRepo.create({
+      ...dto,
+      coinsTg: 0,
+      total,
+      ...split,
+      status: PaymentStatus.PENDING,
+    });
+    const saved = await this.paymentRepo.save(payment);
+
+    this.telegram.send(
+      'payments',
+      `⏳ <b>Начата оплата (ожидает подтверждения)</b>\n${await this.actorLines(saved.parentId, saved.childId)}\n` +
+        `Сумма: ${saved.total} ₸`,
+    );
+
+    return saved;
+  }
+
+  // Родитель подтверждает СВОЙ незавершённый платёж (кнопка «Я оплатил» /
+  // баннер «продолжить» в кабинете). pending → confirmed + активация доступа.
+  async confirmByParent(id: string, parentId: string): Promise<Payment> {
+    const payment = await this.findById(id);
+    if (payment.parentId !== parentId) throw new ForbiddenException('Not your payment');
+    if (payment.status === PaymentStatus.CONFIRMED) return payment; // идемпотентно
+    if (payment.status !== PaymentStatus.PENDING) {
+      throw new BadRequestException('Payment is not pending');
+    }
+    payment.status = PaymentStatus.CONFIRMED;
+    payment.resolvedAt = new Date();
+    await this.paymentRepo.save(payment);
+    await this.activateEnrollment(payment);
+
+    this.telegram.send(
+      'payments',
+      `✅ <b>Оплата подтверждена родителем</b>\n${await this.actorLines(payment.parentId, payment.childId)}\n` +
+        `Сумма: ${payment.total} ₸`,
+    );
+
+    return payment;
+  }
+
+  // Родитель отменяет СВОЙ незавершённый платёж (передумал / не оплатил).
+  async cancelByParent(id: string, parentId: string): Promise<Payment> {
+    const payment = await this.findById(id);
+    if (payment.parentId !== parentId) throw new ForbiddenException('Not your payment');
+    if (payment.status !== PaymentStatus.PENDING) {
+      throw new BadRequestException('Payment is not pending');
+    }
+    payment.status = PaymentStatus.REJECTED;
+    payment.adminNote = 'Отменено родителем';
+    payment.resolvedAt = new Date();
+    return this.paymentRepo.save(payment);
+  }
+
   // «Своя книжка»: родитель оплачивает время чтения своей физической книги.
   // Создаём приватный Challenge (без сканов/эталона) + Payment + Enrollment с таймерной экономикой.
   async createOwnBook(dto: {
