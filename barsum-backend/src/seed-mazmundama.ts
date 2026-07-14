@@ -75,15 +75,15 @@ async function seedMazmundama() {
       description:
         'Суретті кітап «Әдепті балақай» сериясынан: бала әкесіне қалай құрмет көрсету керегін үйренеді. Әр бет — жеке иллюстрация мен қысқа диалог. Бала бетті дауыстап оқиды, AI оқуын бағалайды.',
       pagesTotal: 24,
-      pagesPerPart: 1,
+      pagesPerPart: 2,
       totalParts: AKE_PART_TEXTS.length,
       partTexts: AKE_PART_TEXTS,
       partImages: AKE_PART_IMAGES,
       coverImage: AKE_COVER,
       price: PRICE,
       coinsReward: 300,
-      ageMin: 4,
-      ageMax: 8,
+      ageMin: 5,
+      ageMax: 7,
       retellRequired: false,
       category: ChallengeCategory.READING,
       status: ChallengeStatus.PUBLISHED,
@@ -91,16 +91,19 @@ async function seedMazmundama() {
       membersCount: 0,
     });
     await challengeRepo.save(book);
-    console.log('✓ Создана книга:', title, `(${AKE_PART_TEXTS.length} страниц-частей, 5000₸)`);
+    console.log('✓ Создана книга:', title, `(${AKE_PART_TEXTS.length} тем-частей, ${PRICE}₸)`);
   } else {
-    // Идемпотентно обновляем контент (на случай перегенерации PDF)
+    // Идемпотентно обновляем контент (на случай перегенерации PDF / переразбивки на темы)
     existing.partTexts = AKE_PART_TEXTS;
     existing.partImages = AKE_PART_IMAGES;
     existing.coverImage = AKE_COVER;
     existing.totalParts = AKE_PART_TEXTS.length;
+    existing.pagesPerPart = 2;
+    existing.ageMin = 5;
+    existing.ageMax = 7;
     existing.price = PRICE;
     await challengeRepo.save(existing);
-    console.log('~ Книга уже есть, контент обновлён:', title);
+    console.log('~ Книга уже есть, контент обновлён:', title, `(${AKE_PART_TEXTS.length} тем-частей)`);
   }
 
   console.log('\nseed-mazmundama завершён.');
