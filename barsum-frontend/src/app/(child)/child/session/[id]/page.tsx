@@ -241,11 +241,13 @@ function useAudioRecorder(maxSeconds: number, msgs: { recordFail: string; noMic:
 function PhaseRead({
   session,
   dayText,
+  pageImage,
   ownBook,
   onUploaded,
 }: {
   session: Session;
   dayText: string | null;
+  pageImage: string | null;
   ownBook: boolean;
   onUploaded: () => void;
 }) {
@@ -501,6 +503,20 @@ function PhaseRead({
             {t("ownBookHint")}
           </p>
         </div>
+      ) : pageImage ? (
+      /* Картиночная книга: показываем страницу-иллюстрацию в стиле издательства
+         (текст вшит в картинку, ребёнок читает его с иллюстрации). */
+      <div className="glass" style={{ padding: 12, borderRadius: 20 }}>
+        <p style={{ fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 10px", paddingLeft: 4 }}>
+          {t("part", { n: session.partNumber })}
+        </p>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={pageImage}
+          alt=""
+          style={{ width: "100%", borderRadius: 14, display: "block", background: "#fff" }}
+        />
+      </div>
       ) : (
       /* Text block */
       <div className="glass" style={{ padding: 20, borderRadius: 20 }}>
@@ -880,6 +896,7 @@ export default function SessionPage() {
         <PhaseRead
           session={session}
           dayText={dayTextData?.text ?? null}
+          pageImage={dayTextData?.imageUrl ?? null}
           ownBook={ownBook}
           onUploaded={refetch}
         />

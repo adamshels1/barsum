@@ -15,7 +15,8 @@
     "test:cov": "jest --coverage",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "seed": "ts-node -r tsconfig-paths/register src/seed.ts",
-    "seed:dana": "ts-node -r tsconfig-paths/register src/seed-dana.ts"
+    "seed:dana": "ts-node -r tsconfig-paths/register src/seed-dana.ts",
+    "seed:mazmundama": "ts-node -r tsconfig-paths/register src/seed-mazmundama.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
