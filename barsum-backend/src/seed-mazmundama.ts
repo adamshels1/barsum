@@ -30,6 +30,7 @@ async function seedMazmundama() {
   const PASSWORD = 'test123'; // ВРЕМЕННЫЙ — смените после проверки.
   const COMMISSION = 40; // доля издательства в % от цены книги (настраивается админом)
   const PRICE = 1000; // ₸
+  const REWARD = 1000; // виртуальные монеты ребёнку за прочтение всей книги
 
   // 1) Пользователь-эксперт (издательство)
   let user = await usersService.findByEmail(EMAIL);
@@ -81,7 +82,7 @@ async function seedMazmundama() {
       partImages: AKE_PART_IMAGES,
       coverImage: AKE_COVER,
       price: PRICE,
-      coinsReward: 300,
+      coinsReward: REWARD,
       ageMin: 5,
       ageMax: 7,
       retellRequired: false,
@@ -102,6 +103,7 @@ async function seedMazmundama() {
     existing.ageMin = 5;
     existing.ageMax = 7;
     existing.price = PRICE;
+    existing.coinsReward = REWARD;
     await challengeRepo.save(existing);
     console.log('~ Книга уже есть, контент обновлён:', title, `(${AKE_PART_TEXTS.length} тем-частей)`);
   }
