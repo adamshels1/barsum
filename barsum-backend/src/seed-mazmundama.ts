@@ -29,6 +29,7 @@ async function seedMazmundama() {
   const EMAIL = 'mazmundama@barsum.app';
   const PASSWORD = 'test123'; // ВРЕМЕННЫЙ — смените после проверки.
   const COMMISSION = 40; // доля издательства в % от цены книги (настраивается админом)
+  const PRICE = 1000; // ₸
 
   // 1) Пользователь-эксперт (издательство)
   let user = await usersService.findByEmail(EMAIL);
@@ -79,7 +80,7 @@ async function seedMazmundama() {
       partTexts: AKE_PART_TEXTS,
       partImages: AKE_PART_IMAGES,
       coverImage: AKE_COVER,
-      price: 5000,
+      price: PRICE,
       coinsReward: 300,
       ageMin: 4,
       ageMax: 8,
@@ -97,6 +98,7 @@ async function seedMazmundama() {
     existing.partImages = AKE_PART_IMAGES;
     existing.coverImage = AKE_COVER;
     existing.totalParts = AKE_PART_TEXTS.length;
+    existing.price = PRICE;
     await challengeRepo.save(existing);
     console.log('~ Книга уже есть, контент обновлён:', title);
   }
