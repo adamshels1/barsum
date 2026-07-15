@@ -1,8 +1,8 @@
 import { apiClient } from "../client";
 
 export const sessionsApi = {
-  create: (enrollmentId: string) =>
-    apiClient.post("/sessions", { enrollmentId }).then((r) => r.data),
+  create: (enrollmentId: string, partNumber?: number) =>
+    apiClient.post("/sessions", { enrollmentId, partNumber }).then((r) => r.data),
   list: (params?: { childId?: string }) =>
     apiClient.get("/sessions", { params }).then((r) => r.data),
   listByEnrollment: (enrollmentId: string) =>

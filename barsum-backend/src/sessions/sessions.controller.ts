@@ -15,8 +15,8 @@ export class SessionsController {
   constructor(private readonly sessionsService: SessionsService) {}
 
   @Post()
-  create(@Request() req: any, @Body() body: { enrollmentId: string }) {
-    return this.sessionsService.create(body.enrollmentId, req.user.sub);
+  create(@Request() req: any, @Body() body: { enrollmentId: string; partNumber?: number }) {
+    return this.sessionsService.create(body.enrollmentId, req.user.sub, body.partNumber);
   }
 
   @Get()

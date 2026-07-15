@@ -114,7 +114,7 @@ export default function BookPage() {
   });
 
   const createSession = useMutation({
-    mutationFn: () => sessionsApi.create(enrollmentId),
+    mutationFn: (partNumber: number) => sessionsApi.create(enrollmentId, partNumber),
     onSuccess: (session: any) => {
       queryClient.invalidateQueries({ queryKey: ["sessions-by-enrollment", enrollmentId] });
       router.push(`/child/session/${session.id}`);
@@ -234,7 +234,7 @@ export default function BookPage() {
               onClick={() => {
                 if (isCompleted && session) { goToSession(session.id); return; }
                 if (isCurrent && session) { goToSession(session.id); return; }
-                if (isUnlocked) { createSession.mutate(); }
+                if (isUnlocked) { createSession.mutate(partNum); }
               }}
               style={{
                 width: "100%",

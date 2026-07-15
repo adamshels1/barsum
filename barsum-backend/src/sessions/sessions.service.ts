@@ -6,7 +6,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Not, Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Session } from './entities/session.entity';
 import { ChallengeEnrollment } from './entities/enrollment.entity';
 import { ReviewQueue } from './entities/review-queue.entity';
@@ -49,7 +49,7 @@ export class SessionsService {
     private push: PushService,
   ) {}
 
-  async create(enrollmentId: string, childId: string): Promise<Session> {
+  async create(enrollmentId: string, childId: string, requestedPart?: number): Promise<Session> {
     const enrollment = await this.enrollmentRepo.findOne({
       where: { id: enrollmentId, childId },
       relations: ['challenge'],
@@ -59,29 +59,50 @@ export class SessionsService {
       throw new BadRequestException('Enrollment is not active');
     }
 
-    // Return existing in-progress session if any
-    const existing = await this.sessionRepo.findOne({
-      where: { enrollmentId, status: SessionStatus.PENDING, phase: Not(SessionPhase.DONE) },
-    });
-    if (existing) return existing;
-
-    // Check we haven't exceeded totalParts
-    const completedCount = await this.sessionRepo.count({
-      where: { enrollmentId, status: SessionStatus.COMPLETED },
-    });
     const totalParts = enrollment.challenge?.totalParts ?? 0;
-    if (totalParts > 0 && completedCount >= totalParts) {
+
+    // Какую часть открываем: если фронт передал номер нажатой части — её,
+    // иначе первую непрочитанную. НЕ по счётчику завершённых (иначе дубли/
+    // пропуски частей сбивают нумерацию — см. историю бага).
+    let partNumber =
+      requestedPart && requestedPart > 0 ? Math.floor(requestedPart) : 0;
+    if (!partNumber) {
+      partNumber = await this.nextUnreadPart(enrollmentId, totalParts);
+    }
+    if (totalParts > 0 && partNumber > totalParts) {
       throw new BadRequestException('All parts completed');
     }
+
+    // Идемпотентность по (enrollment, partNumber): если сессия для этой части
+    // уже есть — возвращаем её, а не плодим дубль (чинит гонку двойного тапа).
+    const existing = await this.sessionRepo.findOne({
+      where: { enrollmentId, partNumber },
+    });
+    if (existing) return existing;
 
     const session = this.sessionRepo.create({
       enrollmentId,
       childId,
-      partNumber: completedCount + 1,
+      partNumber,
       phase: SessionPhase.READ,
       status: SessionStatus.PENDING,
     });
     return this.sessionRepo.save(session);
+  }
+
+  // Первая непрочитанная часть = наименьший номер в [1..totalParts], у которого
+  // ещё нет завершённой сессии. Устойчиво к дублям и пропускам в истории чтения.
+  private async nextUnreadPart(enrollmentId: string, totalParts: number): Promise<number> {
+    const completed = await this.sessionRepo.find({
+      where: { enrollmentId, status: SessionStatus.COMPLETED },
+      select: ['partNumber'],
+    });
+    const done = new Set(completed.map((s) => s.partNumber));
+    const limit = totalParts > 0 ? totalParts : Number.MAX_SAFE_INTEGER;
+    for (let p = 1; p <= limit; p++) {
+      if (!done.has(p)) return p;
+    }
+    return (totalParts || 0) + 1; // всё прочитано — вызовет ошибку "All parts completed"
   }
 
   async findById(
