@@ -78,8 +78,8 @@ async function seedDana() {
       partTitles: BARSUM_COLLECTION_TITLES,
       partImages: BARSUM_COLLECTION_IMAGES,
       coverImage: '/books/barsum-collection.jpg',
-      price: 10000,
-      coinsReward: 500,
+      price: 3000,
+      coinsReward: 3000,
       ageMin: 7,
       ageMax: 12,
       retellRequired: true,
@@ -89,7 +89,7 @@ async function seedDana() {
       membersCount: 0,
     });
     await challengeRepo.save(collection);
-    console.log('✓ Создана книга-сборник:', title, `(${BARSUM_COLLECTION_PARTS.length} частей, 10000₸)`);
+    console.log('✓ Создана книга-сборник:', title, `(${BARSUM_COLLECTION_PARTS.length} частей, 3000₸)`);
   } else {
     // Идемпотентный бэкфилл частей (названия + иллюстрации) для уже созданной книги на проде.
     const needsTitles =

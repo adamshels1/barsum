@@ -208,8 +208,8 @@ async function seed() {
       partTitles: BARSUM_COLLECTION_TITLES,
       partImages: BARSUM_COLLECTION_IMAGES,
       coverImage: '/books/barsum-collection.jpg',
-      price: 10000,
-      coinsReward: 500,
+      price: 3000,
+      coinsReward: 3000,
       ageMin: 7,
       ageMax: 12,
       retellRequired: true,
@@ -219,7 +219,7 @@ async function seed() {
       membersCount: 0,
     });
     await challengeRepo.save(collection);
-    console.log('✓ Created collection book:', collectionTitle, `(${BARSUM_COLLECTION_PARTS.length} parts, 10000₸)`);
+    console.log('✓ Created collection book:', collectionTitle, `(${BARSUM_COLLECTION_PARTS.length} parts, 3000₸)`);
   } else {
     console.log('~ Collection book already exists:', collectionTitle);
   }
