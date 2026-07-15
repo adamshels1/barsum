@@ -6,8 +6,7 @@ import { childrenApi } from "@/lib/api/children";
 import { sessionsApi } from "@/lib/api/sessions";
 import type { Child } from "@/types/index";
 import { useT, type Dict } from "@/i18n/useT";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3012";
+import { SessionResult } from "@/components/SessionResult";
 
 const dict: Dict = {
   ru: {
@@ -19,8 +18,6 @@ const dict: Dict = {
     ownBookReasonNoSpeech: "Не распознали речь — послушайте и решите сами",
     expertConfirmDesc: "«{book}» · часть {part} · оценка {score}/10",
     expertReasonReview: "Чтение на проверке эксперта — можете засчитать сами",
-    recordingTitle: "Запись чтения",
-    recordingUnavailable: "Запись недоступна",
     ownBookApprove: "✅ Засчитать",
     ownBookReject: "Отклонить",
     ownBookApproved: "Чтение засчитано!",
@@ -36,8 +33,6 @@ const dict: Dict = {
     ownBookReasonNoSpeech: "Сөз танылмады — тыңдап, өзіңіз шешіңіз",
     expertConfirmDesc: "«{book}» · {part}-бөлім · баға {score}/10",
     expertReasonReview: "Оқу сарапшы тексеруінде — өзіңіз де есептей аласыз",
-    recordingTitle: "Оқу жазбасы",
-    recordingUnavailable: "Жазба қолжетімсіз",
     ownBookApprove: "✅ Есептеу",
     ownBookReject: "Қабылдамау",
     ownBookApproved: "Оқу есептелді!",
@@ -79,19 +74,13 @@ function OwnBookConfirmCard({ session, childName }: { session: any; childName?: 
         <span style={{ fontSize: 12, color: "rgba(255,255,255,0.6)" }}>📖</span>
       </div>
       <p style={{ margin: "0 0 4px", fontSize: 13, color: "rgba(255,255,255,0.85)" }}>{desc}</p>
-      <p style={{ margin: "0 0 10px", fontSize: 12.5, color: "rgba(255,255,255,0.6)", lineHeight: 1.4 }}>{reason}</p>
+      <p style={{ margin: "0 0 6px", fontSize: 12.5, color: "rgba(255,255,255,0.6)", lineHeight: 1.4 }}>{reason}</p>
 
-      {/* Аудиозапись чтения ребёнка — родитель слушает перед решением.
-          Через backend-прокси (https), а не прямую http-ссылку MinIO — иначе mixed-content на проде. */}
-      {session.audioUrl ? (
-        <div style={{ marginBottom: 12 }}>
-          <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.55)", textTransform: "uppercase", letterSpacing: "0.04em" }}>{t("recordingTitle")}</p>
-          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-          <audio controls src={`${API_BASE}/sessions/${session.id}/audio`} style={{ width: "100%", height: 36 }} />
-        </div>
-      ) : (
-        <p style={{ margin: "0 0 12px", fontSize: 12.5, color: "rgba(255,255,255,0.45)" }}>{t("recordingUnavailable")}</p>
-      )}
+      {/* Запись чтения + AI-оценка с полосками — тот же блок, что и в обычных книгах
+          (у эксперта и в кабинете родителя), чтобы вид совпадал. */}
+      <div style={{ marginBottom: 12 }}>
+        <SessionResult session={session} />
+      </div>
 
       <div style={{ display: "flex", gap: 8 }}>
         <button

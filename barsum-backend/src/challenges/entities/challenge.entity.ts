@@ -28,6 +28,11 @@ export class Challenge {
   @Column({ nullable: true, type: 'json' })
   partTexts: string[];
 
+  // Название каждой части (например, отдельный рассказ в книге-сборнике).
+  // partTitles[i] соответствует partTexts[i]. Показывается ребёнку в ридере.
+  @Column({ nullable: true, type: 'json' })
+  partTitles: string[];
+
   @Column({ nullable: true, type: 'json' })
   partImages: string[];
 

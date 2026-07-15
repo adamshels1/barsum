@@ -11,7 +11,7 @@ import { User } from './users/entities/user.entity';
 import { Reward } from './rewards/entities/reward.entity';
 import { ChallengeEnrollment } from './sessions/entities/enrollment.entity';
 import { Repository } from 'typeorm';
-import { BARSUM_COLLECTION_PARTS } from './challenges/barsum-collection';
+import { BARSUM_COLLECTION_PARTS, BARSUM_COLLECTION_TITLES } from './challenges/barsum-collection';
 
 async function seed() {
   const app = await NestFactory.createApplicationContext(AppModule, { logger: ['error'] });
@@ -205,6 +205,7 @@ async function seed() {
       pagesPerPart: 2,
       totalParts: BARSUM_COLLECTION_PARTS.length,
       partTexts: BARSUM_COLLECTION_PARTS,
+      partTitles: BARSUM_COLLECTION_TITLES,
       coverImage: '/books/barsum-collection.jpg',
       price: 10000,
       coinsReward: 500,

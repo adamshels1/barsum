@@ -1,10 +1,10 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, Search } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { Search } from "lucide-react";
 import { useState } from "react";
 import { adminApi } from "@/lib/api/admin";
+import { BackButton } from "@/components/BackButton";
 import { useT, type Dict } from "@/i18n/useT";
 
 const dict: Dict = {
@@ -92,7 +92,6 @@ function SkeletonCard() {
 }
 
 export default function AdminExpertsPage() {
-  const router = useRouter();
   const t = useT(dict);
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<ExpertStatus>("review");
@@ -152,15 +151,7 @@ export default function AdminExpertsPage() {
     <main style={{ minHeight: "100dvh", padding: "0 0 32px" }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "52px 20px 20px" }}>
-        <button
-          onClick={() => router.push("/admin")}
-          className="glass-chip"
-          style={{ display: "flex", alignItems: "center", gap: 4, padding: "8px 14px", border: "none", cursor: "pointer", fontFamily: "inherit", color: "#ffffff", fontWeight: 700, fontSize: 14 }}
-          aria-label={t("back")}
-        >
-          <ChevronLeft size={16} strokeWidth={2.5} />
-          {t("back")}
-        </button>
+        <BackButton href="/admin" style={{ marginBottom: 0, marginLeft: 0 }} />
         <h1 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: "#ffffff" }}>
           {t("title")}
         </h1>

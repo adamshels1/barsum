@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Camera, CheckCircle2, ChevronLeft, ChevronRight, Pencil, Sparkles } from "lucide-react";
+import { Camera, CheckCircle2, ChevronRight, Pencil, Sparkles } from "lucide-react";
 import { useRef, useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -11,6 +11,7 @@ import { rewardsApi } from "@/lib/api/rewards";
 import { useAuthStore } from "@/stores/auth-store";
 import { CoinIcon } from "@/components/CoinIcon";
 import { Portal } from "@/components/Portal";
+import { BackButton } from "@/components/BackButton";
 import { dreamPhotoUrl, rewardPhotoUrl } from "@/lib/media";
 import { useT, type Dict } from "@/i18n/useT";
 
@@ -937,13 +938,7 @@ function ChildShopInner() {
   return (
     <main style={{ minHeight: "100dvh", paddingBottom: 24 }}>
       <div style={{ padding: "20px 20px 0" }}>
-        <button
-          onClick={() => router.push("/child/home")}
-          style={{ display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.65)", fontSize: 14, fontWeight: 700, fontFamily: "inherit", marginBottom: 12, padding: 0 }}
-        >
-          <ChevronLeft size={18} strokeWidth={2.5} />
-          {t("back")}
-        </button>
+        <BackButton href="/child/home" style={{ marginBottom: 12 }} />
         <h2 style={{ margin: 0, fontSize: 20, fontWeight: 900, color: "#ffffff" }}>
           {activeTab === "rewards" ? t("shopTitle") : t("dreamTitle")}
         </h2>

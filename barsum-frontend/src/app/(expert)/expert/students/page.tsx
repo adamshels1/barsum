@@ -1,10 +1,11 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Users2 } from "lucide-react";
+import { ChevronRight, Users2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { sessionsApi } from "@/lib/api/sessions";
 import { childPhotoUrl } from "@/lib/media";
+import { BackButton } from "@/components/BackButton";
 import { useT, type Dict } from "@/i18n/useT";
 
 const dict: Dict = {
@@ -61,13 +62,7 @@ export default function ExpertStudentsPage() {
 
   return (
     <main style={{ minHeight: "100dvh", padding: "52px 20px 40px", maxWidth: 520, margin: "0 auto" }}>
-      <button
-        onClick={() => router.push("/expert/home")}
-        style={{ display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.65)", fontSize: 14, fontWeight: 700, fontFamily: "inherit", marginBottom: 20, padding: 0 }}
-      >
-        <ChevronLeft size={18} strokeWidth={2.5} />
-        {t("back")}
-      </button>
+      <BackButton href="/expert/home" />
 
       <h1 style={{ margin: "0 0 4px", fontSize: 24, fontWeight: 900, color: "#ffffff" }}>{t("students")}</h1>
       <p style={{ margin: "0 0 20px", fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.55)" }}>

@@ -1,10 +1,10 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ShoppingBag } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { ShoppingBag } from "lucide-react";
 import { rewardsApi } from "@/lib/api/rewards";
 import { CoinIcon } from "@/components/CoinIcon";
+import { BackButton } from "@/components/BackButton";
 import { rewardPhotoUrl } from "@/lib/media";
 import { useT, type Dict } from "@/i18n/useT";
 
@@ -56,7 +56,6 @@ function formatDate(iso: string) {
 }
 
 export default function ChildPurchasesPage() {
-  const router = useRouter();
   const t = useT(dict);
   const STATUS_LABEL: Record<RewardRequest["status"], string> = {
     pending: t("pending"),
@@ -72,13 +71,7 @@ export default function ChildPurchasesPage() {
   return (
     <main style={{ minHeight: "100dvh", padding: "52px 20px 40px", maxWidth: 512, margin: "0 auto" }}>
       {/* Back */}
-      <button
-        onClick={() => router.push("/child/home")}
-        style={{ display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.65)", fontSize: 14, fontWeight: 700, fontFamily: "inherit", marginBottom: 20, padding: 0 }}
-      >
-        <ChevronLeft size={18} strokeWidth={2.5} />
-        {t("back")}
-      </button>
+      <BackButton href="/child/home" />
 
       <h1 style={{ margin: "0 0 20px", fontSize: 22, fontWeight: 900, color: "#ffffff" }}>{t("title")}</h1>
 

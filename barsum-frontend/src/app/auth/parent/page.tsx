@@ -130,7 +130,7 @@ export default function ParentAuthPage() {
 
   return (
     <main style={{ minHeight: "100dvh", background: BG, display: "flex", flexDirection: "column" }}>
-      <BackButton />
+      <BackButton variant="fixed" href="/" />
       <div style={{ position: "fixed", top: 16, right: 16, zIndex: 2 }}>
         <LanguageSwitcher />
       </div>

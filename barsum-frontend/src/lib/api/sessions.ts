@@ -15,7 +15,7 @@ export const sessionsApi = {
     apiClient.get(`/enrollments/students/${childId}`).then((r) => r.data),
   get: (id: string) => apiClient.get(`/sessions/${id}`).then((r) => r.data),
   getPartText: (id: string) =>
-    apiClient.get(`/sessions/${id}/text`).then((r) => r.data) as Promise<{ text: string | null; imageUrl: string | null; partNumber: number }>,
+    apiClient.get(`/sessions/${id}/text`).then((r) => r.data) as Promise<{ text: string | null; imageUrl: string | null; title: string | null; partNumber: number }>,
   startRecording: (id: string) =>
     apiClient.post(`/sessions/${id}/start-recording`).then((r) => r.data),
   uploadAudio: (id: string, file: File, durationSec?: number) => {

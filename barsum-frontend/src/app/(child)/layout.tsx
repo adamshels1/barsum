@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, ShoppingBag } from "lucide-react";
+import { BookOpen, Library, ShoppingBag } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { Suspense } from "react";
 import { useAuthStore } from "@/stores/auth-store";
@@ -14,11 +14,13 @@ const BG = "linear-gradient(135deg, #4776e6 0%, #6a3de8 60%, #8e54e9 100%)";
 const dict: Dict = {
   ru: {
     tasks: "Задания",
+    library: "Библиотека",
     shop: "Магазин",
     reader: "Читатель",
   },
   kk: {
     tasks: "Тапсырмалар",
+    library: "Кітапхана",
     shop: "Дүкен",
     reader: "Оқырман",
   },
@@ -26,6 +28,7 @@ const dict: Dict = {
 
 const tabs = [
   { labelKey: "tasks", Icon: BookOpen, href: "/child/home", match: "/child/home" },
+  { labelKey: "library", Icon: Library, href: "/child/library", match: "/child/library" },
   { labelKey: "shop", Icon: ShoppingBag, href: "/child/shop", match: "/child/shop" },
 ] as const;
 
@@ -45,7 +48,13 @@ function ChildLayoutInner({ children }: { children: React.ReactNode }) {
   const balance: number = balanceData?.balance ?? 0;
 
   const activeTab =
-    pathname === "/child/home" ? 0 : pathname?.startsWith("/child/shop") ? 1 : -1;
+    pathname === "/child/home"
+      ? 0
+      : pathname?.startsWith("/child/library")
+        ? 1
+        : pathname?.startsWith("/child/shop")
+          ? 2
+          : -1;
 
   return (
     <div style={{ minHeight: "100dvh", background: BG, position: "relative" }}>

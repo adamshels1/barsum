@@ -1,9 +1,10 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { BookMarked, ChevronLeft, Users2 } from "lucide-react";
-import { useParams, useRouter } from "next/navigation";
+import { BookMarked, Users2 } from "lucide-react";
+import { useParams } from "next/navigation";
 import { challengesApi } from "@/lib/api/challenges";
+import { BackButton } from "@/components/BackButton";
 import { useT, type Dict } from "@/i18n/useT";
 
 const dict: Dict = {
@@ -45,6 +46,7 @@ interface Challenge {
   membersCount: number;
   coverImage?: string | null;
   partTexts?: string[] | null;
+  partTitles?: string[] | null;
 }
 
 function statusBadgeStyle(status: string): React.CSSProperties {
@@ -64,7 +66,6 @@ function statusBadgeLabel(status: string, t: (key: string) => string): string {
 
 export default function ExpertBookDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
   const t = useT(dict);
 
   const { data: book, isLoading } = useQuery<Challenge>({
@@ -78,13 +79,7 @@ export default function ExpertBookDetailPage() {
   return (
     <main style={{ minHeight: "100dvh", padding: "52px 20px 40px", maxWidth: 640, margin: "0 auto" }}>
       {/* Back */}
-      <button
-        onClick={() => router.push("/expert/books")}
-        style={{ display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.65)", fontSize: 14, fontWeight: 700, fontFamily: "inherit", marginBottom: 20, padding: 0 }}
-      >
-        <ChevronLeft size={18} strokeWidth={2.5} />
-        {t("back")}
-      </button>
+      <BackButton href="/expert/books" />
 
       {isLoading || !book ? (
         <div className="glass" style={{ height: 140, borderRadius: 20, animation: "pulse 2s infinite", opacity: 0.5 }} />
@@ -145,7 +140,9 @@ export default function ExpertBookDetailPage() {
                     <div style={{ width: 30, height: 30, borderRadius: 10, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,0.16)", fontSize: 13, fontWeight: 900, color: "#ffffff" }}>
                       {i + 1}
                     </div>
-                    <p style={{ margin: 0, fontWeight: 900, fontSize: 15, color: "#ffffff" }}>{t("part", { n: i + 1 })}</p>
+                    <p style={{ margin: 0, fontWeight: 900, fontSize: 15, color: "#ffffff" }}>
+                      {book?.partTitles?.[i] || t("part", { n: i + 1 })}
+                    </p>
                   </div>
                   <p style={{ margin: 0, fontSize: 15, lineHeight: 1.7, color: "rgba(255,255,255,0.9)", whiteSpace: "pre-wrap" }}>
                     {text}

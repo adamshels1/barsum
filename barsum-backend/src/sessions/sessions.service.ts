@@ -283,16 +283,45 @@ export class SessionsService {
   }
 
   // Начисление монет за сессию чтения своей книги: по-минутно, кап 10 минут.
+  // Прогоняет распознанный текст чтения «своей книги» через ИИ и сохраняет разбор
+  // в сессию (aiScore / aiFeedback / aiQuestions) — те же поля, что и в экспертских
+  // книгах без эталонного текста. Ошибки анализа не критичны: чтение всё равно
+  // засчитывается по минутам.
+  private async attachOwnBookAiAnalysis(
+    session: Session,
+    enrollment: ChallengeEnrollment,
+  ): Promise<void> {
+    const transcription = (session.transcription ?? '').trim();
+    if (!transcription) return;
+    const bookTitle = enrollment.challenge?.bookTitle || 'Своя книга';
+    try {
+      const ai = await this.aiService.analyzeRetelling(transcription, bookTitle);
+      const raw = Number(ai.score ?? 0);
+      const normalized = raw > 10 ? raw / 10 : raw; // на случай если модель вернёт 0–100
+      session.aiScore = Math.max(0, Math.min(10, Math.round(normalized)));
+      session.aiFeedback = ai.feedback ?? null;
+      session.aiQuestions = ai.questions ?? null;
+    } catch (err: any) {
+      this.logger.error(`own-book analyzeRetelling failed for ${session.id}: ${err?.message}`);
+    }
+  }
+
   private async creditOwnBookSession(
     session: Session,
     enrollment: ChallengeEnrollment,
     childId: string,
   ): Promise<Session> {
+    // AI-аналитика чтения своей книги — как в других книгах. У своей книги нет
+    // эталонного текста (это бумажная книга родителя), поэтому анализируем сам
+    // распознанный текст чтения через ту же модель, что и пересказ в экспертских
+    // книгах. Результат (оценка + разбор) уходит родителю вместе с подтверждением.
+    await this.attachOwnBookAiAnalysis(session, enrollment);
+
     const cappedSec = Math.min(session.audioDurationSec ?? 0, OWN_BOOK_SESSION_MAX_SEC);
     const minutes = Math.round(cappedSec / 60);
 
     if (cappedSec < OWN_BOOK_MIN_SEC || minutes < 1) {
-      // Слишком короткая запись — на подтверждение родителю.
+      // Слишком короткая запись — на подтверждение родителю (уже с AI-аналитикой).
       await this.routeToParent(session, 'too_short');
       return session;
     }
@@ -300,7 +329,11 @@ export class SessionsService {
     const coins = (enrollment.coinsPerMinute || 0) * minutes;
     session.phase = SessionPhase.DONE;
     session.status = SessionStatus.COMPLETED;
-    session.aiFeedback = `Прочитано ${minutes} мин — засчитано ${coins} монет.`;
+    // aiFeedback уже содержит разбор ИИ — не затираем его. Если анализ не удался,
+    // оставляем краткий итог по монетам, чтобы экран не был пустым.
+    if (!session.aiFeedback) {
+      session.aiFeedback = `Прочитано ${minutes} мин — засчитано ${coins} монет.`;
+    }
     if (coins > 0) {
       await this.coinsService.transfer({
         fromId: 'system',
@@ -355,7 +388,12 @@ export class SessionsService {
       const coins = (enrollment.coinsPerMinute || 0) * minutes;
       session.status = SessionStatus.COMPLETED;
       session.phase = SessionPhase.DONE;
-      session.aiFeedback = `Подтверждено родителем: ${minutes} мин — ${coins} монет.`;
+      // Не затираем разбор ИИ (aiFeedback) — он нужен родителю и ребёнку.
+      // Итог подтверждения кладём в отдельное поле отчёта.
+      session.expertReport = `Подтверждено родителем: ${minutes} мин — ${coins} монет.`;
+      if (!session.aiFeedback) {
+        session.aiFeedback = `Прочитано ${minutes} мин — засчитано ${coins} монет.`;
+      }
       if (coins > 0) {
         await this.coinsService.transfer({
           fromId: 'system',
@@ -444,7 +482,7 @@ export class SessionsService {
     return this.analyze(id, childId);
   }
 
-  async getPartText(id: string, childId: string): Promise<{ text: string | null; imageUrl: string | null; partNumber: number }> {
+  async getPartText(id: string, childId: string): Promise<{ text: string | null; imageUrl: string | null; title: string | null; partNumber: number }> {
     const session = await this.findById(id);
     if (session.childId !== childId) throw new ForbiddenException('Not your session');
     const enrollment = await this.enrollmentRepo.findOne({
@@ -453,9 +491,11 @@ export class SessionsService {
     });
     const texts: string[] = enrollment?.challenge?.partTexts ?? [];
     const images: string[] = enrollment?.challenge?.partImages ?? [];
+    const titles: string[] = enrollment?.challenge?.partTitles ?? [];
     const text = texts[session.partNumber - 1] ?? null;
     const imageUrl = images[session.partNumber - 1] ?? null;
-    return { text, imageUrl, partNumber: session.partNumber };
+    const title = titles[session.partNumber - 1] ?? null;
+    return { text, imageUrl, title, partNumber: session.partNumber };
   }
 
   async analyze(id: string, childId: string, bookTitle?: string): Promise<Session> {

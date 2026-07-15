@@ -8,7 +8,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Challenge } from './challenges/entities/challenge.entity';
 import { User } from './users/entities/user.entity';
 import { Repository } from 'typeorm';
-import { BARSUM_COLLECTION_PARTS } from './challenges/barsum-collection';
+import { BARSUM_COLLECTION_PARTS, BARSUM_COLLECTION_TITLES } from './challenges/barsum-collection';
 
 /**
  * Точечный (идемпотентный) сид ТОЛЬКО для эксперта Даны и её книги-сборника.
@@ -75,6 +75,7 @@ async function seedDana() {
       pagesPerPart: 2,
       totalParts: BARSUM_COLLECTION_PARTS.length,
       partTexts: BARSUM_COLLECTION_PARTS,
+      partTitles: BARSUM_COLLECTION_TITLES,
       coverImage: '/books/barsum-collection.jpg',
       price: 10000,
       coinsReward: 500,
@@ -89,7 +90,17 @@ async function seedDana() {
     await challengeRepo.save(collection);
     console.log('✓ Создана книга-сборник:', title, `(${BARSUM_COLLECTION_PARTS.length} частей, 10000₸)`);
   } else {
-    console.log('~ Книга уже есть:', title);
+    // Идемпотентный бэкфилл названий частей (рассказов) для уже созданной книги на проде.
+    const needsTitles =
+      !existing.partTitles || existing.partTitles.length !== BARSUM_COLLECTION_TITLES.length;
+    if (needsTitles) {
+      existing.partTitles = BARSUM_COLLECTION_TITLES;
+      existing.partTexts = BARSUM_COLLECTION_PARTS;
+      await challengeRepo.save(existing);
+      console.log('✓ Добавлены названия частей в книгу:', title);
+    } else {
+      console.log('~ Книга уже есть (названия частей на месте):', title);
+    }
   }
 
   console.log('\nseed-dana завершён.');

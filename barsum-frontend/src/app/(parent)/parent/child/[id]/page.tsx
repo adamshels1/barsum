@@ -13,6 +13,7 @@ import { sessionsApi } from "@/lib/api/sessions";
 import type { Child, ChildStats, RewardRequest, Session } from "@/types";
 import { CoinIcon } from "@/components/CoinIcon";
 import { CertificateModal } from "@/components/CertificateModal";
+import { BackButton } from "@/components/BackButton";
 import { childPhotoUrl, dreamPhotoUrl, rewardPhotoUrl } from "@/lib/media";
 import { useT, type Dict } from "@/i18n/useT";
 
@@ -1011,12 +1012,7 @@ export default function ParentChildProgressPage() {
 
   return (
     <main style={{ minHeight: "100dvh", padding: "20px 20px 48px", maxWidth: 520, margin: "0 auto" }}>
-      <button
-        onClick={() => router.push("/parent/cabinet")}
-        style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.75)", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", marginBottom: 20, padding: 0 }}
-      >
-        {t("back")}
-      </button>
+      <BackButton href="/parent/cabinet" />
 
       {isLoading ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>

@@ -1,11 +1,12 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookMarked, ChevronLeft, Plus, Users2 } from "lucide-react";
+import { BookMarked, Plus, Users2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { challengesApi } from "@/lib/api/challenges";
+import { BackButton } from "@/components/BackButton";
 import { useT, type Dict } from "@/i18n/useT";
 
 const dict: Dict = {
@@ -124,14 +125,7 @@ export default function ExpertBooksPage() {
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "52px 20px 16px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <button
-            onClick={() => router.back()}
-            className="glass-chip"
-            style={{ display: "flex", alignItems: "center", gap: 4, padding: "8px 14px", border: "none", cursor: "pointer", fontFamily: "inherit", color: "#ffffff", fontWeight: 700, fontSize: 14 }}
-          >
-            <ChevronLeft size={16} strokeWidth={2.5} />
-            {t("back")}
-          </button>
+          <BackButton href="/expert/home" style={{ marginBottom: 0, marginLeft: 0 }} />
           <h1 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: "#ffffff" }}>{t("myTasks")}</h1>
         </div>
         <button

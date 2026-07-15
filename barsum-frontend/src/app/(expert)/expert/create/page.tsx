@@ -1,13 +1,14 @@
 "use client";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { CheckCircle2, ChevronLeft } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { toast } from "sonner";
 import { challengesApi } from "@/lib/api/challenges";
 import { expertsApi } from "@/lib/api/experts";
 import { apiClient } from "@/lib/api/client";
+import { BackButton } from "@/components/BackButton";
 import { useT, type Dict } from "@/i18n/useT";
 
 const dict: Dict = {
@@ -990,13 +991,10 @@ function ExpertCreateInner() {
     <main style={{ minHeight: "100dvh", padding: "0 0 32px" }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "52px 20px 20px" }}>
-        <button
+        <BackButton
           onClick={() => (step > 0 ? setStep(step - 1) : router.back())}
-          className="glass-chip"
-          style={{ width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", border: "none", cursor: "pointer", flexShrink: 0 }}
-        >
-          <ChevronLeft size={20} color="#ffffff" strokeWidth={2.5} />
-        </button>
+          style={{ marginBottom: 0, marginLeft: 0 }}
+        />
         <h1 style={{ fontSize: 20, fontWeight: 900, color: "#ffffff", margin: 0 }}>
           {editId ? t("editTask") : t("createTask")}
         </h1>

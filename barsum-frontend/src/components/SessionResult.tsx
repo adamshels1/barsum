@@ -33,6 +33,7 @@ const dict: Dict = {
     metricSpeed: "Скорость",
     metricCompleteness: "Полнота",
     metricRetell: "Пересказ",
+    metricComprehension: "Понимание",
     wpmUnit: "{n}/мин",
     overallExcellent: "Отлично",
     overallGood: "Хорошо",
@@ -54,6 +55,7 @@ const dict: Dict = {
     metricSpeed: "Жылдамдық",
     metricCompleteness: "Толықтық",
     metricRetell: "Пересказ",
+    metricComprehension: "Түсіну",
     wpmUnit: "{n}/мин",
     overallExcellent: "Тамаша",
     overallGood: "Жақсы",
@@ -100,6 +102,9 @@ function ReadingReport({ session, t }: { session: SessionResultData; t: (k: stri
   const errors = session.errorWords ?? [];
   const overallLight = lightFor(score, 8, 5);
   const overallLabel = score == null ? "—" : score >= 8 ? t("overallExcellent") : score >= 5 ? t("overallGood") : t("overallRetry");
+  // «Своя книга»: эталонного текста нет, поэтому точность/скорость/полноту не считаем.
+  // Показываем полоску общей AI-оценки (понимание) — чтобы вид совпадал с обычными книгами.
+  const hasReadingMetrics = acc != null || comp != null || wpm != null;
 
   return (
     <div style={{ margin: "10px 0 0" }}>
@@ -109,9 +114,16 @@ function ReadingReport({ session, t }: { session: SessionResultData; t: (k: stri
         <span style={{ fontSize: 15, fontWeight: 900, color: "#ffffff" }}>{overallLabel}</span>
         {score != null && <span style={{ marginLeft: "auto", fontSize: 15, fontWeight: 900, color: LIGHT_COLOR[overallLight] }}>{score} / 10</span>}
       </div>
-      <MetricBar label={t("metricAccuracy")} light={lightFor(acc, 85, 70)} fillPct={acc ?? 0} valueText={acc != null ? `${acc}%` : "—"} />
-      <MetricBar label={t("metricSpeed")} light={lightFor(wpm, 90, 60)} fillPct={wpm != null ? (wpm / 150) * 100 : 0} valueText={wpm != null ? t("wpmUnit", { n: wpm }) : "—"} />
-      <MetricBar label={t("metricCompleteness")} light={lightFor(comp, 75, 40)} fillPct={comp ?? 0} valueText={comp != null ? `${comp}%` : "—"} />
+      {hasReadingMetrics && (
+        <>
+          <MetricBar label={t("metricAccuracy")} light={lightFor(acc, 85, 70)} fillPct={acc ?? 0} valueText={acc != null ? `${acc}%` : "—"} />
+          <MetricBar label={t("metricSpeed")} light={lightFor(wpm, 90, 60)} fillPct={wpm != null ? (wpm / 150) * 100 : 0} valueText={wpm != null ? t("wpmUnit", { n: wpm }) : "—"} />
+          <MetricBar label={t("metricCompleteness")} light={lightFor(comp, 75, 40)} fillPct={comp ?? 0} valueText={comp != null ? `${comp}%` : "—"} />
+        </>
+      )}
+      {!hasReadingMetrics && score != null && (
+        <MetricBar label={t("metricComprehension")} light={overallLight} fillPct={score * 10} valueText={`${score}/10`} />
+      )}
       {session.retellScore != null && (() => {
         const rs = Math.round(Number(session.retellScore));
         return <MetricBar label={t("metricRetell")} light={lightFor(rs, 8, 5)} fillPct={rs * 10} valueText={`${rs}/10`} />;
@@ -156,8 +168,9 @@ export function SessionResult({ session }: { session: SessionResultData }) {
         </div>
       )}
 
-      {/* Отчёт о чтении / фолбэки */}
-      {session.readingAccuracy != null ? (
+      {/* Отчёт о чтении / фолбэки. Полоски-оценки показываем и для своей книги
+          (там только AI-оценка aiScore, без метрик чтения). */}
+      {session.readingAccuracy != null || session.aiScore != null || session.retellScore != null ? (
         <ReadingReport session={session} t={t} />
       ) : session.expertReport ? (
         <div>

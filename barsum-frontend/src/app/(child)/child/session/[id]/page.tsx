@@ -2,10 +2,11 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
-import { ChevronLeft, Home, Mic, MicOff, Send, RotateCcw, Bot } from "lucide-react";
+import { Home, Mic, MicOff, Send, RotateCcw, Bot } from "lucide-react";
 import { useRef, useState } from "react";
 import { sessionsApi } from "@/lib/api/sessions";
 import { CoinIcon } from "@/components/CoinIcon";
+import { BackButton } from "@/components/BackButton";
 import { useT, type Dict } from "@/i18n/useT";
 
 const dict: Dict = {
@@ -53,6 +54,7 @@ const dict: Dict = {
     retellAgain: "Рассказать заново",
     retellListening: "Слушаем твой пересказ...",
     retellScoreLabel: "Пересказ: {score}/10",
+    readScoreLabel: "Чтение: {score}/10",
   },
   kk: {
     recordFail: "Жазу қатесі. Қайта байқап көр.",
@@ -98,6 +100,7 @@ const dict: Dict = {
     retellAgain: "Қайта айту",
     retellListening: "Пересказыңды тыңдап жатырмыз...",
     retellScoreLabel: "Пересказ: {score}/10",
+    readScoreLabel: "Оқу: {score}/10",
   },
 };
 
@@ -242,12 +245,14 @@ function PhaseRead({
   session,
   dayText,
   pageImage,
+  partTitle,
   ownBook,
   onUploaded,
 }: {
   session: Session;
   dayText: string | null;
   pageImage: string | null;
+  partTitle: string | null;
   ownBook: boolean;
   onUploaded: () => void;
 }) {
@@ -520,9 +525,14 @@ function PhaseRead({
       ) : (
       /* Text block */
       <div className="glass" style={{ padding: 20, borderRadius: 20 }}>
-        <p style={{ fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12, margin: "0 0 12px" }}>
+        <p style={{ fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: partTitle ? 4 : 12, margin: partTitle ? "0 0 4px" : "0 0 12px" }}>
           {t("part", { n: session.partNumber })}
         </p>
+        {partTitle && (
+          <h2 style={{ fontSize: 20, fontWeight: 900, color: "#ffffff", margin: "0 0 14px", lineHeight: 1.25 }}>
+            {partTitle}
+          </h2>
+        )}
         {dayText ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {toReadingParagraphs(dayText).map((p, i) => (
@@ -742,7 +752,7 @@ function PhaseDone({ session, coinsPerPart, ownBook }: { session: Session; coins
             <div style={{ animation: "coinPop 0.6s ease 0.3s both" }}>
               <p style={{ fontSize: 24, fontWeight: 900, color: "#ffffff", margin: 0 }}>
                 {ownBook
-                  ? (session.aiFeedback || t("partCounted"))
+                  ? t("partCounted")
                   : coinsPerPart > 0
                     ? <>{t("coinsAdded", { coins: coinsPerPart })} <CoinIcon size={20} /></>
                     : t("partCounted")}
@@ -752,6 +762,16 @@ function PhaseDone({ session, coinsPerPart, ownBook }: { session: Session; coins
               {t("streakGoes")}
             </p>
           </div>
+          {ownBook && (session.aiScore != null || session.aiFeedback) && (
+            <div className="glass" style={{ width: "100%", padding: 16, borderRadius: 16, background: "rgba(120,97,255,0.18)", border: "1px solid rgba(150,130,255,0.3)", textAlign: "left" }}>
+              {session.aiScore != null && (
+                <p style={{ fontSize: 14, fontWeight: 900, color: "#ffffff", margin: 0 }}>🤖 {t("readScoreLabel", { score: Math.round(Number(session.aiScore)) })}</p>
+              )}
+              {session.aiFeedback && (
+                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", margin: session.aiScore != null ? "6px 0 0" : 0, lineHeight: 1.4 }}>{session.aiFeedback}</p>
+              )}
+            </div>
+          )}
           {session.retellScore != null && (
             <div className="glass" style={{ width: "100%", padding: 16, borderRadius: 16, background: "rgba(120,97,255,0.18)", border: "1px solid rgba(150,130,255,0.3)" }}>
               <p style={{ fontSize: 14, fontWeight: 900, color: "#ffffff", margin: 0 }}>🗣️ {t("retellScoreLabel", { score: Math.round(Number(session.retellScore)) })}</p>
@@ -817,7 +837,7 @@ export default function SessionPage() {
     refetchInterval: (query) => (isPolling(query.state.data) ? 3000 : false),
   });
 
-  const { data: partText } = useQuery<{ text: string | null; imageUrl: string | null; partNumber: number }>({
+  const { data: partText } = useQuery<{ text: string | null; imageUrl: string | null; title: string | null; partNumber: number }>({
     queryKey: ["session-text", id],
     queryFn: () => sessionsApi.getPartText(id),
     enabled: !!session && (session.phase === "read" || session.phase === "recording"),
@@ -841,13 +861,7 @@ export default function SessionPage() {
     <main style={{ minHeight: "100dvh", padding: "52px 20px 32px", maxWidth: 512, margin: "0 auto" }}>
       {/* Back */}
       {(session.phase === "read" || session.phase === "recording") && (
-        <button
-          onClick={() => router.push(`/child/book/${session.enrollmentId}`)}
-          style={{ display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.65)", fontSize: 14, fontWeight: 700, fontFamily: "inherit", marginBottom: 20, padding: 0 }}
-        >
-          <ChevronLeft size={18} strokeWidth={2.5} />
-          {t("back")}
-        </button>
+        <BackButton href={`/child/book/${session.enrollmentId}`} />
       )}
 
       {/* Header */}
@@ -897,6 +911,7 @@ export default function SessionPage() {
           session={session}
           dayText={dayTextData?.text ?? null}
           pageImage={dayTextData?.imageUrl ?? null}
+          partTitle={dayTextData?.title ?? null}
           ownBook={ownBook}
           onUploaded={refetch}
         />

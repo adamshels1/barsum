@@ -1,12 +1,12 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft } from "lucide-react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useState } from "react";
 import { sessionsApi } from "@/lib/api/sessions";
 import { childPhotoUrl } from "@/lib/media";
 import { SessionResult, type SessionResultData } from "@/components/SessionResult";
+import { BackButton } from "@/components/BackButton";
 import { useT, type Dict } from "@/i18n/useT";
 
 const dict: Dict = {
@@ -148,7 +148,6 @@ function BookCard({ book }: { book: StudentBook }) {
 }
 
 export default function ExpertStudentDetailPage() {
-  const router = useRouter();
   const t = useT(dict);
   const { childId } = useParams<{ childId: string }>();
 
@@ -163,13 +162,7 @@ export default function ExpertStudentDetailPage() {
 
   return (
     <main style={{ minHeight: "100dvh", padding: "52px 20px 40px", maxWidth: 520, margin: "0 auto" }}>
-      <button
-        onClick={() => router.push("/expert/students")}
-        style={{ display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.65)", fontSize: 14, fontWeight: 700, fontFamily: "inherit", marginBottom: 20, padding: 0 }}
-      >
-        <ChevronLeft size={18} strokeWidth={2.5} />
-        {t("back")}
-      </button>
+      <BackButton href="/expert/students" />
 
       {isLoading || !data ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>

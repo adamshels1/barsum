@@ -12,6 +12,7 @@ import type { Challenge, Child, Payment, RewardRequest } from "@/types/index";
 import { CoinIcon } from "@/components/CoinIcon";
 import { RewardRequestCard } from "@/components/RewardRequestCard";
 import { Portal } from "@/components/Portal";
+import { BackButton } from "@/components/BackButton";
 import { useT, type Dict } from "@/i18n/useT";
 
 const dict: Dict = {
@@ -247,12 +248,7 @@ function KaspiQrStep({
   const confirmDisabled = isPending || !payClicked;
   return (
     <div style={{ padding: "16px 20px 32px", display: "flex", flexDirection: "column", gap: 16 }}>
-      <button
-        onClick={onBack}
-        style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.65)", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", padding: 0, alignSelf: "flex-start" }}
-      >
-        {t("back")}
-      </button>
+      <BackButton onClick={onBack} style={{ alignSelf: "flex-start" }} />
 
       <div style={{ textAlign: "center" }}>
         <p style={{ margin: "0 0 2px", fontSize: 12, color: "rgba(255,255,255,0.55)" }}>{t("toPay")}</p>

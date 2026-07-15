@@ -265,6 +265,14 @@ export default function ChildHomePage() {
   const currentBalance: number = balance_data?.balance ?? 0;
   const streak: number = (user as any)?.streak ?? 0;
 
+  // «Мои задания» — только незавершённые книги. Прочитанные полностью книги
+  // уезжают в «Библиотеку» (/child/library), где их можно перечитать.
+  const activeEnrollments = (enrollments as any[]).filter((e) => {
+    const total = e.challenge?.totalParts ?? 0;
+    const done = e.completedParts ?? 0;
+    return !(total > 0 && done >= total);
+  });
+
   const sendMutation = useMutation({
     mutationFn: ({ amount, dreamId }: { amount: number; dreamId: string }) => dreamsApi.send(amount, dreamId),
     onSuccess: () => {
@@ -310,7 +318,7 @@ export default function ChildHomePage() {
             <div key={i} style={{ width: 176, height: 200, borderRadius: 20, flexShrink: 0, background: "rgba(255,255,255,0.1)", animation: "pulse 2s infinite" }} />
           ))}
         </div>
-      ) : (enrollments as any[]).length === 0 ? (
+      ) : activeEnrollments.length === 0 ? (
         <div className="glass" style={{ padding: 40, textAlign: "center" }}>
           <div style={{ width: 56, height: 56, borderRadius: 18, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
             <BookOpen size={26} color="#ffffff" strokeWidth={2} />
@@ -320,7 +328,7 @@ export default function ChildHomePage() {
         </div>
       ) : (
         <div className="scrollbar-hide" style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 8, marginLeft: -4, paddingLeft: 4 }}>
-          {(enrollments as any[]).map((enrollment, idx) => {
+          {activeEnrollments.map((enrollment, idx) => {
             const ch = enrollment.challenge;
             const colorIdx = ch?.title ? ch.title.charCodeAt(0) % CARD_COLORS.length : idx % CARD_COLORS.length;
             const cardGrad = CARD_COLORS[colorIdx];

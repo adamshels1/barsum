@@ -1,12 +1,13 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Award, ChevronLeft, Lock } from "lucide-react";
+import { Award, Lock } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { sessionsApi } from "@/lib/api/sessions";
 import { useAuthStore } from "@/stores/auth-store";
 import { CertificateModal } from "@/components/CertificateModal";
+import { BackButton } from "@/components/BackButton";
 import { useT, type Dict } from "@/i18n/useT";
 
 const dict: Dict = {
@@ -67,6 +68,7 @@ interface Enrollment {
     totalParts: number;
     pagesPerPart: number;
     coinsReward: number;
+    partTitles?: string[] | null;
   };
 }
 
@@ -131,17 +133,13 @@ export default function BookPage() {
   return (
     <main style={{ minHeight: "100dvh", padding: "52px 20px 40px", maxWidth: 512, margin: "0 auto" }}>
       {/* Back */}
-      <button
+      <BackButton
         onClick={() => {
           queryClient.invalidateQueries({ queryKey: ["enrollments"] });
           queryClient.invalidateQueries({ queryKey: ["sessions-by-enrollment", enrollmentId] });
           router.push("/child/home");
         }}
-        style={{ display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.65)", fontSize: 14, fontWeight: 700, fontFamily: "inherit", marginBottom: 20, padding: 0 }}
-      >
-        <ChevronLeft size={18} strokeWidth={2.5} />
-        {t("back")}
-      </button>
+      />
 
       {/* Book header */}
       <div className="glass" style={{ padding: 20, borderRadius: 20, marginBottom: 20 }}>
@@ -222,6 +220,7 @@ export default function BookPage() {
           const session = (sessions as Session[]).find((s) => s.partNumber === partNum);
           const startPage = (partNum - 1) * pagesPerPart + 1;
           const endPage = partNum * pagesPerPart;
+          const partTitle = ch?.partTitles?.[partNum - 1] || null;
 
           const isCompleted = state === "completed";
           const isCurrent = state === "current";
@@ -290,11 +289,15 @@ export default function BookPage() {
 
               {/* Info */}
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ margin: 0, fontWeight: 900, fontSize: 15, color: isLocked ? "rgba(255,255,255,0.4)" : "#ffffff" }}>
-                  {t("part", { n: partNum })}
+                <p style={{ margin: 0, fontWeight: 900, fontSize: 15, color: isLocked ? "rgba(255,255,255,0.4)" : "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {partTitle || t("part", { n: partNum })}
                 </p>
                 <p style={{ margin: "2px 0 0", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.5)" }}>
-                  {pagesPerPart > 0 ? t("pages", { start: startPage, end: endPage }) : t("partOfTotal", { n: partNum, total: totalParts })}
+                  {partTitle
+                    ? t("part", { n: partNum })
+                    : pagesPerPart > 0
+                      ? t("pages", { start: startPage, end: endPage })
+                      : t("partOfTotal", { n: partNum, total: totalParts })}
                 </p>
               </div>
 
