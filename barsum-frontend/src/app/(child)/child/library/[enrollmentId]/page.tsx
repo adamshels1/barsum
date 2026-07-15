@@ -125,18 +125,20 @@ export default function LibraryReaderPage() {
         {t("part", { n: partNum, total })}
       </p>
 
-      {/* Content */}
-      {pageImage ? (
-        <div className="glass" style={{ padding: 12, borderRadius: 20 }}>
+      {/* Content: если есть иллюстрация — показываем её сверху, а текст части снизу
+          (в книгах-картинках со вшитым текстом это крупный читаемый вариант). */}
+      {pageImage && (
+        <div className="glass" style={{ padding: 12, borderRadius: 20, marginBottom: partText || partTitle ? 12 : 0 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={pageImage} alt="" style={{ width: "100%", borderRadius: 14, display: "block", background: "#fff" }} />
         </div>
-      ) : (
+      )}
+      {(partText || partTitle) && (
         <div className="glass" style={{ padding: 20, borderRadius: 20 }}>
           {partTitle && (
             <h2 style={{ fontSize: 20, fontWeight: 900, color: "#ffffff", margin: "0 0 14px", lineHeight: 1.25 }}>{partTitle}</h2>
           )}
-          {partText ? (
+          {partText && (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {toReadingParagraphs(partText).map((p, i) => (
                 <p
@@ -155,9 +157,12 @@ export default function LibraryReaderPage() {
                 </p>
               ))}
             </div>
-          ) : (
-            <p style={{ fontSize: 15, color: "rgba(255,255,255,0.6)", margin: 0 }}>—</p>
           )}
+        </div>
+      )}
+      {!pageImage && !partText && !partTitle && (
+        <div className="glass" style={{ padding: 20, borderRadius: 20 }}>
+          <p style={{ fontSize: 15, color: "rgba(255,255,255,0.6)", margin: 0 }}>—</p>
         </div>
       )}
 

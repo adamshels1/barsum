@@ -508,56 +508,64 @@ function PhaseRead({
             {t("ownBookHint")}
           </p>
         </div>
-      ) : pageImage ? (
-      /* Картиночная книга: показываем страницу-иллюстрацию в стиле издательства
-         (текст вшит в картинку, ребёнок читает его с иллюстрации). */
-      <div className="glass" style={{ padding: 12, borderRadius: 20 }}>
-        <p style={{ fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 10px", paddingLeft: 4 }}>
-          {t("part", { n: session.partNumber })}
-        </p>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={pageImage}
-          alt=""
-          style={{ width: "100%", borderRadius: 14, display: "block", background: "#fff" }}
-        />
-      </div>
       ) : (
-      /* Text block */
-      <div className="glass" style={{ padding: 20, borderRadius: 20 }}>
-        <p style={{ fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: partTitle ? 4 : 12, margin: partTitle ? "0 0 4px" : "0 0 12px" }}>
-          {t("part", { n: session.partNumber })}
-        </p>
-        {partTitle && (
-          <h2 style={{ fontSize: 20, fontWeight: 900, color: "#ffffff", margin: "0 0 14px", lineHeight: 1.25 }}>
-            {partTitle}
-          </h2>
-        )}
-        {dayText ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {toReadingParagraphs(dayText).map((p, i) => (
-              <p
-                key={i}
-                style={{
-                  fontSize: 16,
-                  lineHeight: 1.7,
-                  color: "rgba(255,255,255,0.9)",
-                  fontFamily: "Georgia, serif",
-                  fontStyle: p.isDialogue ? "italic" : "normal",
-                  paddingLeft: p.isDialogue ? 12 : 0,
-                  margin: 0,
-                }}
-              >
-                {p.text}
-              </p>
-            ))}
+      /* Иллюстрация (если есть) — сверху, а текст части — снизу. В книгах со вшитым
+         в картинку текстом это крупный читаемый вариант; в обычных книгах — просто текст. */
+      <>
+        {pageImage && (
+          <div className="glass" style={{ padding: 12, borderRadius: 20, marginBottom: dayText || partTitle ? 12 : 0 }}>
+            <p style={{ fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 10px", paddingLeft: 4 }}>
+              {t("part", { n: session.partNumber })}
+            </p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={pageImage}
+              alt=""
+              style={{ width: "100%", borderRadius: 14, display: "block", background: "#fff" }}
+            />
           </div>
-        ) : (
-          <p style={{ fontSize: 14, fontStyle: "italic", color: "rgba(255,255,255,0.55)", margin: 0 }}>
-            {t("readThisPart")}
-          </p>
         )}
-      </div>
+        {(dayText || partTitle || !pageImage) && (
+          <div className="glass" style={{ padding: 20, borderRadius: 20 }}>
+            {!pageImage && (
+              <p style={{ fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: partTitle ? 4 : 12, margin: partTitle ? "0 0 4px" : "0 0 12px" }}>
+                {t("part", { n: session.partNumber })}
+              </p>
+            )}
+            {partTitle && (
+              <h2 style={{ fontSize: 20, fontWeight: 900, color: "#ffffff", margin: "0 0 14px", lineHeight: 1.25 }}>
+                {partTitle}
+              </h2>
+            )}
+            {dayText ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {toReadingParagraphs(dayText).map((p, i) => (
+                  <p
+                    key={i}
+                    style={{
+                      fontSize: 16,
+                      lineHeight: 1.7,
+                      color: "rgba(255,255,255,0.9)",
+                      fontFamily: "Georgia, serif",
+                      fontStyle: p.isDialogue ? "italic" : "normal",
+                      paddingLeft: p.isDialogue ? 12 : 0,
+                      margin: 0,
+                    }}
+                  >
+                    {p.text}
+                  </p>
+                ))}
+              </div>
+            ) : (
+              !pageImage && (
+                <p style={{ fontSize: 14, fontStyle: "italic", color: "rgba(255,255,255,0.55)", margin: 0 }}>
+                  {t("readThisPart")}
+                </p>
+              )
+            )}
+          </div>
+        )}
+      </>
       )}
     </div>
   );

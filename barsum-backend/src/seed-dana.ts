@@ -8,7 +8,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Challenge } from './challenges/entities/challenge.entity';
 import { User } from './users/entities/user.entity';
 import { Repository } from 'typeorm';
-import { BARSUM_COLLECTION_PARTS, BARSUM_COLLECTION_TITLES } from './challenges/barsum-collection';
+import { BARSUM_COLLECTION_PARTS, BARSUM_COLLECTION_TITLES, BARSUM_COLLECTION_IMAGES } from './challenges/barsum-collection';
 
 /**
  * Точечный (идемпотентный) сид ТОЛЬКО для эксперта Даны и её книги-сборника.
@@ -76,6 +76,7 @@ async function seedDana() {
       totalParts: BARSUM_COLLECTION_PARTS.length,
       partTexts: BARSUM_COLLECTION_PARTS,
       partTitles: BARSUM_COLLECTION_TITLES,
+      partImages: BARSUM_COLLECTION_IMAGES,
       coverImage: '/books/barsum-collection.jpg',
       price: 10000,
       coinsReward: 500,
@@ -90,16 +91,19 @@ async function seedDana() {
     await challengeRepo.save(collection);
     console.log('✓ Создана книга-сборник:', title, `(${BARSUM_COLLECTION_PARTS.length} частей, 10000₸)`);
   } else {
-    // Идемпотентный бэкфилл названий частей (рассказов) для уже созданной книги на проде.
+    // Идемпотентный бэкфилл частей (названия + иллюстрации) для уже созданной книги на проде.
     const needsTitles =
       !existing.partTitles || existing.partTitles.length !== BARSUM_COLLECTION_TITLES.length;
-    if (needsTitles) {
+    const needsImages =
+      !existing.partImages || existing.partImages.length !== BARSUM_COLLECTION_IMAGES.length;
+    if (needsTitles || needsImages) {
       existing.partTitles = BARSUM_COLLECTION_TITLES;
       existing.partTexts = BARSUM_COLLECTION_PARTS;
+      existing.partImages = BARSUM_COLLECTION_IMAGES;
       await challengeRepo.save(existing);
-      console.log('✓ Добавлены названия частей в книгу:', title);
+      console.log('✓ Обновлены части (названия + иллюстрации) в книге:', title);
     } else {
-      console.log('~ Книга уже есть (названия частей на месте):', title);
+      console.log('~ Книга уже есть (части на месте):', title);
     }
   }
 
