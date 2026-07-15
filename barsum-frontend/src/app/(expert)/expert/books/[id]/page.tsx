@@ -47,6 +47,7 @@ interface Challenge {
   coverImage?: string | null;
   partTexts?: string[] | null;
   partTitles?: string[] | null;
+  partImages?: string[] | null;
 }
 
 function statusBadgeStyle(status: string): React.CSSProperties {
@@ -74,7 +75,9 @@ export default function ExpertBookDetailPage() {
     enabled: !!id,
   });
 
-  const parts = book?.partTexts ?? [];
+  const texts = book?.partTexts ?? [];
+  const images = book?.partImages ?? [];
+  const partCount = Math.max(texts.length, images.length);
 
   return (
     <main style={{ minHeight: "100dvh", padding: "52px 20px 40px", maxWidth: 640, margin: "0 auto" }}>
@@ -127,28 +130,43 @@ export default function ExpertBookDetailPage() {
             {t("contents")}
           </p>
 
-          {parts.length === 0 ? (
+          {partCount === 0 ? (
             <div className="glass" style={{ padding: 40, textAlign: "center", borderRadius: 20 }}>
               <p style={{ margin: 0, fontSize: 36 }}>📖</p>
               <p style={{ margin: "12px 0 0", fontWeight: 900, fontSize: 15, color: "#ffffff" }}>{t("noContent")}</p>
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {parts.map((text, i) => (
-                <div key={i} className="glass" style={{ padding: 20, borderRadius: 18 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                    <div style={{ width: 30, height: 30, borderRadius: 10, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,0.16)", fontSize: 13, fontWeight: 900, color: "#ffffff" }}>
-                      {i + 1}
+              {Array.from({ length: partCount }, (_, i) => {
+                const text = texts[i] ?? "";
+                const img = images[i] ?? null;
+                return (
+                  <div key={i} className="glass" style={{ padding: 20, borderRadius: 18 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                      <div style={{ width: 30, height: 30, borderRadius: 10, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,0.16)", fontSize: 13, fontWeight: 900, color: "#ffffff" }}>
+                        {i + 1}
+                      </div>
+                      <p style={{ margin: 0, fontWeight: 900, fontSize: 15, color: "#ffffff" }}>
+                        {book?.partTitles?.[i] || t("part", { n: i + 1 })}
+                      </p>
                     </div>
-                    <p style={{ margin: 0, fontWeight: 900, fontSize: 15, color: "#ffffff" }}>
-                      {book?.partTitles?.[i] || t("part", { n: i + 1 })}
-                    </p>
+                    {/* Иллюстрация части (как в детском ридере) — сверху, текст снизу. */}
+                    {img && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={img}
+                        alt=""
+                        style={{ width: "100%", borderRadius: 12, display: "block", background: "#fff", marginBottom: text ? 12 : 0 }}
+                      />
+                    )}
+                    {text && (
+                      <p style={{ margin: 0, fontSize: 15, lineHeight: 1.7, color: "rgba(255,255,255,0.9)", whiteSpace: "pre-wrap" }}>
+                        {text}
+                      </p>
+                    )}
                   </div>
-                  <p style={{ margin: 0, fontSize: 15, lineHeight: 1.7, color: "rgba(255,255,255,0.9)", whiteSpace: "pre-wrap" }}>
-                    {text}
-                  </p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </>
