@@ -1,9 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { BookOpen, ChevronRight } from "lucide-react";
+import { BookOpen, Award } from "lucide-react";
 import { sessionsApi } from "@/lib/api/sessions";
+import { useAuthStore } from "@/stores/auth-store";
+import { CertificateModal } from "@/components/CertificateModal";
 import { useT, type Dict } from "@/i18n/useT";
 
 const dict: Dict = {
@@ -15,6 +18,7 @@ const dict: Dict = {
     emptyText: "Здесь появятся книги, которые ты прочитаешь полностью",
     book: "Книга",
     loading: "Загрузка...",
+    certificate: "Сертификат",
   },
   kk: {
     title: "Менің кітапханам",
@@ -24,6 +28,7 @@ const dict: Dict = {
     emptyText: "Мұнда толық оқыған кітаптарың пайда болады",
     book: "Кітап",
     loading: "Жүктелуде...",
+    certificate: "Сертификат",
   },
 };
 
@@ -43,6 +48,8 @@ interface Enrollment {
 export default function LibraryPage() {
   const router = useRouter();
   const t = useT(dict);
+  const user = useAuthStore((s) => s.user);
+  const [certBook, setCertBook] = useState<string | null>(null);
 
   const { data: enrollments = [], isLoading } = useQuery<Enrollment[]>({
     queryKey: ["enrollments"],
@@ -82,10 +89,10 @@ export default function LibraryPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {finishedBooks.map((e) => {
             const ch = e.challenge!;
+            const bookTitle = ch.bookTitle || ch.title || t("book");
             return (
-              <button
+              <div
                 key={e.id}
-                onClick={() => router.push(`/child/library/${e.id}`)}
                 className="glass"
                 style={{
                   width: "100%",
@@ -94,47 +101,89 @@ export default function LibraryPage() {
                   gap: 14,
                   padding: 12,
                   borderRadius: 20,
-                  textAlign: "left",
-                  cursor: "pointer",
                   border: "1px solid rgba(255,255,255,0.18)",
                   background: "rgba(255,255,255,0.1)",
-                  fontFamily: "inherit",
                 }}
               >
-                <div
+                <button
+                  onClick={() => router.push(`/child/library/${e.id}`)}
                   style={{
-                    width: 68,
-                    height: 68,
-                    borderRadius: 14,
+                    flex: 1,
+                    minWidth: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 14,
+                    padding: 0,
+                    border: "none",
+                    background: "transparent",
+                    textAlign: "left",
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 68,
+                      height: 68,
+                      borderRadius: 14,
+                      flexShrink: 0,
+                      background: ch.coverImage
+                        ? `url(${ch.coverImage}) center/cover`
+                        : "linear-gradient(135deg, #4776e6, #8e54e9)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {!ch.coverImage && <span style={{ fontSize: 26 }}>📖</span>}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 800, color: "#aaffcc", background: "rgba(0,200,100,0.2)", padding: "3px 8px", borderRadius: 9999, marginBottom: 6 }}>
+                      ✅ {t("done")}
+                    </span>
+                    <p style={{ margin: 0, fontWeight: 900, fontSize: 15, color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {bookTitle}
+                    </p>
+                    {ch.bookAuthor && (
+                      <p style={{ margin: "2px 0 0", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.55)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {ch.bookAuthor}
+                      </p>
+                    )}
+                  </div>
+                </button>
+                <button
+                  onClick={() => setCertBook(bookTitle)}
+                  aria-label={t("certificate")}
+                  title={t("certificate")}
+                  style={{
                     flexShrink: 0,
-                    background: ch.coverImage
-                      ? `url(${ch.coverImage}) center/cover`
-                      : "linear-gradient(135deg, #4776e6, #8e54e9)",
+                    width: 44,
+                    height: 44,
+                    borderRadius: 14,
+                    border: "none",
+                    cursor: "pointer",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
+                    background: "#ffffff",
+                    color: "#2ea36a",
+                    fontFamily: "inherit",
                   }}
                 >
-                  {!ch.coverImage && <span style={{ fontSize: 26 }}>📖</span>}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 800, color: "#aaffcc", background: "rgba(0,200,100,0.2)", padding: "3px 8px", borderRadius: 9999, marginBottom: 6 }}>
-                    ✅ {t("done")}
-                  </span>
-                  <p style={{ margin: 0, fontWeight: 900, fontSize: 15, color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {ch.bookTitle || ch.title || t("book")}
-                  </p>
-                  {ch.bookAuthor && (
-                    <p style={{ margin: "2px 0 0", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.55)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {ch.bookAuthor}
-                    </p>
-                  )}
-                </div>
-                <ChevronRight size={20} color="rgba(255,255,255,0.4)" strokeWidth={2.5} style={{ flexShrink: 0 }} />
-              </button>
+                  <Award size={20} strokeWidth={2.5} />
+                </button>
+              </div>
             );
           })}
         </div>
+      )}
+
+      {certBook !== null && (
+        <CertificateModal
+          childName={user?.name || ""}
+          bookTitle={certBook}
+          onClose={() => setCertBook(null)}
+        />
       )}
     </main>
   );

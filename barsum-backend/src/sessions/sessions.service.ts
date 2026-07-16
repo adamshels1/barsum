@@ -791,11 +791,20 @@ export class SessionsService {
     );
   }
 
-  async findEnrollmentsByParent(parentId: string): Promise<ChallengeEnrollment[]> {
-    return this.enrollmentRepo.find({
+  async findEnrollmentsByParent(parentId: string): Promise<any[]> {
+    const enrollments = await this.enrollmentRepo.find({
       where: { parentId },
       relations: ['challenge', 'child'],
     });
+
+    return Promise.all(
+      enrollments.map(async (e) => {
+        const completedParts = await this.sessionRepo.count({
+          where: { enrollmentId: e.id, status: SessionStatus.COMPLETED },
+        });
+        return { ...e, completedParts };
+      }),
+    );
   }
 
   async findStudentsByExpert(expertUserId: string): Promise<any[]> {
