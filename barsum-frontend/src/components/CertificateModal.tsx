@@ -37,6 +37,34 @@ function slugify(s: string) {
   return (s || "certificate").toLowerCase().replace(/[^a-z0-9а-яёіңғүұқөһ]+/gi, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "certificate";
 }
 
+// Опции снимка: натуральный размер 1500×1030, ретина ×2, белый фон.
+const CAPTURE_OPTS = { pixelRatio: 2, width: 1500, height: 1030, backgroundColor: "#ffffff" };
+const CERT_IMAGES = ["/certificate/logo.png", "/certificate/watermark.png", "/certificate/seal.png"];
+
+// Перед снимком дожидаемся шрифтов и картинок (печать 708 КБ грузится не мгновенно —
+// без этого в PNG слетала вёрстка/отступы и пропадала печать справа снизу).
+async function waitForAssets() {
+  try {
+    if (typeof document !== "undefined" && (document as any).fonts?.ready) {
+      await (document as any).fonts.ready;
+    }
+  } catch {
+    /* нет FontFaceSet — не критично */
+  }
+  await Promise.all(
+    CERT_IMAGES.map(
+      (src) =>
+        new Promise<void>((resolve) => {
+          const img = new Image();
+          const done = () => resolve();
+          img.onload = () => (img.decode ? img.decode().then(done, done) : done());
+          img.onerror = done;
+          img.src = src;
+        }),
+    ),
+  );
+}
+
 export function CertificateModal({
   childName,
   bookTitle,
@@ -84,8 +112,11 @@ export function CertificateModal({
   const genPng = async () => {
     const node = certRef.current;
     if (!node) return null;
-    // Снимаем с натурального узла 1500×1030 (обёртка масштабирует визуально, но node — в полный размер)
-    return toPng(node, { pixelRatio: 2, width: 1500, height: 1030, backgroundColor: "#ffffff" });
+    // Снимаем со скрытого узла в натуральную величину (без transform → без сдвигов).
+    await waitForAssets();
+    // Первый проход прогревает инлайн шрифтов/картинок в html-to-image, второй — чистый снимок.
+    await toPng(node, CAPTURE_OPTS);
+    return toPng(node, CAPTURE_OPTS);
   };
 
   const handleDownload = async () => {
@@ -110,7 +141,9 @@ export function CertificateModal({
     try {
       const node = certRef.current;
       if (!node) throw new Error("no node");
-      const blob = await toBlob(node, { pixelRatio: 2, width: 1500, height: 1030, backgroundColor: "#ffffff" });
+      await waitForAssets();
+      await toBlob(node, CAPTURE_OPTS); // прогрев (инлайн шрифтов/картинок)
+      const blob = await toBlob(node, CAPTURE_OPTS);
       if (!blob) throw new Error("no blob");
       const file = new File([blob], filename, { type: "image/png" });
       const nav = navigator as Navigator & { canShare?: (d: any) => boolean };
@@ -190,9 +223,15 @@ export function CertificateModal({
                 transformOrigin: "center center",
               }}
             >
-              <ReadingCertificate ref={certRef} childName={childName} bookTitle={bookTitle} />
+              <ReadingCertificate childName={childName} bookTitle={bookTitle} />
             </div>
           </div>
+        </div>
+
+        {/* Скрытая копия в натуральную величину — только для снимка (PNG/шаринг/печать).
+            Без transform и вне видимой области → в файле нет сдвигов и обрезки. */}
+        <div aria-hidden style={{ position: "fixed", left: -100000, top: 0, width: 1500, height: 1030, pointerEvents: "none", zIndex: -1, opacity: 1 }}>
+          <ReadingCertificate ref={certRef} childName={childName} bookTitle={bookTitle} />
         </div>
 
         {/* Нижняя панель кнопок — всегда доступна */}
