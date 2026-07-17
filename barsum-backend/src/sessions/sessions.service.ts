@@ -503,7 +503,7 @@ export class SessionsService {
     return this.analyze(id, childId);
   }
 
-  async getPartText(id: string, childId: string): Promise<{ text: string | null; imageUrl: string | null; title: string | null; partNumber: number }> {
+  async getPartText(id: string, childId: string): Promise<{ text: string | null; imageUrl: string | null; audioUrl: string | null; title: string | null; partNumber: number }> {
     const session = await this.findById(id);
     if (session.childId !== childId) throw new ForbiddenException('Not your session');
     const enrollment = await this.enrollmentRepo.findOne({
@@ -512,11 +512,13 @@ export class SessionsService {
     });
     const texts: string[] = enrollment?.challenge?.partTexts ?? [];
     const images: string[] = enrollment?.challenge?.partImages ?? [];
+    const audios: string[] = enrollment?.challenge?.partAudios ?? [];
     const titles: string[] = enrollment?.challenge?.partTitles ?? [];
     const text = texts[session.partNumber - 1] ?? null;
     const imageUrl = images[session.partNumber - 1] ?? null;
+    const audioUrl = audios[session.partNumber - 1] ?? null;
     const title = titles[session.partNumber - 1] ?? null;
-    return { text, imageUrl, title, partNumber: session.partNumber };
+    return { text, imageUrl, audioUrl, title, partNumber: session.partNumber };
   }
 
   async analyze(id: string, childId: string, bookTitle?: string): Promise<Session> {

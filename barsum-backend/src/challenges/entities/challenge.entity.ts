@@ -36,6 +36,11 @@ export class Challenge {
   @Column({ nullable: true, type: 'json' })
   partImages: string[];
 
+  // Аудиоверсия каждой части (озвучка эксперта). partAudios[i] соответствует
+  // partTexts[i]. Ребёнок может прослушать её в ридере перед чтением вслух.
+  @Column({ nullable: true, type: 'json' })
+  partAudios: string[];
+
   @Column({ nullable: true })
   coverImage: string;
 

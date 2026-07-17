@@ -6,6 +6,7 @@ import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { sessionsApi } from "@/lib/api/sessions";
 import { BackButton } from "@/components/BackButton";
+import { PartAudioPlayer } from "@/components/PartAudioPlayer";
 import { useT, type Dict } from "@/i18n/useT";
 
 const dict: Dict = {
@@ -17,6 +18,7 @@ const dict: Dict = {
     loading: "Загружаем книгу...",
     notFound: "Книга не найдена",
     reread: "Перечитывай сколько хочешь 💛",
+    listenTitle: "Послушай рассказ",
   },
   kk: {
     bookLabel: "📖 Кітап",
@@ -26,6 +28,7 @@ const dict: Dict = {
     loading: "Кітап жүктелуде...",
     notFound: "Кітап табылмады",
     reread: "Қалағаныңша қайта оқи бер 💛",
+    listenTitle: "Әңгімені тыңдап ал",
   },
 };
 
@@ -41,6 +44,7 @@ interface Enrollment {
     partTexts?: string[] | null;
     partTitles?: string[] | null;
     partImages?: string[] | null;
+    partAudios?: string[] | null;
   };
 }
 
@@ -98,6 +102,7 @@ export default function LibraryReaderPage() {
   const pageImage = ch.partImages?.[clampedIdx] ?? null;
   const partText = ch.partTexts?.[clampedIdx] ?? null;
   const partTitle = ch.partTitles?.[clampedIdx] ?? null;
+  const partAudio = ch.partAudios?.[clampedIdx] ?? null;
 
   return (
     <main style={{ minHeight: "100dvh", padding: "52px 20px 40px", maxWidth: 512, margin: "0 auto" }}>
@@ -124,6 +129,13 @@ export default function LibraryReaderPage() {
       <p style={{ margin: "0 0 12px", fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
         {t("part", { n: partNum, total })}
       </p>
+
+      {/* Аудиоверсия части (озвучка эксперта) — можно слушать при перечитывании. */}
+      {partAudio && (
+        <div style={{ marginBottom: 12 }}>
+          <PartAudioPlayer src={partAudio} title={t("listenTitle")} />
+        </div>
+      )}
 
       {/* Content: если есть иллюстрация — показываем её сверху, а текст части снизу
           (в книгах-картинках со вшитым текстом это крупный читаемый вариант). */}

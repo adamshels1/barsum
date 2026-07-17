@@ -7,6 +7,7 @@ import { useRef, useState } from "react";
 import { sessionsApi } from "@/lib/api/sessions";
 import { CoinIcon } from "@/components/CoinIcon";
 import { BackButton } from "@/components/BackButton";
+import { PartAudioPlayer } from "@/components/PartAudioPlayer";
 import { useT, type Dict } from "@/i18n/useT";
 
 const dict: Dict = {
@@ -55,6 +56,8 @@ const dict: Dict = {
     retellListening: "Слушаем твой пересказ...",
     retellScoreLabel: "Пересказ: {score}/10",
     readScoreLabel: "Чтение: {score}/10",
+    listenTitle: "Послушай рассказ",
+    listenHint: "Сначала можешь послушать аудио, потом читай вслух сам",
   },
   kk: {
     recordFail: "Жазу қатесі. Қайта байқап көр.",
@@ -101,6 +104,8 @@ const dict: Dict = {
     retellListening: "Пересказыңды тыңдап жатырмыз...",
     retellScoreLabel: "Пересказ: {score}/10",
     readScoreLabel: "Оқу: {score}/10",
+    listenTitle: "Әңгімені тыңдап ал",
+    listenHint: "Алдымен аудионы тыңдауыңа болады, кейін өзің дауыстап оқы",
   },
 };
 
@@ -245,6 +250,7 @@ function PhaseRead({
   session,
   dayText,
   pageImage,
+  partAudio,
   partTitle,
   ownBook,
   onUploaded,
@@ -252,6 +258,7 @@ function PhaseRead({
   session: Session;
   dayText: string | null;
   pageImage: string | null;
+  partAudio: string | null;
   partTitle: string | null;
   ownBook: boolean;
   onUploaded: () => void;
@@ -512,6 +519,9 @@ function PhaseRead({
       /* Иллюстрация (если есть) — сверху, а текст части — снизу. В книгах со вшитым
          в картинку текстом это крупный читаемый вариант; в обычных книгах — просто текст. */
       <>
+        {partAudio && stage === "before" && (
+          <PartAudioPlayer src={partAudio} title={t("listenTitle")} hint={t("listenHint")} />
+        )}
         {pageImage && (
           <div className="glass" style={{ padding: 12, borderRadius: 20, marginBottom: dayText || partTitle ? 12 : 0 }}>
             <p style={{ fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 10px", paddingLeft: 4 }}>
@@ -845,7 +855,7 @@ export default function SessionPage() {
     refetchInterval: (query) => (isPolling(query.state.data) ? 3000 : false),
   });
 
-  const { data: partText } = useQuery<{ text: string | null; imageUrl: string | null; title: string | null; partNumber: number }>({
+  const { data: partText } = useQuery<{ text: string | null; imageUrl: string | null; audioUrl: string | null; title: string | null; partNumber: number }>({
     queryKey: ["session-text", id],
     queryFn: () => sessionsApi.getPartText(id),
     enabled: !!session && (session.phase === "read" || session.phase === "recording"),
@@ -919,6 +929,7 @@ export default function SessionPage() {
           session={session}
           dayText={dayTextData?.text ?? null}
           pageImage={dayTextData?.imageUrl ?? null}
+          partAudio={dayTextData?.audioUrl ?? null}
           partTitle={dayTextData?.title ?? null}
           ownBook={ownBook}
           onUploaded={refetch}

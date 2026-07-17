@@ -48,6 +48,7 @@ interface Challenge {
   partTexts?: string[] | null;
   partTitles?: string[] | null;
   partImages?: string[] | null;
+  partAudios?: string[] | null;
 }
 
 function statusBadgeStyle(status: string): React.CSSProperties {
@@ -140,6 +141,7 @@ export default function ExpertBookDetailPage() {
               {Array.from({ length: partCount }, (_, i) => {
                 const text = texts[i] ?? "";
                 const img = images[i] ?? null;
+                const audio = book?.partAudios?.[i] ?? null;
                 return (
                   <div key={i} className="glass" style={{ padding: 20, borderRadius: 18 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
@@ -150,6 +152,15 @@ export default function ExpertBookDetailPage() {
                         {book?.partTitles?.[i] || t("part", { n: i + 1 })}
                       </p>
                     </div>
+                    {/* Аудиоверсия части — эксперт может прослушать свою озвучку. */}
+                    {audio && (
+                      <audio
+                        controls
+                        preload="metadata"
+                        src={audio}
+                        style={{ width: "100%", display: "block", borderRadius: 12, marginBottom: img || text ? 12 : 0 }}
+                      />
+                    )}
                     {/* Иллюстрация части (как в детском ридере) — сверху, текст снизу. */}
                     {img && (
                       // eslint-disable-next-line @next/next/no-img-element
