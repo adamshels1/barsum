@@ -27,6 +27,7 @@ const dict: Dict = {
     done: "Готово",
     continue: "Продолжить",
     read: "Читать",
+    retry: "Перечитать",
     loadingBook: "Загружаем книгу...",
   },
   kk: {
@@ -45,6 +46,7 @@ const dict: Dict = {
     done: "Дайын",
     continue: "Жалғастыру",
     read: "Оқу",
+    retry: "Қайта оқу",
     loadingBook: "Кітап жүктелуде...",
   },
 };
@@ -73,7 +75,7 @@ interface Enrollment {
 }
 
 function isSessionDone(s: Session) {
-  return s.status === "completed" || s.phase === "done";
+  return s.status === "completed" || (s.phase === "done" && s.status !== "failed");
 }
 
 function PartState({ sessions, partNumber }: {
@@ -81,13 +83,16 @@ function PartState({ sessions, partNumber }: {
   partNumber: number;
 }) {
   const session = sessions.find((s) => s.partNumber === partNumber);
+  // Отклонённая часть — не «готово»: её нужно перечитать заново.
+  if (session?.status === "failed") return "retry";
   if (session?.status === "completed") return "completed";
   if (session && isSessionDone(session)) return "completed";
   if (session && !isSessionDone(session)) return "current";
   // No session yet — check if previous part is done to unlock
   if (partNumber === 1) return "unlocked";
   const prevSession = sessions.find((s) => s.partNumber === partNumber - 1);
-  if (prevSession && isSessionDone(prevSession)) return "unlocked";
+  // failed тоже открывает следующую часть: книга уже была пройдена дальше.
+  if (prevSession && (isSessionDone(prevSession) || prevSession.status === "failed")) return "unlocked";
   return "locked";
 }
 
@@ -226,6 +231,7 @@ export default function BookPage() {
           const isCurrent = state === "current";
           const isUnlocked = state === "unlocked";
           const isLocked = state === "locked";
+          const isRetry = state === "retry";
 
           return (
             <button
@@ -234,7 +240,8 @@ export default function BookPage() {
               onClick={() => {
                 if (isCompleted && session) { goToSession(session.id); return; }
                 if (isCurrent && session) { goToSession(session.id); return; }
-                if (isUnlocked) { createSession.mutate(partNum); }
+                // retry: бэкенд сбрасывает отклонённую сессию и возвращает её чистой.
+                if (isUnlocked || isRetry) { createSession.mutate(partNum); }
               }}
               style={{
                 width: "100%",
@@ -242,18 +249,22 @@ export default function BookPage() {
                 borderRadius: 16,
                 border: isLocked
                   ? "1px solid rgba(255,255,255,0.08)"
-                  : isCurrent
-                    ? "1px solid rgba(255,255,255,0.45)"
-                    : isCompleted
-                      ? "1px solid rgba(100,255,150,0.3)"
-                      : "1px solid rgba(255,255,255,0.25)",
+                  : isRetry
+                    ? "1px solid rgba(255,180,80,0.45)"
+                    : isCurrent
+                      ? "1px solid rgba(255,255,255,0.45)"
+                      : isCompleted
+                        ? "1px solid rgba(100,255,150,0.3)"
+                        : "1px solid rgba(255,255,255,0.25)",
                 background: isLocked
                   ? "rgba(255,255,255,0.04)"
-                  : isCurrent
-                    ? "rgba(255,255,255,0.18)"
-                    : isCompleted
-                      ? "rgba(0,200,100,0.12)"
-                      : "rgba(255,255,255,0.1)",
+                  : isRetry
+                    ? "rgba(255,160,60,0.14)"
+                    : isCurrent
+                      ? "rgba(255,255,255,0.18)"
+                      : isCompleted
+                        ? "rgba(0,200,100,0.12)"
+                        : "rgba(255,255,255,0.1)",
                 cursor: isLocked ? "default" : "pointer",
                 display: "flex",
                 alignItems: "center",
@@ -278,13 +289,15 @@ export default function BookPage() {
                   justifyContent: "center",
                   background: isCompleted
                     ? "rgba(100,255,150,0.25)"
-                    : isCurrent
-                      ? "rgba(255,255,255,0.25)"
-                      : "rgba(255,255,255,0.1)",
+                    : isRetry
+                      ? "rgba(255,160,60,0.25)"
+                      : isCurrent
+                        ? "rgba(255,255,255,0.25)"
+                        : "rgba(255,255,255,0.1)",
                   fontSize: 20,
                 }}
               >
-                {isCompleted ? "✅" : isCurrent ? "▶" : isLocked ? <Lock size={18} color="rgba(255,255,255,0.4)" /> : "📖"}
+                {isCompleted ? "✅" : isRetry ? "🔄" : isCurrent ? "▶" : isLocked ? <Lock size={18} color="rgba(255,255,255,0.4)" /> : "📖"}
               </div>
 
               {/* Info */}
@@ -316,6 +329,11 @@ export default function BookPage() {
                 {isUnlocked && (
                   <span style={{ fontSize: 11, fontWeight: 800, color: "#4776e6", background: "rgba(255,255,255,0.9)", padding: "4px 10px", borderRadius: 9999 }}>
                     {t("read")}
+                  </span>
+                )}
+                {isRetry && (
+                  <span style={{ fontSize: 11, fontWeight: 800, color: "#ffd9a0", background: "rgba(255,160,60,0.25)", padding: "4px 10px", borderRadius: 9999 }}>
+                    {t("retry")}
                   </span>
                 )}
                 {isLocked && (

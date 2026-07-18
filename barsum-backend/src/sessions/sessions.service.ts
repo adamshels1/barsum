@@ -78,7 +78,43 @@ export class SessionsService {
     const existing = await this.sessionRepo.findOne({
       where: { enrollmentId, partNumber },
     });
-    if (existing) return existing;
+    if (existing) {
+      if (existing.status !== SessionStatus.FAILED) return existing;
+      // Отклонённая (failed) часть: без сброса ребёнок навсегда застревал —
+      // сессия возвращалась как есть и перечитать было нельзя. Сбрасываем
+      // в чистое состояние, чтобы часть можно было прочитать заново.
+      Object.assign(existing, {
+        status: SessionStatus.PENDING,
+        phase: SessionPhase.READ,
+        audioUrl: null,
+        transcription: null,
+        aiScore: null,
+        aiQuestions: null,
+        aiAnswers: null,
+        readingAccuracy: null,
+        readingCompleteness: null,
+        readingSpeedWpm: null,
+        errorWords: null,
+        audioDurationSec: null,
+        aiFeedback: null,
+        reviewReason: null,
+        expertReportDraft: null,
+        expertReport: null,
+        lastError: null,
+        retellAudioUrl: null,
+        retellDurationSec: null,
+        retellTranscription: null,
+        retellScore: null,
+        retellFeedback: null,
+      });
+      const reset = await this.sessionRepo.save(existing);
+      // Закрываем висящие записи в очереди эксперта по старой попытке.
+      await this.reviewQueueRepo.update(
+        { sessionId: reset.id, resolved: false },
+        { resolved: true, resolvedAt: new Date() },
+      );
+      return reset;
+    }
 
     const session = this.sessionRepo.create({
       enrollmentId,
