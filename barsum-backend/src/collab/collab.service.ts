@@ -20,7 +20,11 @@ import {
   audioMimeFromUrl,
 } from '../files/files.service';
 import { PushService } from '../push/push.service';
+import { TelegramService, esc } from '../notifications/telegram.service';
 import { ContributionStatus, ChallengeStatus, CoinTransactionType } from '../common/enums';
+
+// 👤 родитель / 🧒 ребёнок — для читаемости логов.
+const roleLabel = (t: 'child' | 'parent') => (t === 'parent' ? '👤 Родитель' : '🧒 Ребёнок');
 
 // Монеты ребёнку за участие (даже если не выбрали) — чтобы возвращался.
 const PARTICIPATION_COINS = 50;
@@ -42,6 +46,7 @@ export class CollabService {
     private aiService: AiService,
     private filesService: FilesService,
     private push: PushService,
+    private telegram: TelegramService,
   ) {}
 
   // Список совместных книг, открытых для приёма продолжений (для ребёнка/родителя).
@@ -165,6 +170,17 @@ export class CollabService {
     }
 
     await this.contribRepo.update({ id }, aiFields);
+
+    // Лог в Telegram: новое продолжение (кто, книга, глава, ИИ-оценка, текст).
+    const scoreStr = aiFields.aiScore != null ? `${aiFields.aiScore}/10` : '—';
+    const snippet = (transcription || '').slice(0, 180);
+    this.telegram.send(
+      'other',
+      `✍️ <b>Соавторство: новое продолжение</b>\n` +
+        `${roleLabel(contrib.authorType)} ${esc(contrib.authorName || '—')} → «${esc(challenge?.bookTitle ?? '')}», глава ${contrib.roundNumber}\n` +
+        `🤖 Оценка: ${scoreStr}` +
+        (snippet ? `\n«${esc(snippet)}»` : ''),
+    );
   }
 
   // Продолжения раунда — для эксперта (сортировка по скору; safetyFlag отдельно).
@@ -278,6 +294,20 @@ export class CollabService {
 
     await this.contribRepo.save([...winners, ...losers]);
 
+    // Лог в Telegram: выбрана глава, победители, участники.
+    const winnersLine = winners
+      .map((w) => `${roleLabel(w.authorType)} ${esc(w.authorName || '—')}`)
+      .join(', ');
+    const childWinners = winners.filter((w) => w.authorType === 'child').length;
+    this.telegram.send(
+      'other',
+      `🏆 <b>Соавторство: выбрана глава ${partTexts.length}</b>\n` +
+        `Книга «${esc(challenge.bookTitle)}»\n` +
+        `Победител${winners.length > 1 ? 'и' : 'ь'}: ${winnersLine}\n` +
+        (childWinners > 0 ? `💰 Монеты (+${challenge.winnerCoins}) начислены детям: ${childWinners}\n` : '') +
+        `Участников не выбрано: ${losers.length}`,
+    );
+
     // Следующий раунд.
     challenge.currentRound = roundNumber + 1;
     return this.challengeRepo.save(challenge);
@@ -313,7 +343,16 @@ export class CollabService {
     challenge.collabOpen = false;
     challenge.totalParts = (challenge.partTexts ?? []).length;
     if (coverImage) challenge.coverImage = coverImage;
-    return this.challengeRepo.save(challenge);
+    const saved = await this.challengeRepo.save(challenge);
+
+    // Лог в Telegram: книга-соавторство завершена и опубликована в магазин.
+    this.telegram.send(
+      'other',
+      `📚 <b>Соавторство: книга завершена</b>\n` +
+        `«${esc(challenge.bookTitle)}» — ${challenge.totalParts} глав, ` +
+        `соавторов: ${(challenge.coAuthors ?? []).length}. Опубликована в магазин.`,
+    );
+    return saved;
   }
 
   // Публичная отдача аудио продолжения через backend (mixed-content на проде).
