@@ -1,11 +1,12 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookMarked, CheckCircle, ChevronRight, LogOut, Plus, TrendingUp, Users2, XCircle } from "lucide-react";
+import { BookMarked, CheckCircle, ChevronRight, LogOut, Plus, TrendingUp, Users2, XCircle, PenLine } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { expertsApi } from "@/lib/api/experts";
 import { sessionsApi } from "@/lib/api/sessions";
+import { challengesApi } from "@/lib/api/challenges";
 import { useAuthStore } from "@/stores/auth-store";
 import { childPhotoUrl } from "@/lib/media";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -215,6 +216,11 @@ export default function ExpertHomePage() {
     queryKey: ["expert-students"],
     queryFn: sessionsApi.listStudents,
   });
+  const { data: myBooks = [] } = useQuery<any[]>({
+    queryKey: ["expert-my-books"],
+    queryFn: challengesApi.my,
+  });
+  const collabBooks = (myBooks as any[]).filter((b) => b.collaborative);
   const { data: reviewQueue = [] } = useQuery({
     queryKey: ["review-queue"],
     queryFn: sessionsApi.reviewQueue,
@@ -339,6 +345,40 @@ export default function ExpertHomePage() {
             {t("myTasks")}
           </button>
         </div>
+
+        {/* Совместные книги (соавторство) */}
+        {collabBooks.length > 0 && (
+          <div style={{ padding: "0 20px", marginBottom: 20 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 0 12px" }}>
+              <PenLine size={16} color="rgba(255,255,255,0.75)" />
+              <h2 style={{ fontSize: 15, fontWeight: 900, color: "#fff", margin: 0 }}>Совместные книги</h2>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {collabBooks.map((b) => (
+                <button
+                  key={b.id}
+                  onClick={() => router.push(`/expert/collab/${b.id}`)}
+                  className="glass"
+                  style={{ padding: 14, borderRadius: 16, border: "none", cursor: "pointer", textAlign: "left", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 12, width: "100%" }}
+                >
+                  <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(255,200,80,0.18)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0, overflow: "hidden" }}>
+                    {b.coverImage ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={b.coverImage} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : "✨"}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: 15, fontWeight: 900, color: "#fff", margin: "0 0 3px" }}>{b.bookTitle}</p>
+                    <p style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", margin: 0 }}>
+                      {b.collabCompleted ? "Завершена" : b.collabOpen ? `Идёт глава #${b.currentRound}` : "Приём закрыт"} · {(b.partTexts?.length ?? 0)} глав
+                    </p>
+                  </div>
+                  <ChevronRight size={18} color="rgba(255,255,255,0.5)" />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Review Queue */}
         {(reviewQueue as any[]).length > 0 && (

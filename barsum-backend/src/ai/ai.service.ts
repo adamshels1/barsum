@@ -110,6 +110,69 @@ ${chapterContext ? `Контекст главы: ${chapterContext}` : ''}
     return JSON.parse(content);
   }
 
+  // Оценка детского/родительского ПРОДОЛЖЕНИЯ главы совместной книги.
+  // ВАЖНО: у творческого продолжения нет эталона (в отличие от чтения вслух → LCS),
+  // поэтому это генеративная оценка-ПОДСКАЗКА эксперту, а не авто-решение.
+  async assessContribution(
+    previousChapterText: string,
+    contribution: string,
+    authorType: 'child' | 'parent' = 'child',
+  ): Promise<{
+    relevance: number;
+    creativity: number;
+    coherence: number;
+    language: number;
+    overall: number;
+    safetyFlag: boolean;
+    feedback: string;
+  }> {
+    // Продолжение может добавить и ребёнок, и родитель — фидбек не должен приписывать
+    // авторство ребёнку. Обозначаем автора нейтрально/по роли.
+    const author = authorType === 'parent' ? 'родитель' : 'ребёнок';
+    const prompt = `Ты детский редактор. Участники (дети 6–12 лет и их родители) сочиняют продолжение главы книги, наговаривая его голосом. Оцени продолжение как ПОДСКАЗКУ для педагога — финальное решение примет человек.
+
+Предыдущая глава:
+"${previousChapterText || '(это начало книги)'}"
+
+Продолжение, которое предложил автор (роль: ${author}):
+"${contribution}"
+
+В поле feedback обращайся к автору по его роли («автор» или «${author}»), НЕ приписывай авторство ребёнку, если это родитель.
+
+Оцени по шкале 0–10 каждый критерий:
+- relevance: насколько связано с предыдущей главой (не «улетел» в сторону)
+- creativity: оригинальность и интересность идеи
+- coherence: связность, законченность мысли, логика
+- language: богатство речи, грамотность
+
+Также определи safetyFlag = true, если есть недетский/неуместный контент, ругательства, жестокость или персональные данные (реальные имена, адреса, телефоны). Иначе false.
+
+Дай короткий feedback (1–2 фразы) для педагога о сильных/слабых сторонах.
+
+Ответь СТРОГО в JSON: {"relevance": number, "creativity": number, "coherence": number, "language": number, "safetyFlag": boolean, "feedback": "string"}`;
+
+    const content = await this.generateText(prompt);
+    const parsed = JSON.parse(content);
+    const clamp = (n: any) => Math.max(0, Math.min(10, Math.round(Number(n) || 0)));
+    const relevance = clamp(parsed.relevance);
+    const creativity = clamp(parsed.creativity);
+    const coherence = clamp(parsed.coherence);
+    const language = clamp(parsed.language);
+    // Взвешенная итоговая: связь и креатив весят больше.
+    const overall = Math.round(
+      (relevance * 0.3 + creativity * 0.3 + coherence * 0.2 + language * 0.2) * 10,
+    ) / 10;
+    return {
+      relevance,
+      creativity,
+      coherence,
+      language,
+      overall,
+      safetyFlag: !!parsed.safetyFlag,
+      feedback: parsed.feedback ?? '',
+    };
+  }
+
   async answerQuestion(
     question: string,
     childAnswer: string,

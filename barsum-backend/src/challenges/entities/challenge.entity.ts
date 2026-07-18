@@ -82,6 +82,33 @@ export class Challenge {
   @Column({ default: 0 })
   membersCount: number;
 
+  // ── Совместная книга (collaborative): дети/родители сочиняют главы голосом ──
+  // Флаг «книга-соавторство». Стартовую главу задаёт эксперт (partTexts[0]),
+  // каждая следующая глава — выбранное экспертом детское/родительское продолжение.
+  @Column({ default: false })
+  collaborative: boolean;
+
+  // Номер главы, которая сейчас набирается (продолжения падают на этот раунд).
+  // Стартовая глава = 1, приём продолжений идёт для currentRound (2, 3, …).
+  @Column({ default: 1 })
+  currentRound: number;
+
+  // Открыт ли приём продолжений прямо сейчас.
+  @Column({ default: false })
+  collabOpen: boolean;
+
+  // Книга завершена экспертом и доступна в магазине как обычная читаемая.
+  @Column({ default: false })
+  collabCompleted: boolean;
+
+  // Накопленный список соавторов (дети и родители). Полиморфно, как монетный реестр.
+  @Column({ nullable: true, type: 'json' })
+  coAuthors: { type: 'child' | 'parent'; id: string; name?: string }[];
+
+  // Награда ребёнку-победителю за выбранную главу (задаёт эксперт). Родителям — только бейдж.
+  @Column({ default: 300 })
+  winnerCoins: number;
+
   @CreateDateColumn()
   createdAt: Date;
 

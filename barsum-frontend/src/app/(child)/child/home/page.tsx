@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, History, LogOut, Sparkles } from "lucide-react";
+import { BookOpen, History, LogOut, Sparkles, PenLine } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -36,6 +36,8 @@ const dict: Dict = {
     addDream: "Добавь свою мечту!",
     addAnotherDream: "Добавить ещё мечту",
     parentsHelp: "Родители помогут её осуществить",
+    collabCard: "Сочиняем вместе",
+    collabCardHint: "Придумай продолжение сказки своим голосом",
     myTasks: "Мои задания",
     noActiveTasks: "Нет активных заданий",
     askParents: "Попроси родителей записать тебя на курс",
@@ -64,6 +66,8 @@ const dict: Dict = {
     addDream: "Арманыңды қос!",
     addAnotherDream: "Тағы арман қосу",
     parentsHelp: "Ата-анаң оны орындауға көмектеседі",
+    collabCard: "Бірге шығарамыз",
+    collabCardHint: "Ертегінің жалғасын өз дауысыңмен ойлап тап",
     myTasks: "Менің тапсырмаларым",
     noActiveTasks: "Белсенді тапсырмалар жоқ",
     askParents: "Ата-анаңнан курсқа жазуын өтін",
@@ -304,6 +308,23 @@ export default function ChildHomePage() {
         <div style={{ flex: 1 }}>
           <p style={{ margin: 0, fontWeight: 900, fontSize: 15, color: "#ffffff" }}>{currentDreams.length > 0 ? t("addAnotherDream") : t("addDream")}</p>
           <p style={{ margin: "3px 0 0", fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.55)" }}>{t("parentsHelp")}</p>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+      </button>
+
+      <button
+        onClick={() => router.push("/child/collab")}
+        className="glass"
+        style={{ width: "100%", marginBottom: 12, padding: 16, display: "flex", alignItems: "center", gap: 12, textAlign: "left", cursor: "pointer", border: "1px solid rgba(255,210,120,0.35)", borderRadius: 20, background: "rgba(255,200,80,0.12)" }}
+      >
+        <div style={{ width: 48, height: 48, borderRadius: 16, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <PenLine size={22} color="#ffffff" strokeWidth={2.5} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <p style={{ margin: 0, fontWeight: 900, fontSize: 15, color: "#ffffff" }}>{t("collabCard")} ✨</p>
+          <p style={{ margin: "3px 0 0", fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.6)" }}>{t("collabCardHint")}</p>
         </div>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="9 18 15 12 9 6" />

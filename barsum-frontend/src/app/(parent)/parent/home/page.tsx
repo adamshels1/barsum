@@ -44,6 +44,8 @@ const dict: Dict = {
     childGotAccess: "Ребёнок уже получил доступ к заданию!",
     great: "Отлично!",
     catalogTitle: "Каталог заданий",
+    collabCard: "Сочиняем вместе",
+    collabCardHint: "Придумайте продолжение сказки голосом вместе с ребёнком",
     cabinet: "← Кабинет",
     allAges: "Все",
     childRequests: "🔔 Запросы детей",
@@ -101,6 +103,8 @@ const dict: Dict = {
     childGotAccess: "Бала тапсырмаға қол жеткізді!",
     great: "Тамаша!",
     catalogTitle: "Тапсырмалар каталогы",
+    collabCard: "Бірге шығарамыз",
+    collabCardHint: "Баламен бірге ертегінің жалғасын дауыспен ойлап табыңыз",
     cabinet: "← Кабинет",
     allAges: "Барлығы",
     childRequests: "🔔 Балалардың сұраулары",
@@ -759,6 +763,24 @@ export default function ParentHomePage() {
             );
           })}
         </div>
+      </div>
+
+      {/* Сочиняем вместе (соавторство) */}
+      <div style={{ padding: "16px 20px 0" }}>
+        <button
+          onClick={() => router.push("/parent/collab")}
+          className="glass"
+          style={{ width: "100%", padding: 16, display: "flex", alignItems: "center", gap: 12, textAlign: "left", cursor: "pointer", border: "1px solid rgba(255,210,120,0.35)", borderRadius: 20, background: "rgba(255,200,80,0.12)", fontFamily: "inherit" }}
+        >
+          <div style={{ width: 48, height: 48, borderRadius: 16, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }}>✍️</div>
+          <div style={{ flex: 1 }}>
+            <p style={{ margin: 0, fontWeight: 900, fontSize: 15, color: "#ffffff" }}>{t("collabCard")} ✨</p>
+            <p style={{ margin: "3px 0 0", fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.6)" }}>{t("collabCardHint")}</p>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </button>
       </div>
 
       {/* Подтверждение чтения перенесено на главную (кабинет) — см. OwnBookConfirmInbox */}

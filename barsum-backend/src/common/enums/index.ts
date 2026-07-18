@@ -5,6 +5,7 @@ export * from './challenge-category.enum';
 export * from './enrollment-status.enum';
 export * from './session-phase.enum';
 export * from './session-status.enum';
+export * from './contribution-status.enum';
 export * from './coin-transaction-type.enum';
 export * from './coin-transaction-status.enum';
 export * from './reward-type.enum';

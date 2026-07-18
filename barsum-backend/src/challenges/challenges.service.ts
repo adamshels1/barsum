@@ -22,7 +22,11 @@ export class ChallengesService {
       .leftJoinAndSelect('c.author', 'author')
       .where('c.status = :status', { status: ChallengeStatus.PUBLISHED })
       // «Свои книги» — приватные задания родителя, их не показываем в общем каталоге.
-      .andWhere('c.category != :ownBook', { ownBook: ChallengeCategory.OWN_BOOK });
+      .andWhere('c.category != :ownBook', { ownBook: ChallengeCategory.OWN_BOOK })
+      // Совместные книги в процессе соавторства НЕ продаются: в каталог они попадают
+      // только после завершения (collabCompleted). До этого доступны лишь в разделе
+      // «Сочиняем вместе» для участия — без цены и кнопки «купить».
+      .andWhere('(c.collaborative = false OR c.collabCompleted = true)');
     if (filters?.category) {
       qb.andWhere('c.category = :category', { category: filters.category });
     }
@@ -49,12 +53,14 @@ export class ChallengesService {
   > {
     const challenges = await this.challengeRepo.find({
       where: { status: ChallengeStatus.PUBLISHED, category: ChallengeCategory.READING },
-      select: ['bookTitle', 'bookAuthor', 'pagesTotal', 'ageMin', 'ageMax', 'coverImage'],
+      select: ['bookTitle', 'bookAuthor', 'pagesTotal', 'ageMin', 'ageMax', 'coverImage', 'collaborative', 'collabCompleted'],
       order: { bookTitle: 'ASC' },
     });
     const seen = new Set<string>();
     const catalog: { title: string; author: string; pages: number; ageMin: number; ageMax: number; coverImage: string | null }[] = [];
     for (const c of challenges) {
+      // Незавершённые совместные книги в общий книжный каталог не попадают.
+      if (c.collaborative && !c.collabCompleted) continue;
       if (seen.has(c.bookTitle)) continue;
       seen.add(c.bookTitle);
       catalog.push({

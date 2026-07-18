@@ -20,6 +20,7 @@ import { DreamsModule } from './dreams/dreams.module';
 import { AdminModule } from './admin/admin.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PushModule } from './push/push.module';
+import { CollabModule } from './collab/collab.module';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { PushModule } from './push/push.module';
     DreamsModule,
     AdminModule,
     PushModule,
+    CollabModule,
   ],
   controllers: [AppController],
   providers: [AppService],
