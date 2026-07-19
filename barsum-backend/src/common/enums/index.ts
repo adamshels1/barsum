@@ -10,5 +10,6 @@ export * from './coin-transaction-type.enum';
 export * from './coin-transaction-status.enum';
 export * from './reward-type.enum';
 export * from './reward-request-status.enum';
+export * from './book-request-status.enum';
 export * from './payment-status.enum';
 export * from './dream-status.enum';

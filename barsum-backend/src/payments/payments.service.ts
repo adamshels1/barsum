@@ -13,6 +13,7 @@ import { User } from '../users/entities/user.entity';
 import { Child } from '../children/entities/child.entity';
 import { ChallengeEnrollment } from '../sessions/entities/enrollment.entity';
 import { Challenge } from '../challenges/entities/challenge.entity';
+import { BookRequest } from '../challenges/entities/book-request.entity';
 import { Expert } from '../experts/entities/expert.entity';
 import { CoinsService } from '../coins/coins.service';
 import {
@@ -21,6 +22,7 @@ import {
   EnrollmentStatus,
   ChallengeCategory,
   ChallengeStatus,
+  BookRequestStatus,
 } from '../common/enums';
 
 // Экономика «своей книги»: 1000 ₸ = 60 минут = 6 сессий по 10 минут.
@@ -284,6 +286,15 @@ export class PaymentsService {
       startedAt: new Date(),
     });
     await this.enrollmentRepo.save(enrollment);
+
+    // Если ребёнок просил эту книгу — закрываем его запрос как купленный.
+    await this.dataSource
+      .getRepository(BookRequest)
+      .update(
+        { childId: payment.childId, challengeId: payment.challengeId, status: BookRequestStatus.PENDING },
+        { status: BookRequestStatus.PURCHASED, resolvedAt: new Date() },
+      )
+      .catch(() => undefined);
   }
 
   async uploadReceipt(id: string, parentId: string, receiptUrl: string): Promise<Payment> {

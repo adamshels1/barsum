@@ -38,6 +38,8 @@ const dict: Dict = {
     parentsHelp: "Родители помогут её осуществить",
     collabCard: "Сочиняем вместе",
     collabCardHint: "Придумай продолжение сказки своим голосом",
+    booksCard: "Каталог книг",
+    booksCardHint: "Выбери книгу и попроси родителя купить её",
     myTasks: "Мои задания",
     noActiveTasks: "Нет активных заданий",
     askParents: "Попроси родителей записать тебя на курс",
@@ -68,6 +70,8 @@ const dict: Dict = {
     parentsHelp: "Ата-анаң оны орындауға көмектеседі",
     collabCard: "Бірге шығарамыз",
     collabCardHint: "Ертегінің жалғасын өз дауысыңмен ойлап тап",
+    booksCard: "Кітаптар каталогы",
+    booksCardHint: "Кітап таңдап, ата-анаңнан сатып алуын сұра",
     myTasks: "Менің тапсырмаларым",
     noActiveTasks: "Белсенді тапсырмалар жоқ",
     askParents: "Ата-анаңнан курсқа жазуын өтін",
@@ -308,6 +312,23 @@ export default function ChildHomePage() {
         <div style={{ flex: 1 }}>
           <p style={{ margin: 0, fontWeight: 900, fontSize: 15, color: "#ffffff" }}>{currentDreams.length > 0 ? t("addAnotherDream") : t("addDream")}</p>
           <p style={{ margin: "3px 0 0", fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.55)" }}>{t("parentsHelp")}</p>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+      </button>
+
+      <button
+        onClick={() => router.push("/child/books")}
+        className="glass"
+        style={{ width: "100%", marginBottom: 12, padding: 16, display: "flex", alignItems: "center", gap: 12, textAlign: "left", cursor: "pointer", border: "1px solid rgba(120,200,255,0.35)", borderRadius: 20, background: "rgba(80,160,255,0.12)" }}
+      >
+        <div style={{ width: 48, height: 48, borderRadius: 16, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <BookOpen size={22} color="#ffffff" strokeWidth={2.5} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <p style={{ margin: 0, fontWeight: 900, fontSize: 15, color: "#ffffff" }}>{t("booksCard")} 📚</p>
+          <p style={{ margin: "3px 0 0", fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.6)" }}>{t("booksCardHint")}</p>
         </div>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="9 18 15 12 9 6" />

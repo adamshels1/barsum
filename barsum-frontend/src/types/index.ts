@@ -135,6 +135,18 @@ export interface RewardRequest {
   resolvedAt?: string;
 }
 
+export interface BookRequest {
+  id: string;
+  childId: string;
+  child?: Child;
+  parentId: string;
+  challengeId: string;
+  challenge?: Challenge;
+  status: "pending" | "purchased" | "rejected";
+  createdAt: string;
+  resolvedAt?: string;
+}
+
 export interface Payment {
   id: string;
   parentId: string;

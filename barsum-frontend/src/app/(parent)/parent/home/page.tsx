@@ -8,7 +8,8 @@ import { challengesApi } from "@/lib/api/challenges";
 import { childrenApi } from "@/lib/api/children";
 import { paymentsApi } from "@/lib/api/payments";
 import { rewardsApi } from "@/lib/api/rewards";
-import type { Challenge, Child, Payment, RewardRequest } from "@/types/index";
+import { bookRequestsApi } from "@/lib/api/book-requests";
+import type { BookRequest, Challenge, Child, Payment, RewardRequest } from "@/types/index";
 import { CoinIcon } from "@/components/CoinIcon";
 import { RewardRequestCard } from "@/components/RewardRequestCard";
 import { Portal } from "@/components/Portal";
@@ -49,6 +50,12 @@ const dict: Dict = {
     cabinet: "← Кабинет",
     allAges: "Все",
     childRequests: "🔔 Запросы детей",
+    bookRequests: "📚 Просят книгу",
+    bookReqText: "{name} просит книгу",
+    bookReqBuy: "Купить",
+    bookReqReject: "Отклонить",
+    bookReqRejected: "Запрос отклонён",
+    bookReqError: "Ошибка",
     ownBookConfirmTitle: "📖 Подтвердите чтение",
     ownBookConfirmDesc: "«{book}» · сессия {part}{minutes}",
     ownBookMinutesRead: " · прочитано ~{n} мин",
@@ -108,6 +115,12 @@ const dict: Dict = {
     cabinet: "← Кабинет",
     allAges: "Барлығы",
     childRequests: "🔔 Балалардың сұраулары",
+    bookRequests: "📚 Кітап сұрайды",
+    bookReqText: "{name} кітап сұрайды",
+    bookReqBuy: "Сатып алу",
+    bookReqReject: "Бас тарту",
+    bookReqRejected: "Сұрау қабылданбады",
+    bookReqError: "Қате",
     ownBookConfirmTitle: "📖 Оқуды растаңыз",
     ownBookConfirmDesc: "«{book}» · сессия {part}{minutes}",
     ownBookMinutesRead: " · ~{n} мин оқыды",
@@ -317,15 +330,17 @@ function KaspiQrStep({
 }
 
 function PurchaseModal({
-  challenge, children, onClose, onSuccess,
+  challenge, children, onClose, onSuccess, initialChildId,
 }: {
   challenge: Challenge & { author?: { name?: string } };
   children: Child[];
   onClose: () => void;
   onSuccess: (payment: Payment) => void;
+  // Предвыбранный ребёнок — при покупке из запроса «просит книгу».
+  initialChildId?: string;
 }) {
   const t = useT(dict);
-  const [childId, setChildId] = useState("");
+  const [childId, setChildId] = useState(initialChildId ?? "");
   const [step, setStep] = useState<"form" | "qr">("form");
   // id черновика оплаты (intent), созданного при клике «Оплатить через Kaspi».
   const [intentId, setIntentId] = useState<string | null>(null);
@@ -684,6 +699,8 @@ export default function ParentHomePage() {
 
   const [ageFilter, setAgeFilter] = useState("");
   const [selectedChallenge, setSelectedChallenge] = useState<(Challenge & { author?: { name?: string } }) | null>(null);
+  // Ребёнок, для которого открыта покупка из запроса «просит книгу».
+  const [purchaseChildId, setPurchaseChildId] = useState<string | undefined>(undefined);
   const [showOwnBook, setShowOwnBook] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
@@ -705,6 +722,23 @@ export default function ParentHomePage() {
   });
   const pendingRequests = requests.filter((r) => r.status === "pending");
 
+  const { data: bookRequests = [] } = useQuery<BookRequest[]>({
+    queryKey: ["book-requests"],
+    queryFn: bookRequestsApi.list,
+    refetchInterval: 15000,
+    refetchOnWindowFocus: true,
+  });
+  const pendingBookRequests = bookRequests.filter((r) => r.status === "pending");
+
+  const rejectBookReqMutation = useMutation({
+    mutationFn: (id: string) => bookRequestsApi.reject(id),
+    onSuccess: () => {
+      toast.success(t("bookReqRejected"));
+      queryClient.invalidateQueries({ queryKey: ["book-requests"] });
+    },
+    onError: () => toast.error(t("bookReqError")),
+  });
+
   const ageConfig = AGE_FILTERS.find((f) => f.value === ageFilter);
   const filteredChallenges = (challenges as any[]).filter((c) => {
     if (c.status !== "published") return false;
@@ -716,8 +750,10 @@ export default function ParentHomePage() {
 
   const handlePurchaseSuccess = () => {
     setSelectedChallenge(null);
+    setPurchaseChildId(undefined);
     setShowSuccess(true);
     queryClient.invalidateQueries({ queryKey: ["payments"] });
+    queryClient.invalidateQueries({ queryKey: ["book-requests"] });
   };
 
   return (
@@ -802,6 +838,52 @@ export default function ParentHomePage() {
         </div>
       )}
 
+      {/* Запросы книг от детей: «купи мне эту книгу» */}
+      {pendingBookRequests.length > 0 && (
+        <div style={{ padding: "16px 20px 0" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 900, color: "#ffffff" }}>{t("bookRequests")}</h2>
+            <span style={{ fontSize: 12, fontWeight: 900, padding: "2px 9px", borderRadius: 9999, background: "#ef4444", color: "#ffffff" }}>{pendingBookRequests.length}</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {pendingBookRequests.map((req) => {
+              const ch = req.challenge;
+              return (
+                <div key={req.id} className="glass" style={{ padding: "14px 16px", border: "1px solid rgba(120,200,255,0.35)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+                    <div style={{ width: 48, height: 48, borderRadius: 12, flexShrink: 0, background: ch?.coverImage ? `url(${ch.coverImage}) center/cover` : "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>
+                      {!ch?.coverImage && "📚"}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.6)" }}>{t("bookReqText", { name: req.child?.name ?? "" })}</p>
+                      <p style={{ margin: "3px 0 0", fontWeight: 900, fontSize: 14.5, color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        «{ch?.bookTitle || ch?.title}»
+                      </p>
+                    </div>
+                    <p style={{ margin: 0, fontWeight: 900, fontSize: 16, color: "#ffffff", flexShrink: 0 }}>{(ch?.price ?? 0).toLocaleString()} ₸</p>
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      onClick={() => rejectBookReqMutation.mutate(req.id)}
+                      disabled={rejectBookReqMutation.isPending}
+                      style={{ flex: 1, padding: "11px 0", borderRadius: 12, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13, background: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.7)" }}
+                    >
+                      {t("bookReqReject")}
+                    </button>
+                    <button
+                      onClick={() => { if (ch) { setPurchaseChildId(req.childId); setSelectedChallenge(ch as any); } }}
+                      style={{ flex: 1, padding: "11px 0", borderRadius: 12, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 900, fontSize: 13, background: "rgba(255,255,255,0.9)", color: "#4776e6" }}
+                    >
+                      {t("bookReqBuy")} 🚀
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Своя книжка — приоритетный сценарий, крупная карточка над каталогом */}
       <div style={{ padding: "16px 20px 0" }}>
         <button
@@ -837,7 +919,7 @@ export default function ParentHomePage() {
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             {filteredChallenges.map((c: any) => (
-              <ChallengeCard key={c.id} challenge={c} onBuy={() => setSelectedChallenge(c)} />
+              <ChallengeCard key={c.id} challenge={c} onBuy={() => { setPurchaseChildId(undefined); setSelectedChallenge(c); }} />
             ))}
           </div>
         )}
@@ -845,9 +927,11 @@ export default function ParentHomePage() {
 
       {selectedChallenge && (
         <PurchaseModal
+          key={`${selectedChallenge.id}-${purchaseChildId ?? ""}`}
           challenge={selectedChallenge}
           children={children}
-          onClose={() => setSelectedChallenge(null)}
+          initialChildId={purchaseChildId}
+          onClose={() => { setSelectedChallenge(null); setPurchaseChildId(undefined); }}
           onSuccess={handlePurchaseSuccess}
         />
       )}
