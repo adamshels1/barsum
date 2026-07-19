@@ -248,10 +248,14 @@ export default function ChildHomePage() {
   const clearAuth = useAuthStore((s) => s.clearAuth);
   const queryClient = useQueryClient();
 
+  // Поллинг + рефетч при возврате в приложение: купленная родителем книга
+  // появляется сама, без перезахода (актуально для свёрнутой PWA).
   const { data: enrollments = [], isLoading } = useQuery({
     queryKey: ["enrollments"],
     queryFn: sessionsApi.listEnrollments,
     refetchOnMount: "always",
+    refetchInterval: 15000,
+    refetchOnWindowFocus: "always",
   });
 
   const { data: balance_data } = useQuery({

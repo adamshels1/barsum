@@ -1,5 +1,6 @@
-import { Controller, Post, Body } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Controller, Post, Body, UseGuards, Request } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { AuthService } from './auth.service';
 import { RegisterParentDto } from './dto/register-parent.dto';
 import { LoginDto } from './dto/login.dto';
@@ -15,6 +16,14 @@ export class AuthController {
   @ApiOperation({ summary: 'Универсальный вход (email или логин)' })
   universalLogin(@Body() dto: UniversalLoginDto) {
     return this.authService.universalLogin(dto);
+  }
+
+  @Post('refresh')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Обмен валидного токена на свежий (скользящая сессия)' })
+  refresh(@Request() req: any) {
+    return this.authService.refreshToken(req.user);
   }
 
   @Post('parent/register')

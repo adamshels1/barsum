@@ -175,6 +175,43 @@ export class AuthService {
     throw new UnauthorizedException('Неверный логин или пароль');
   }
 
+  // Скользящая сессия: приложение при каждом открытии молча обменивает ещё
+  // валидный токен на свежий (полный срок жизни). Активные пользователи не
+  // разлогиниваются никогда; заброшенные сессии истекают сами.
+  async refreshToken(payload: { sub: string; role: string }) {
+    const { sub, role } = payload;
+
+    if (role === 'child') {
+      const child = await this.childrenService.findById(sub);
+      if (!child) throw new UnauthorizedException('Account not found');
+      const token = await this.jwtService.signAsync({
+        sub: child.id,
+        login: child.login,
+        role: 'child',
+        parentId: child.parentId,
+      });
+      const { password, ...result } = child as any;
+      return { access_token: token, role, child: result };
+    }
+
+    const user = await this.usersService.findById(sub);
+    if (!user || (user.role as string) !== role) throw new UnauthorizedException('Account not found');
+
+    const base: Record<string, any> = { sub: user.id, email: user.email, role };
+    if (role === UserRole.EXPERT) {
+      // expertStatus берём свежий: одобрение эксперта подхватится без перелогина.
+      const expert = await this.expertsService.findByUserId(user.id);
+      base.expertStatus = expert?.status;
+      const token = await this.jwtService.signAsync(base);
+      const { password, ...result } = user as any;
+      return { access_token: token, role, user: result, expert };
+    }
+
+    const token = await this.jwtService.signAsync(base);
+    const { password, ...result } = user as any;
+    return { access_token: token, role, user: result };
+  }
+
   async loginAdmin(dto: LoginDto) {
     const user = await this.usersService.findByEmail(dto.email);
     if (!user || user.role !== UserRole.ADMIN) throw new UnauthorizedException('Invalid credentials');

@@ -18,4 +18,7 @@ export const authApi = {
 
   loginAdmin: (data: { email: string; password: string }) =>
     apiClient.post("/auth/admin/login", data).then((r) => r.data),
+
+  // Обмен валидного токена на свежий (скользящая сессия).
+  refresh: () => apiClient.post("/auth/refresh").then((r) => r.data),
 };

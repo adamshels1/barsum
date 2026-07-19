@@ -14,7 +14,21 @@ interface AuthState {
     user: any,
     expertStatus?: string
   ) => void;
+  // Тихая замена токена (скользящая сессия): роль и пользователь не меняются.
+  setToken: (token: string) => void;
   clearAuth: () => void;
+}
+
+// Токен живёт 90 дней (JWT_EXPIRES_IN на бэке) — cookie столько же.
+const TOKEN_MAX_AGE = 90 * 24 * 3600;
+
+function persistToken(token: string) {
+  if (typeof document !== "undefined") {
+    document.cookie = `barsum_token=${token}; path=/; max-age=${TOKEN_MAX_AGE}`;
+  }
+  if (typeof window !== "undefined") {
+    localStorage.setItem("access_token", token);
+  }
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -25,13 +39,12 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       expertStatus: null,
       setAuth: (token, role, user, expertStatus) => {
-        if (typeof document !== "undefined") {
-          document.cookie = `barsum_token=${token}; path=/; max-age=${7 * 24 * 3600}`;
-        }
-        if (typeof window !== "undefined") {
-          localStorage.setItem("access_token", token);
-        }
+        persistToken(token);
         set({ token, role, user, expertStatus: expertStatus ?? null });
+      },
+      setToken: (token) => {
+        persistToken(token);
+        set({ token });
       },
       clearAuth: () => {
         if (typeof document !== "undefined") {

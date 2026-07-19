@@ -5,6 +5,7 @@ import { QueryProvider } from "@/providers/query-provider";
 import { HtmlLangSync } from "@/i18n/HtmlLangSync";
 import { YandexMetrica } from "@/components/YandexMetrica";
 import { PwaInstall } from "@/components/PwaInstall";
+import { SessionRefresher } from "@/components/SessionRefresher";
 import "./globals.css";
 
 const nunito = Nunito({
@@ -59,6 +60,7 @@ export default function RootLayout({
       <body className={`${nunito.variable} ${playfair.variable} ${manrope.variable} font-sans`}>
         <QueryProvider>
           <HtmlLangSync />
+          <SessionRefresher />
           {children}
           <Toaster richColors position="top-center" />
           <PwaInstall />

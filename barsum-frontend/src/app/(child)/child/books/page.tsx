@@ -198,14 +198,19 @@ export default function ChildBooksPage() {
     queryFn: () => challengesApi.list(),
   });
 
+  // Поллинг: как только родитель купил/отклонил — статусы карточек обновляются сами.
   const { data: enrollments = [] } = useQuery<any[]>({
     queryKey: ["enrollments"],
     queryFn: sessionsApi.listEnrollments,
+    refetchInterval: 15000,
+    refetchOnWindowFocus: "always",
   });
 
   const { data: myRequests = [] } = useQuery<BookRequest[]>({
     queryKey: ["book-requests-my"],
     queryFn: bookRequestsApi.my,
+    refetchInterval: 15000,
+    refetchOnWindowFocus: "always",
   });
 
   const askMutation = useMutation({
