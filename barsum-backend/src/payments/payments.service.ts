@@ -24,10 +24,10 @@ import {
 } from '../common/enums';
 
 // Экономика «своей книги»: 1000 ₸ = 60 минут = 6 сессий по 10 минут.
-// Курс монет как в системе: 1 ₸ = 10 монет → ~167 монет за минуту чтения.
+// Курс монет как у экспертских книг: 1 монета = 1 ₸ — весь пул монет равен цене,
+// за засчитанную сессию начисляется фиксированная доля (цена / кол-во сессий).
 const OWN_BOOK_MINUTES_PER_1000TG = 60;
 const OWN_BOOK_SESSION_MINUTES = 10;
-const OWN_BOOK_COINS_PER_MINUTE = 167;
 import { TelegramService, esc } from '../notifications/telegram.service';
 
 @Injectable()
@@ -208,9 +208,9 @@ export class PaymentsService {
 
     const minutes = Math.round((amountTg / 1000) * OWN_BOOK_MINUTES_PER_1000TG);
     const sessions = Math.max(1, Math.round(minutes / OWN_BOOK_SESSION_MINUTES));
-    const coinsPerMinute = OWN_BOOK_COINS_PER_MINUTE;
-    // Монет за полную 10-минутную сессию (для отображения ребёнку/родителю).
-    const coinsPerPart = coinsPerMinute * OWN_BOOK_SESSION_MINUTES;
+    // Фиксированная сумма за засчитанную сессию: цена книги делится на кол-во сессий
+    // (1000 ₸ / 6 сессий ≈ 167 монет). Итоговый пул монет равен цене книги.
+    const coinsPerPart = Math.round(amountTg / sessions);
     const coinsPool = coinsPerPart * sessions;
 
     const challenge = await this.challengeRepo.save(
@@ -250,7 +250,7 @@ export class PaymentsService {
         parentId: dto.parentId,
         status: EnrollmentStatus.ACTIVE,
         coinsPerPart,
-        coinsPerMinute,
+        coinsPerMinute: 0,
         startedAt: new Date(),
       }),
     );

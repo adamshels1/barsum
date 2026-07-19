@@ -383,7 +383,9 @@ export class SessionsService {
       return session;
     }
 
-    const coins = (enrollment.coinsPerMinute || 0) * minutes;
+    // Фиксированная сумма за засчитанную сессию (цена книги / кол-во сессий),
+    // не зависит от длительности записи — иначе медленное чтение приносит больше монет.
+    const coins = enrollment.coinsPerPart || 0;
     session.phase = SessionPhase.DONE;
     session.status = SessionStatus.COMPLETED;
     // aiFeedback уже содержит разбор ИИ — не затираем его. Если анализ не удался,
@@ -442,7 +444,7 @@ export class SessionsService {
       }
       const cappedSec = Math.min(session.audioDurationSec ?? 0, OWN_BOOK_SESSION_MAX_SEC);
       const minutes = Math.max(1, Math.round(cappedSec / 60));
-      const coins = (enrollment.coinsPerMinute || 0) * minutes;
+      const coins = enrollment.coinsPerPart || 0;
       session.status = SessionStatus.COMPLETED;
       session.phase = SessionPhase.DONE;
       // Не затираем разбор ИИ (aiFeedback) — он нужен родителю и ребёнку.
@@ -567,8 +569,8 @@ export class SessionsService {
       relations: ['challenge'],
     });
 
-    // «Своя книжка»: эталонного текста нет — не оцениваем чтение, а начисляем монеты
-    // по-минутно за реально записанное время (речь уже подтверждена на этапе transcribe).
+    // «Своя книжка»: эталонного текста нет — не оцениваем чтение, а начисляем
+    // фиксированные монеты за сессию (речь уже подтверждена на этапе transcribe).
     if (enrollment?.challenge?.category === ChallengeCategory.OWN_BOOK) {
       return this.creditOwnBookSession(session, enrollment, childId);
     }

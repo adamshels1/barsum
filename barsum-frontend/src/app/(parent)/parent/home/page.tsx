@@ -72,7 +72,7 @@ const dict: Dict = {
     amountLabel: "Сколько оплачиваем?",
     customAmount: "Своя сумма, ₸",
     ownBookPreview: "{minutes} минут · {sessions} сессий по 10 мин · до {coins} монет",
-    ownBookHint: "1 час чтения = 1000 ₸. Ребёнок получает ~{perMin} монет за минуту.",
+    ownBookHint: "1 час чтения = 1000 ₸. Ребёнок получает ~{perPart} монет за сессию.",
     minAmountWarn: "⚠️ Минимальная сумма — 1000 ₸",
   },
   kk: {
@@ -131,7 +131,7 @@ const dict: Dict = {
     amountLabel: "Қанша төлейміз?",
     customAmount: "Өз сомаң, ₸",
     ownBookPreview: "{minutes} минут · {sessions} сессия 10 минуттан · {coins} монетаға дейін",
-    ownBookHint: "1 сағат оқу = 1000 ₸. Бала минутына ~{perMin} монета алады.",
+    ownBookHint: "1 сағат оқу = 1000 ₸. Бала әр сессия үшін ~{perPart} монета алады.",
     minAmountWarn: "⚠️ Ең төменгі сома — 1000 ₸",
   },
 };
@@ -140,14 +140,16 @@ const dict: Dict = {
 const OWN_BOOK_MIN_TG = 1000;
 const OWN_BOOK_MINUTES_PER_1000 = 60;
 const OWN_BOOK_SESSION_MIN = 10;
-const OWN_BOOK_COINS_PER_MIN = 167;
 const OWN_BOOK_AMOUNTS = [1000, 2000, 3000];
 
+// Экономика как на бэке (payments.service.ts): 1 монета = 1 ₸,
+// фиксированная сумма за сессию = цена / кол-во сессий.
 function ownBookCalc(amountTg: number) {
   const minutes = Math.round((amountTg / 1000) * OWN_BOOK_MINUTES_PER_1000);
   const sessions = Math.max(1, Math.round(minutes / OWN_BOOK_SESSION_MIN));
-  const coins = OWN_BOOK_COINS_PER_MIN * OWN_BOOK_SESSION_MIN * sessions;
-  return { minutes, sessions, coins };
+  const perPart = Math.round(amountTg / sessions);
+  const coins = perPart * sessions;
+  return { minutes, sessions, perPart, coins };
 }
 
 const COMMISSION = 0.15;
@@ -532,7 +534,7 @@ function OwnBookModal({
   const [amountTg, setAmountTg] = useState(OWN_BOOK_AMOUNTS[0]);
   const [step, setStep] = useState<"form" | "qr">("form");
 
-  const { minutes, sessions, coins } = ownBookCalc(amountTg);
+  const { minutes, sessions, perPart, coins } = ownBookCalc(amountTg);
   const canPay = !!childId && amountTg >= OWN_BOOK_MIN_TG;
 
   const createMutation = useMutation({
@@ -643,7 +645,7 @@ function OwnBookModal({
               {t("ownBookPreview", { minutes, sessions, coins: coins.toLocaleString() })} <CoinIcon size={13} />
             </p>
             <p style={{ margin: "6px 0 0", fontSize: 12, color: "rgba(255,255,255,0.55)" }}>
-              {t("ownBookHint", { perMin: OWN_BOOK_COINS_PER_MIN })}
+              {t("ownBookHint", { perPart })}
             </p>
           </div>
 
