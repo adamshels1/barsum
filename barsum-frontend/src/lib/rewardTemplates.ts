@@ -8,13 +8,13 @@ export interface RewardTemplate {
 // Картинки — уже существующие ассеты /public/rewards, использованные в реальных
 // наградах parent@test.kz (see rewards/page.tsx). Даём тот же визуал по умолчанию.
 export const REWARD_TEMPLATES: RewardTemplate[] = [
-  { image: "/rewards/morozhenoe.png", name: "Мороженое", cost: 200, type: "snack" },
-  { image: "/rewards/pizza.png", name: "Пицца", cost: 1500, type: "snack" },
-  { image: "/rewards/burger.png", name: "Бургер", cost: 600, type: "snack" },
-  { image: "/rewards/ponchik.png", name: "Пончик", cost: 250, type: "snack" },
+  { image: "/rewards/morozhenoe.png", name: "Мороженое", cost: 380, type: "snack" },
+  { image: "/rewards/pizza.png", name: "Пицца", cost: 2900, type: "snack" },
+  { image: "/rewards/burger.png", name: "Бургер", cost: 1500, type: "snack" },
+  { image: "/rewards/ponchik.png", name: "Пончик", cost: 500, type: "snack" },
   { image: "/rewards/boba-tea.png", name: "Милк ти", cost: 400, type: "snack" },
   { image: "/rewards/game-time.png", name: "Игровая приставка (1 час)", cost: 500, type: "time" },
-  { image: "/rewards/phone-time.png", name: "+30 минут телефона", cost: 350, type: "time" },
+  { image: "/rewards/phone-time.png", name: "+30 минут телефона", cost: 300, type: "time" },
   { image: "/rewards/sleep-later.png", name: "Поспать подольше", cost: 300, type: "time" },
   { image: "/rewards/stay-up-later.png", name: "Лечь спать позже", cost: 500, type: "time" },
   { image: "/rewards/kino.png", name: "Кино", cost: 3000, type: "experience" },
