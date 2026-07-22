@@ -21,7 +21,8 @@
     "seed:dana-nurzhigit": "ts-node -r tsconfig-paths/register src/seed-dana-nurzhigit.ts",
     "seed:collab": "ts-node -r tsconfig-paths/register src/seed-collab.ts",
     "seed:collab-robot": "ts-node -r tsconfig-paths/register src/seed-collab-robot.ts",
-    "seed:ayagul": "ts-node -r tsconfig-paths/register src/seed-ayagul.ts"
+    "seed:ayagul": "ts-node -r tsconfig-paths/register src/seed-ayagul.ts",
+    "seed:dana-bala-tulgalar": "ts-node -r tsconfig-paths/register src/seed-dana-bala-tulgalar.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

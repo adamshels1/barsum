@@ -66,8 +66,12 @@ async function seedDanaNurzhigit() {
   // 3) Книга: 3 рассказа (Абай, Шоқан, Ыбырай) с аудио. Статус DRAFT —
   //    не публикуется в маркетплейсе, видна только автору-эксперту.
   const title = '«ДАНА БАЛА» І бөлім';
+  const COVER = '/books/dana-nurzhigit/cover.jpg';
   const LEGACY_TITLES = ['Дана бала. І бөлім', 'Ұлылар ізімен: Абай, Шоқан, Ыбырай'];
-  let existing = await challengeRepo.findOne({ where: { title } });
+  // Ищем по обложке: у эксперта есть вторая книга с ТАКИМ ЖЕ названием
+  // (seed:dana-bala-tulgalar), и поиск по одному title мог бы попасть в неё
+  // и перетереть её контент.
+  let existing = await challengeRepo.findOne({ where: { coverImage: COVER } });
   for (const legacy of LEGACY_TITLES) {
     if (existing) break;
     existing = await challengeRepo.findOne({ where: { title: legacy } });
