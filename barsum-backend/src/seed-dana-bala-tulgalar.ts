@@ -10,11 +10,13 @@ import {
   DANA_BALA_TULGALAR_PARTS,
   DANA_BALA_TULGALAR_TITLES,
   DANA_BALA_TULGALAR_IMAGES,
+  DANA_BALA_TULGALAR_AUDIOS,
 } from './challenges/dana-bala-tulgalar';
 
 /**
  * Точечный (идемпотентный) сид ВТОРОЙ книги эксперта Даны Нұржігіт —
- * «ДАНА БАЛА» І бөлім (9 рассказов о великих тұлға, с иллюстрациями).
+ * «ДАНА БАЛА» І бөлім (9 рассказов о великих тұлға, с иллюстрациями
+ * и авторской озвучкой каждой части).
  * Статус PUBLISHED — сразу в маркетплейсе, 3000₸, с пересказом.
  *
  * У эксперта уже есть первая (draft) книга с ТАКИМ ЖЕ названием, поэтому
@@ -62,6 +64,7 @@ async function seedDanaBalaTulgalar() {
     partTexts: DANA_BALA_TULGALAR_PARTS,
     partTitles: DANA_BALA_TULGALAR_TITLES,
     partImages: DANA_BALA_TULGALAR_IMAGES,
+    partAudios: DANA_BALA_TULGALAR_AUDIOS,
     coverImage: COVER,
     price: 3000,
     coinsReward: 3000,

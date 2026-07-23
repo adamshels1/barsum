@@ -31,6 +31,21 @@ export const DANA_BALA_TULGALAR_IMAGES: string[] = [
   '/books/dana-bala-tulgalar/part-09.jpg',
 ];
 
+// Авторская озвучка каждой части (partAudios[i] ↔ partTexts[i]).
+// Исходники — MP3 от автора, названы по первой строке части; сведены
+// в 128 kbps mono (как в первой книге) и переименованы в part-01..09.mp3.
+export const DANA_BALA_TULGALAR_AUDIOS: string[] = [
+  '/books/dana-bala-tulgalar/part-01.mp3',
+  '/books/dana-bala-tulgalar/part-02.mp3',
+  '/books/dana-bala-tulgalar/part-03.mp3',
+  '/books/dana-bala-tulgalar/part-04.mp3',
+  '/books/dana-bala-tulgalar/part-05.mp3',
+  '/books/dana-bala-tulgalar/part-06.mp3',
+  '/books/dana-bala-tulgalar/part-07.mp3',
+  '/books/dana-bala-tulgalar/part-08.mp3',
+  '/books/dana-bala-tulgalar/part-09.mp3',
+];
+
 export const DANA_BALA_TULGALAR_PARTS: string[] = [
   // ── Часть 1: Абай Құнанбайұлы ──
   `Абай Құнанбайұлы – қазақтың ұлы ақыны, ойшылы және ағартушысы. Ол қазақтың жазба әдебиетінің негізін қалады. Абай Шыңғыс тауының баурайында дүниеге келген. Бала кезінен зерек болып, әжесі Зере мен анасы Ұлжаннан жақсы тәрбие алды.
