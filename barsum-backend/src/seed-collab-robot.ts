@@ -45,7 +45,14 @@ async function seed() {
     totalParts: 1,
     partTexts: [CHAPTER_1],
     partTitles: ['1-тарау'],
-    partImages: ['/books/robot/cover.jpg'],
+    // Иллюстрация к каждой главе. 1-тарау — обложка (эксперт); главы 2 и 3 —
+    // придуманы соавторами, картинки добавлены вручную (accept-флоу collab не
+    // сохраняет partImages, поэтому канон живёт здесь и переживает ре-сид).
+    partImages: [
+      '/books/robot/cover.jpg', // 1-тарау (эксперт)
+      '/books/robot/chapter2.jpg', // Глава 2 (соавторы)
+      '/books/robot/chapter3.jpg', // Глава 3 (соавторы)
+    ],
     partAudios: ['/books/robot/chapter1.mp3'],
     coverImage: '/books/robot/cover.jpg',
     price: 0,
