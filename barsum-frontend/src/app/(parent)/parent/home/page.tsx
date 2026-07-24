@@ -15,6 +15,7 @@ import { RewardRequestCard } from "@/components/RewardRequestCard";
 import { Portal } from "@/components/Portal";
 import { BackButton } from "@/components/BackButton";
 import { useT, type Dict } from "@/i18n/useT";
+import { useLocaleStore } from "@/stores/locale-store";
 
 const dict: Dict = {
   ru: {
@@ -694,6 +695,7 @@ function OwnBookModal({
 
 export default function ParentHomePage() {
   const t = useT(dict);
+  const locale = useLocaleStore((s) => s.locale);
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -807,17 +809,15 @@ export default function ParentHomePage() {
       <div style={{ padding: "16px 20px 0" }}>
         <button
           onClick={() => router.push("/parent/collab")}
-          className="glass"
-          style={{ width: "100%", padding: 16, display: "flex", alignItems: "center", gap: 12, textAlign: "left", cursor: "pointer", border: "1px solid rgba(255,210,120,0.35)", borderRadius: 20, background: "rgba(255,200,80,0.12)", fontFamily: "inherit" }}
+          aria-label={t("collabCard")}
+          style={{ width: "100%", padding: 0, border: "none", background: "transparent", cursor: "pointer", borderRadius: 20, overflow: "hidden", display: "block", lineHeight: 0, fontFamily: "inherit" }}
         >
-          <div style={{ width: 48, height: 48, borderRadius: 16, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }}>✍️</div>
-          <div style={{ flex: 1 }}>
-            <p style={{ margin: 0, fontWeight: 900, fontSize: 15, color: "#ffffff" }}>{t("collabCard")} ✨</p>
-            <p style={{ margin: "3px 0 0", fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.6)" }}>{t("collabCardHint")}</p>
-          </div>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="9 18 15 12 9 6" />
-          </svg>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={locale === "kk" ? "/banners/collab-kk.jpg" : "/banners/collab-ru.jpg"}
+            alt={t("collabCard")}
+            style={{ width: "100%", height: "auto", display: "block", borderRadius: 20 }}
+          />
         </button>
       </div>
 
