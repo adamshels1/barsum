@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Trophy, AlertTriangle, Check, Lock, Unlock, Flag } from "lucide-react";
+import { Trophy, AlertTriangle, Check, Lock, Unlock, Flag, Pencil } from "lucide-react";
 import { collabApi, contributionAudioUrl, type CollabBook, type Contribution } from "@/lib/api/collab";
 import { BackButton } from "@/components/BackButton";
 
@@ -26,6 +26,8 @@ export default function ExpertCollabPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [editedText, setEditedText] = useState("");
   const [busy, setBusy] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editingText, setEditingText] = useState("");
 
   const { data: book } = useQuery<CollabBook>({ queryKey: ["expert-collab-book", id], queryFn: () => collabApi.getBook(id) });
   const { data: contribs } = useQuery<Contribution[]>({
@@ -79,6 +81,31 @@ export default function ExpertCollabPage() {
     } finally { setBusy(false); }
   };
 
+  const startEdit = (i: number, text: string) => {
+    setEditingIndex(i);
+    setEditingText(text);
+  };
+
+  const cancelEdit = () => {
+    setEditingIndex(null);
+    setEditingText("");
+  };
+
+  const saveChapter = async () => {
+    if (editingIndex == null) return;
+    const text = editingText.trim();
+    if (!text) { toast.error("Текст главы пустой"); return; }
+    setBusy(true);
+    try {
+      await collabApi.editChapter(id, editingIndex, { text });
+      toast.success("Глава сохранена ✍️");
+      cancelEdit();
+      refresh();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || "Не удалось сохранить главу");
+    } finally { setBusy(false); }
+  };
+
   const toggleRound = async () => {
     if (!book) return;
     setBusy(true);
@@ -126,11 +153,44 @@ export default function ExpertCollabPage() {
         {book.collabCompleted && <span style={{ fontSize: 13, fontWeight: 800, color: "#8effc0", alignSelf: "center" }}>✓ Книга завершена</span>}
       </div>
 
-      {/* Последняя глава — контекст */}
+      {/* Главы книги — можно исправить текст любой уже сохранённой главы */}
       {chapters.length > 0 && (
-        <div className="glass" style={{ padding: 16, borderRadius: 16, marginBottom: 20 }}>
-          <p style={{ fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 8px" }}>Предыдущая глава ({chapters.length})</p>
-          <p style={{ fontSize: 14, color: "rgba(255,255,255,0.8)", margin: 0, lineHeight: 1.6, fontFamily: "Georgia, serif" }}>{chapters[chapters.length - 1]}</p>
+        <div style={{ marginBottom: 20 }}>
+          <p style={{ fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 10px" }}>Главы книги ({chapters.length})</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {chapters.map((text, i) => (
+              <div key={i} className="glass" style={{ padding: 16, borderRadius: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
+                  <p style={{ fontSize: 12, fontWeight: 800, color: "#ffd27d", margin: 0 }}>{book.partTitles?.[i] || `Глава ${i + 1}`}</p>
+                  {editingIndex !== i && (
+                    <button onClick={() => startEdit(i, text)} disabled={busy} className="glass-chip" style={{ padding: "6px 12px", fontSize: 12, fontWeight: 800, color: "#fff", border: "1px solid rgba(255,255,255,0.25)", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
+                      <Pencil size={13} /> Редактировать
+                    </button>
+                  )}
+                </div>
+                {editingIndex === i ? (
+                  <>
+                    <textarea
+                      value={editingText}
+                      onChange={(e) => setEditingText(e.target.value)}
+                      rows={10}
+                      style={{ width: "100%", padding: 10, borderRadius: 12, background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", fontFamily: "inherit", fontSize: 14, lineHeight: 1.55, resize: "vertical", marginBottom: 10 }}
+                    />
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button onClick={saveChapter} disabled={busy} style={{ flex: 1, padding: "10px 0", borderRadius: 9999, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 900, fontSize: 14, background: "#6ee7a0", color: "#0a3d24", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                        <Check size={16} strokeWidth={3} /> {busy ? "Сохраняем…" : "Сохранить"}
+                      </button>
+                      <button onClick={cancelEdit} disabled={busy} className="glass-chip" style={{ padding: "10px 18px", fontSize: 14, fontWeight: 800, color: "#fff", border: "1px solid rgba(255,255,255,0.25)", cursor: "pointer" }}>
+                        Отмена
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <p style={{ fontSize: 14, color: "rgba(255,255,255,0.8)", margin: 0, lineHeight: 1.6, fontFamily: "Georgia, serif", whiteSpace: "pre-wrap" }}>{text}</p>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

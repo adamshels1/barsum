@@ -313,6 +313,40 @@ export class CollabService {
     return this.challengeRepo.save(challenge);
   }
 
+  // Эксперт правит уже сохранённую главу (исправление ошибок).
+  // Меняет текст (и при желании заголовок) главы по индексу. Только автор книги.
+  // Разрешено и для завершённых книг — чтобы можно было поправить опечатку.
+  async editChapter(
+    challengeId: string,
+    expertUserId: string,
+    index: number,
+    body: { text: string; title?: string },
+  ): Promise<Challenge> {
+    const challenge = await this.findBook(challengeId);
+    if (challenge.authorId !== expertUserId) throw new ForbiddenException('Not your book');
+
+    const partTexts = [...(challenge.partTexts ?? [])];
+    if (!Number.isInteger(index) || index < 0 || index >= partTexts.length) {
+      throw new BadRequestException('Invalid chapter index');
+    }
+    const text = (body?.text ?? '').trim();
+    if (!text) throw new BadRequestException('Chapter text is empty');
+
+    partTexts[index] = text;
+    challenge.partTexts = partTexts;
+
+    // Заголовок правим только если явно передан непустой.
+    if (body?.title != null) {
+      const partTitles = [...(challenge.partTitles ?? [])];
+      while (partTitles.length < partTexts.length) partTitles.push(`Глава ${partTitles.length + 1}`);
+      const title = body.title.trim();
+      if (title) partTitles[index] = title;
+      challenge.partTitles = partTitles;
+    }
+
+    return this.challengeRepo.save(challenge);
+  }
+
   // Пуш автору. Дети обычно без подписки — best-effort, ошибки глушим.
   private async notifyAuthor(c: ChapterContribution, won: boolean, bookTitle: string): Promise<void> {
     const title = won ? '🎉 Твоё продолжение выбрали!' : '✍️ Новая глава — попробуй ещё!';

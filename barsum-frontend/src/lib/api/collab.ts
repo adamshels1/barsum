@@ -69,6 +69,9 @@ export const collabApi = {
     apiClient.post(`/collab/${challengeId}/round`, { open }).then((r) => r.data),
   complete: (challengeId: string, coverImage?: string): Promise<CollabBook> =>
     apiClient.post(`/collab/${challengeId}/complete`, { coverImage }).then((r) => r.data),
+  // Эксперт: отредактировать уже сохранённую главу (исправить ошибку).
+  editChapter: (challengeId: string, index: number, body: { text: string; title?: string }): Promise<CollabBook> =>
+    apiClient.post(`/collab/${challengeId}/chapters/${index}`, body).then((r) => r.data),
 };
 
 // Мотивирующие тексты для проигравших (ротация) + поздравление победителю.

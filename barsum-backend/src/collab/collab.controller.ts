@@ -103,6 +103,19 @@ export class CollabController {
     return this.collab.selectWinners(id, req.user.sub, body);
   }
 
+  // Эксперт: отредактировать уже сохранённую главу (исправить ошибку).
+  @Post(':id/chapters/:index')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  editChapter(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Param('index') index: string,
+    @Body() body: { text: string; title?: string },
+  ) {
+    return this.collab.editChapter(id, req.user.sub, parseInt(index, 10), body);
+  }
+
   // Эксперт: открыть/закрыть приём продолжений.
   @Post(':id/round')
   @ApiBearerAuth()
