@@ -104,6 +104,7 @@ async function seedBarsumCity() {
       partTitles: BARSUM_CITY_PART_TITLES,
       partImages: BARSUM_CITY_PART_IMAGES,
       coverImage: BARSUM_CITY_COVER,
+      language: 'ru',
       sortWeight: 300, // первая книга в каталоге
     },
     {
@@ -117,6 +118,7 @@ async function seedBarsumCity() {
       partTitles: BARSUM_CITY_KZ_PART_TITLES,
       partImages: BARSUM_CITY_KZ_PART_IMAGES,
       coverImage: BARSUM_CITY_KZ_COVER,
+      language: 'kk',
       sortWeight: 200, // вторая — сразу за русской версией
     },
   ];
@@ -140,6 +142,7 @@ async function seedBarsumCity() {
       retellRequired: false,
       category: ChallengeCategory.READING,
       status: ChallengeStatus.PUBLISHED,
+      language: book.language,
       sortWeight: book.sortWeight,
     };
 

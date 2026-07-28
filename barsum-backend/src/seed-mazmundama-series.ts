@@ -79,6 +79,7 @@ async function seedMazmundamaSeries() {
       ageMax: AGE_MAX,
       retellRequired: false,
       category: ChallengeCategory.READING,
+      language: b.lang, // 'kk' у «Әдепті балақай», 'ru' у «Как вести себя хорошо»
       status: ChallengeStatus.PUBLISHED,
       authorId: user.id,
     };

@@ -46,6 +46,8 @@ export interface Challenge {
   ageMin: number;
   ageMax: number;
   totalParts: number;
+  // Язык текста книги — по нему фильтруется каталог. null у книг, залитых до фильтра.
+  language?: "ru" | "kk" | null;
   price: number;
   coinsReward: number;
   status: "draft" | "moderation" | "published" | "rejected";

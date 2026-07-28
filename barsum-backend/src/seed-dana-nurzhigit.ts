@@ -97,6 +97,7 @@ async function seedDanaNurzhigit() {
       ageMax: 12,
       retellRequired: true,
       category: ChallengeCategory.READING,
+      language: 'kk',
       status: ChallengeStatus.DRAFT,
       authorId: user.id,
       membersCount: 0,

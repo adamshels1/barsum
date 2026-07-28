@@ -72,6 +72,7 @@ async function seedDanaBalaTulgalar() {
     ageMax: 12,
     retellRequired: true,
     category: ChallengeCategory.READING,
+    language: 'kk',
     status: ChallengeStatus.PUBLISHED,
     authorId: user.id,
     sortWeight: 100, // третья книга в каталоге (после двух «Барсумов»)

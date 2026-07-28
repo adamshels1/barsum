@@ -59,6 +59,7 @@ async function seedCollab() {
       ageMin: 5,
       ageMax: 12,
       category: ChallengeCategory.READING,
+      language: 'ru',
       status: ChallengeStatus.PUBLISHED,
       authorId: user.id,
       membersCount: 0,

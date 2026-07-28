@@ -63,6 +63,12 @@ export class Challenge {
   @Column({ default: 30 })
   totalParts: number;
 
+  // Язык текста книги: 'ru' | 'kk'. По нему работает фильтр каталога.
+  // NULL = язык ещё не проставлен (такие книги видны только в фильтре «Все»);
+  // существующие книги заполняет `npm run backfill:book-language`.
+  @Column({ nullable: true })
+  language: string;
+
   @Column({ default: 0 })
   price: number;
 

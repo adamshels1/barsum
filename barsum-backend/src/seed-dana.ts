@@ -84,6 +84,7 @@ async function seedDana() {
       ageMax: 12,
       retellRequired: true,
       category: ChallengeCategory.READING,
+      language: 'kk',
       status: ChallengeStatus.PUBLISHED,
       authorId: user.id,
       membersCount: 0,

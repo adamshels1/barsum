@@ -91,6 +91,7 @@ async function seedMazmundama() {
       ageMax: 7,
       retellRequired: false,
       category: ChallengeCategory.READING,
+      language: 'kk',
       status: ChallengeStatus.PUBLISHED,
       authorId: user.id,
       membersCount: 0,
@@ -108,6 +109,7 @@ async function seedMazmundama() {
     existing.ageMax = 7;
     existing.price = PRICE;
     existing.costPrice = COST_PRICE;
+    existing.language = 'kk';
     existing.coinsReward = REWARD;
     await challengeRepo.save(existing);
     console.log('~ Книга уже есть, контент обновлён:', title, `(${AKE_PART_TEXTS.length} тем-частей)`);

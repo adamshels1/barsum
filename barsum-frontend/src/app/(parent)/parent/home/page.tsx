@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { challengesApi } from "@/lib/api/challenges";
 import { childrenApi } from "@/lib/api/children";
@@ -60,6 +60,7 @@ const dict: Dict = {
     collabCardHint: "Придумайте продолжение сказки голосом вместе с ребёнком",
     cabinet: "← Кабинет",
     allAges: "Все",
+    allLangs: "Все языки",
     childRequests: "🔔 Запросы детей",
     bookRequests: "📚 Просят книгу",
     bookReqText: "{name} просит книгу",
@@ -134,6 +135,7 @@ const dict: Dict = {
     collabCardHint: "Баламен бірге ертегінің жалғасын дауыспен ойлап табыңыз",
     cabinet: "← Кабинет",
     allAges: "Барлығы",
+    allLangs: "Барлық тіл",
     childRequests: "🔔 Балалардың сұраулары",
     bookRequests: "📚 Кітап сұрайды",
     bookReqText: "{name} кітап сұрайды",
@@ -186,6 +188,14 @@ function ownBookCalc(amountTg: number) {
 }
 
 const COMMISSION = 0.15;
+
+// Язык книги. Предвыбирается по языку интерфейса, но «Все» всегда доступен —
+// иначе часть каталога выглядит как пропавшая.
+const LANG_FILTERS = [
+  { label: "Все", value: "" },
+  { label: "Рус", value: "ru" },
+  { label: "Қаз", value: "kk" },
+];
 
 const AGE_FILTERS = [
   { label: "Все", value: "", min: 0, max: 99 },
@@ -812,6 +822,14 @@ export default function ParentHomePage() {
   const queryClient = useQueryClient();
 
   const [ageFilter, setAgeFilter] = useState("");
+  // Стартуем с языка интерфейса: казахоязычный родитель сразу видит казахские книги.
+  // Локаль приезжает из localStorage уже после первого рендера, поэтому подхватываем
+  // её эффектом — но только пока родитель не переключил фильтр руками.
+  const [langFilter, setLangFilter] = useState<string>(locale);
+  const [langTouched, setLangTouched] = useState(false);
+  useEffect(() => {
+    if (!langTouched) setLangFilter(locale);
+  }, [locale, langTouched]);
   const [selectedChallenge, setSelectedChallenge] = useState<(Challenge & { author?: { name?: string } }) | null>(null);
   // Ребёнок, для которого открыта покупка из запроса «просит книгу».
   const [purchaseChildId, setPurchaseChildId] = useState<string | undefined>(undefined);
@@ -860,6 +878,8 @@ export default function ParentHomePage() {
     if (ageConfig && ageConfig.value !== "") {
       if (c.ageMax < ageConfig.min || c.ageMin > ageConfig.max) return false;
     }
+    // Книги без проставленного языка показываем только в режиме «Все».
+    if (langFilter && c.language !== langFilter) return false;
     return true;
   });
 
@@ -914,6 +934,34 @@ export default function ParentHomePage() {
                 }}
               >
                 {f.value === "" ? t("allAges") : f.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Language filters */}
+        <div className="scrollbar-hide" style={{ display: "flex", gap: 8, overflowX: "auto", paddingTop: 8 }}>
+          {LANG_FILTERS.map((f) => {
+            const active = langFilter === f.value;
+            return (
+              <button
+                key={f.value || "all"}
+                onClick={() => { setLangTouched(true); setLangFilter(f.value); }}
+                style={{
+                  flexShrink: 0,
+                  padding: "6px 14px",
+                  borderRadius: 9999,
+                  border: active ? "none" : "1px solid rgba(255,255,255,0.22)",
+                  background: active ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.1)",
+                  color: active ? "#4776e6" : "rgba(255,255,255,0.75)",
+                  fontWeight: active ? 900 : 600,
+                  fontSize: 12,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  transition: "all 0.15s",
+                }}
+              >
+                {f.value === "" ? t("allLangs") : f.label}
               </button>
             );
           })}

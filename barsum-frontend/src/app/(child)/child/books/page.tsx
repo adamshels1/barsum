@@ -10,11 +10,15 @@ import type { BookRequest, Challenge } from "@/types";
 import { BackButton } from "@/components/BackButton";
 import { Portal } from "@/components/Portal";
 import { useT, type Dict } from "@/i18n/useT";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useLocaleStore } from "@/stores/locale-store";
 
 const dict: Dict = {
   ru: {
     title: "Каталог книг",
+    allLangs: "Все языки",
+    langRu: "Рус",
+    langKk: "Қаз",
     subtitle: "Выбери книгу — родитель сможет купить её для тебя",
     parts: "{n} частей",
     askBtn: "Попросить",
@@ -32,6 +36,9 @@ const dict: Dict = {
   },
   kk: {
     title: "Кітаптар каталогы",
+    allLangs: "Барлық тіл",
+    langRu: "Рус",
+    langKk: "Қаз",
     subtitle: "Кітап таңда — ата-анаң оны саған сатып ала алады",
     parts: "{n} бөлім",
     askBtn: "Сұрау",
@@ -189,7 +196,16 @@ function ConfirmAskModal({
 
 export default function ChildBooksPage() {
   const t = useT(dict);
+  const locale = useLocaleStore((s) => s.locale);
   const queryClient = useQueryClient();
+  // Фильтр языка книг: стартует с языка интерфейса, «» = показать все.
+  // Локаль приезжает из localStorage после первого рендера — подхватываем эффектом,
+  // пока ребёнок не переключил фильтр сам.
+  const [langFilter, setLangFilter] = useState<string>(locale);
+  const [langTouched, setLangTouched] = useState(false);
+  useEffect(() => {
+    if (!langTouched) setLangFilter(locale);
+  }, [locale, langTouched]);
   // Книга, ожидающая подтверждения «точно попросить?».
   const [confirmBook, setConfirmBook] = useState<Challenge | null>(null);
 
@@ -225,7 +241,11 @@ export default function ChildBooksPage() {
 
   // Обычные опубликованные книги; незавершённое соавторство живёт в /child/collab.
   const books = (challenges as any[]).filter(
-    (c) => c.status === "published" && !(c.collaborative && !c.collabCompleted),
+    (c) =>
+      c.status === "published" &&
+      !(c.collaborative && !c.collabCompleted) &&
+      // Книги без проставленного языка видны только в режиме «Все».
+      (!langFilter || c.language === langFilter),
   );
 
   const enrollmentByChallenge = new Map<string, string>(
@@ -240,7 +260,39 @@ export default function ChildBooksPage() {
       <BackButton href="/child/home" />
 
       <h1 style={{ margin: "16px 0 4px", fontSize: 24, fontWeight: 900, color: "#ffffff" }}>📚 {t("title")}</h1>
-      <p style={{ margin: "0 0 20px", fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.6)" }}>{t("subtitle")}</p>
+      <p style={{ margin: "0 0 14px", fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.6)" }}>{t("subtitle")}</p>
+
+      {/* Фильтр по языку книги */}
+      <div className="scrollbar-hide" style={{ display: "flex", gap: 8, overflowX: "auto", marginBottom: 18 }}>
+        {[
+          { label: t("allLangs"), value: "" },
+          { label: t("langRu"), value: "ru" },
+          { label: t("langKk"), value: "kk" },
+        ].map((f) => {
+          const active = langFilter === f.value;
+          return (
+            <button
+              key={f.value || "all"}
+              onClick={() => { setLangTouched(true); setLangFilter(f.value); }}
+              style={{
+                flexShrink: 0,
+                padding: "7px 16px",
+                borderRadius: 9999,
+                border: active ? "none" : "1px solid rgba(255,255,255,0.22)",
+                background: active ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.1)",
+                color: active ? "#4776e6" : "rgba(255,255,255,0.75)",
+                fontWeight: active ? 900 : 600,
+                fontSize: 13,
+                cursor: "pointer",
+                fontFamily: "inherit",
+                transition: "all 0.15s",
+              }}
+            >
+              {f.label}
+            </button>
+          );
+        })}
+      </div>
 
       {isLoading ? (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>

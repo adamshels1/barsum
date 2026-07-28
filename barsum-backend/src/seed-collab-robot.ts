@@ -60,6 +60,7 @@ async function seed() {
     ageMin: 5,
     ageMax: 12,
     category: ChallengeCategory.READING,
+    language: 'kk',
     status: ChallengeStatus.PUBLISHED,
     authorId: user.id,
     membersCount: 0,

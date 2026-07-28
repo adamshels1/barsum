@@ -86,6 +86,7 @@ async function seedAibek() {
       ageMax: 10,
       retellRequired: false,
       category: ChallengeCategory.READING,
+      language: 'kk',
       status: ChallengeStatus.PUBLISHED,
       authorId: user.id,
       membersCount: 0,
