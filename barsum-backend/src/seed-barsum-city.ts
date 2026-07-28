@@ -33,10 +33,12 @@ async function seedBarsumCity() {
   const challengeRepo = app.get<Repository<Challenge>>(getRepositoryToken(Challenge));
   const userRepo = app.get<Repository<User>>(getRepositoryToken(User));
 
+  // Автор — «внутренний» эксперт платформы: это переименованный тестовый эксперт,
+  // под которым уже лежит весь демо-контент Barsum. Отдельного аккаунта не заводим.
   const NAME = 'Команда Barsum';
-  const EMAIL = 'team@barsum.app';
-  const PASSWORD = 'test123'; // ВРЕМЕННЫЙ — смените после проверки.
-  const COMMISSION = 0; // книга бесплатная, выплат по ней нет
+  const EMAIL = 'expert@test.kz';
+  const PASSWORD = 'test123'; // используется, только если пользователя ещё нет
+  const COMMISSION = 0; // применяется ТОЛЬКО к новому профилю эксперта (см. ниже)
   const PRICE = 0; // ₸ — бесплатно, родитель добавляет без оплаты
   // Монеты ребёнку за всю книгу: 112 × 9 частей. Делится нацело, чтобы округление
   // не съедало монеты (обещанная «тысяча» с запасом).
@@ -61,19 +63,24 @@ async function seedBarsumCity() {
     console.log('~ Эксперт-пользователь уже есть:', user.email);
   }
 
-  // 2) Профиль эксперта (approved, без комиссии — книга бесплатная)
+  // 2) Профиль эксперта. У существующего эксперта НЕ трогаем ни комиссию, ни профиль:
+  // под этим аккаунтом лежат другие книги, и их выплаты считаются по его текущему %.
   let expert = await expertsService.findByUserId(user.id);
-  if (!expert) expert = await expertsService.createForUser(user.id);
-  await expertsService.updateProfile(user.id, {
-    specialization: 'Детская литература Barsum',
-    whatsapp: '+7 700 000 0000',
-    bio: 'Собственные истории платформы Barsum — про снежного барса Барсума, который помогает детям полюбить чтение.',
-  });
+  if (!expert) {
+    expert = await expertsService.createForUser(user.id);
+    await expertsService.updateProfile(user.id, {
+      specialization: 'Детская литература Barsum',
+      whatsapp: '+7 700 000 0000',
+      bio: 'Собственные истории платформы Barsum — про снежного барса Барсума, который помогает детям полюбить чтение.',
+    });
+    await expertsService.setCommission(expert.id, COMMISSION);
+    console.log(`✓ Создан профиль эксперта (${COMMISSION}%)`);
+  } else {
+    console.log(`~ Профиль эксперта уже есть (комиссия ${expert.commissionPct}% — не меняем)`);
+  }
   if (expert.status !== ExpertStatus.APPROVED) {
     await expertsService.updateStatus(expert.id, ExpertStatus.APPROVED);
   }
-  await expertsService.setCommission(expert.id, COMMISSION);
-  console.log(`✓ Эксперт готов (approved, ${COMMISSION}%)`);
 
   // 3) Книга (текстовая, 9 частей-сцен с иллюстрациями)
   const title = 'Барсум и город потерянных слов';
@@ -110,8 +117,9 @@ async function seedBarsumCity() {
     );
     console.log('✓ Создана книга:', title, `(${content.totalParts} частей, бесплатно, ${REWARD} монет)`);
   } else {
-    // Идемпотентно обновляем контент (на случай перегенерации из docx).
-    Object.assign(existing, content);
+    // Идемпотентно обновляем контент (на случай перегенерации из docx) и автора —
+    // чтобы книгу можно было перевесить на другой аккаунт эксперта повторным запуском.
+    Object.assign(existing, content, { authorId: user.id });
     await challengeRepo.save(existing);
     console.log('~ Книга уже есть, контент обновлён:', title, `(${content.totalParts} частей)`);
   }
