@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Manrope, Nunito, Playfair_Display } from "next/font/google";
+import { Comfortaa, Manrope, Nunito, Playfair_Display } from "next/font/google";
 import { Toaster } from "sonner";
 import { QueryProvider } from "@/providers/query-provider";
 import { HtmlLangSync } from "@/i18n/HtmlLangSync";
@@ -19,6 +19,14 @@ const playfair = Playfair_Display({
   subsets: ["latin", "cyrillic"],
   weight: ["600", "700", "800"],
   variable: "--font-playfair",
+});
+
+// Заголовки баннеров у ребёнка: округлый «сказочный» шрифт, есть кириллица
+// и казахские глифы (cyrillic-ext).
+const comfortaa = Comfortaa({
+  subsets: ["latin", "cyrillic", "cyrillic-ext"],
+  weight: ["500", "600", "700"],
+  variable: "--font-comfortaa",
 });
 
 const manrope = Manrope({
@@ -57,7 +65,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ru">
-      <body className={`${nunito.variable} ${playfair.variable} ${manrope.variable} font-sans`}>
+      <body className={`${nunito.variable} ${playfair.variable} ${manrope.variable} ${comfortaa.variable} font-sans`}>
         <QueryProvider>
           <HtmlLangSync />
           <SessionRefresher />

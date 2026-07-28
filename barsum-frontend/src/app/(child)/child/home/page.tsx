@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, History, LogOut, Sparkles } from "lucide-react";
+import { BookOpen, History, LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -12,6 +12,7 @@ import { useAuthStore } from "@/stores/auth-store";
 import { CoinIcon } from "@/components/CoinIcon";
 import { dreamPhotoUrl } from "@/lib/media";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { BannerCard } from "@/components/BannerCard";
 import { useT, type Dict } from "@/i18n/useT";
 import { useLocaleStore } from "@/stores/locale-store";
 
@@ -40,7 +41,7 @@ const dict: Dict = {
     collabCard: "Сочиняем вместе",
     collabCardHint: "Придумай продолжение сказки своим голосом",
     booksCard: "Каталог книг",
-    booksCardHint: "Выбери книгу и попроси родителя купить её",
+    booksCardHint: "Выбери книгу и попроси купить",
     myTasks: "Мои задания",
     noActiveTasks: "Нет активных заданий",
     askParents: "Попроси родителей записать тебя на курс",
@@ -72,7 +73,7 @@ const dict: Dict = {
     collabCard: "Бірге шығарамыз",
     collabCardHint: "Ертегінің жалғасын өз дауысыңмен ойлап тап",
     booksCard: "Кітаптар каталогы",
-    booksCardHint: "Кітап таңдап, ата-анаңнан сатып алуын сұра",
+    booksCardHint: "Кітап таңдап, сатып алуын сұра",
     myTasks: "Менің тапсырмаларым",
     noActiveTasks: "Белсенді тапсырмалар жоқ",
     askParents: "Ата-анаңнан курсқа жазуын өтін",
@@ -307,39 +308,20 @@ export default function ChildHomePage() {
         <DreamCard key={d.id} dream={d} currentBalance={currentBalance} onSend={(amt, dreamId) => sendMutation.mutate({ amount: amt, dreamId })} isSending={sendMutation.isPending} />
       ))}
 
-      <button
+      <BannerCard
+        image="/banners/dream.jpg"
+        title={currentDreams.length > 0 ? t("addAnotherDream") : t("addDream")}
+        subtitle={t("parentsHelp")}
         onClick={() => router.push("/child/shop?tab=dream")}
-        className="glass"
-        style={{ width: "100%", marginBottom: 12, padding: 16, display: "flex", alignItems: "center", gap: 12, textAlign: "left", cursor: "pointer", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 20, background: "rgba(255,255,255,0.08)" }}
-      >
-        <div style={{ width: 48, height: 48, borderRadius: 16, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <Sparkles size={22} color="#ffffff" strokeWidth={2.5} />
-        </div>
-        <div style={{ flex: 1 }}>
-          <p style={{ margin: 0, fontWeight: 900, fontSize: 15, color: "#ffffff" }}>{currentDreams.length > 0 ? t("addAnotherDream") : t("addDream")}</p>
-          <p style={{ margin: "3px 0 0", fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.55)" }}>{t("parentsHelp")}</p>
-        </div>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="9 18 15 12 9 6" />
-        </svg>
-      </button>
+      />
 
-      <button
+      <BannerCard
+        image="/banners/books.jpg"
+        title={t("booksCard")}
+        subtitle={t("booksCardHint")}
+        textFrom="58%"
         onClick={() => router.push("/child/books")}
-        className="glass"
-        style={{ width: "100%", marginBottom: 12, padding: 16, display: "flex", alignItems: "center", gap: 12, textAlign: "left", cursor: "pointer", border: "1px solid rgba(120,200,255,0.35)", borderRadius: 20, background: "rgba(80,160,255,0.12)" }}
-      >
-        <div style={{ width: 48, height: 48, borderRadius: 16, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <BookOpen size={22} color="#ffffff" strokeWidth={2.5} />
-        </div>
-        <div style={{ flex: 1 }}>
-          <p style={{ margin: 0, fontWeight: 900, fontSize: 15, color: "#ffffff" }}>{t("booksCard")} 📚</p>
-          <p style={{ margin: "3px 0 0", fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.6)" }}>{t("booksCardHint")}</p>
-        </div>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="9 18 15 12 9 6" />
-        </svg>
-      </button>
+      />
 
       <button
         onClick={() => router.push("/child/collab")}
