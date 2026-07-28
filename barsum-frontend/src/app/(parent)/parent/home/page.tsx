@@ -1010,10 +1010,14 @@ export default function ParentHomePage() {
           </div>
         ) : (
           <>
-            {/* «Своя книжка» — такая же карточка, как книги каталога, первой в сетке */}
+            {/* Порядок сетки: две закреплённые книги каталога (sortWeight с бэкенда),
+                затем «Своя книжка» такой же карточкой, затем остальные книги. */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              {filteredChallenges.slice(0, 2).map((c: any) => (
+                <ChallengeCard key={c.id} challenge={c} onBuy={() => { setPurchaseChildId(undefined); setSelectedChallenge(c); }} />
+              ))}
               <OwnBookCard onOpen={() => setShowOwnBook(true)} />
-              {filteredChallenges.map((c: any) => (
+              {filteredChallenges.slice(2).map((c: any) => (
                 <ChallengeCard key={c.id} challenge={c} onBuy={() => { setPurchaseChildId(undefined); setSelectedChallenge(c); }} />
               ))}
             </div>

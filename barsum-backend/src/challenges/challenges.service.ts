@@ -33,8 +33,8 @@ export class ChallengesService {
     if (filters?.age) {
       qb.andWhere('c.ageMin <= :age AND c.ageMax >= :age', { age: filters.age });
     }
-    // Новые книги — сверху.
-    qb.orderBy('c.createdAt', 'DESC');
+    // Сначала закреплённые (sortWeight), затем новые — сверху.
+    qb.orderBy('c.sortWeight', 'DESC').addOrderBy('c.createdAt', 'DESC');
     const list = await qb.getMany();
     // Себестоимость — внутренняя коммерческая информация (расчёт с правообладателем),
     // в витрину родителю/ребёнку не отдаём. Админке она приходит другим методом.

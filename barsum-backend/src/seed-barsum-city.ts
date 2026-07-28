@@ -108,6 +108,7 @@ async function seedBarsumCity() {
     retellRequired: false,
     category: ChallengeCategory.READING,
     status: ChallengeStatus.PUBLISHED,
+    sortWeight: 100, // вторая книга в каталоге (после «ДАНА БАЛА»)
   };
 
   const existing = await challengeRepo.findOne({ where: { title } });
