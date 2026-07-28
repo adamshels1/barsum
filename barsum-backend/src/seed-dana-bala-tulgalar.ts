@@ -74,7 +74,7 @@ async function seedDanaBalaTulgalar() {
     category: ChallengeCategory.READING,
     status: ChallengeStatus.PUBLISHED,
     authorId: user.id,
-    sortWeight: 200, // первая книга в каталоге
+    sortWeight: 100, // третья книга в каталоге (после двух «Барсумов»)
   };
 
   if (!existing) {

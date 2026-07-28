@@ -104,7 +104,7 @@ async function seedBarsumCity() {
       partTitles: BARSUM_CITY_PART_TITLES,
       partImages: BARSUM_CITY_PART_IMAGES,
       coverImage: BARSUM_CITY_COVER,
-      sortWeight: 100, // вторая книга в каталоге (после «ДАНА БАЛА»)
+      sortWeight: 300, // первая книга в каталоге
     },
     {
       title: 'Барсум және жоғалған сөздер қаласы',
@@ -117,7 +117,7 @@ async function seedBarsumCity() {
       partTitles: BARSUM_CITY_KZ_PART_TITLES,
       partImages: BARSUM_CITY_KZ_PART_IMAGES,
       coverImage: BARSUM_CITY_KZ_COVER,
-      sortWeight: 90, // сразу за русской версией
+      sortWeight: 200, // вторая — сразу за русской версией
     },
   ];
 
