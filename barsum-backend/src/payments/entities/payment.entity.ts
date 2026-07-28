@@ -52,6 +52,11 @@ export class Payment {
   @Column({ default: 0 })
   expertCommissionPct: number;
 
+  // Себестоимость книги на момент оплаты (₸). > 0 — выплата шла по себестоимости,
+  // а не по проценту (тогда expertCommissionPct = 0). Нужен для сверки с прайсом.
+  @Column({ default: 0 })
+  expertCostPrice: number;
+
   @Column({ nullable: true })
   receiptUrl: string;
 

@@ -30,6 +30,9 @@ async function seedMazmundama() {
   const PASSWORD = 'test123'; // ВРЕМЕННЫЙ — смените после проверки.
   const COMMISSION = 40; // доля издательства в % от цены книги (настраивается админом)
   const PRICE = 1000; // ₸
+  // С «Мазмұндама» рассчитываемся по себестоимости экземпляра (прайс издательства),
+  // а не процентом: costPrice имеет приоритет над COMMISSION при сплите оплаты.
+  const COST_PRICE = 427; // ₸
   const REWARD = 1000; // виртуальные монеты ребёнку за прочтение всей книги
 
   // 1) Пользователь-эксперт (издательство)
@@ -82,6 +85,7 @@ async function seedMazmundama() {
       partImages: AKE_PART_IMAGES,
       coverImage: AKE_COVER,
       price: PRICE,
+      costPrice: COST_PRICE,
       coinsReward: REWARD,
       ageMin: 5,
       ageMax: 7,
@@ -103,6 +107,7 @@ async function seedMazmundama() {
     existing.ageMin = 5;
     existing.ageMax = 7;
     existing.price = PRICE;
+    existing.costPrice = COST_PRICE;
     existing.coinsReward = REWARD;
     await challengeRepo.save(existing);
     console.log('~ Книга уже есть, контент обновлён:', title, `(${AKE_PART_TEXTS.length} тем-частей)`);

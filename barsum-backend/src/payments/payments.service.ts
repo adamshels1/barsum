@@ -62,11 +62,31 @@ export class PaymentsService {
 
   // Доля эксперта на момент оплаты: процент берём с профиля автора книги (снимок),
   // чтобы позднее изменение % админом не переписывало историю выплат.
+  // Если у книги задана себестоимость (costPrice) — она имеет приоритет над процентом:
+  // правообладателю уходит фиксированная сумма по прайсу (договор с «Мазмұндама»).
   private async resolveExpertSplit(
     challengeId: string,
     price: number,
-  ): Promise<{ expertShare: number; platformFee: number; expertCommissionPct: number }> {
+  ): Promise<{
+    expertShare: number;
+    platformFee: number;
+    expertCommissionPct: number;
+    expertCostPrice: number;
+  }> {
     const challenge = await this.challengeRepo.findOne({ where: { id: challengeId } });
+
+    const cost = challenge?.costPrice ?? 0;
+    if (cost > 0) {
+      // Больше цены книги отдать не можем — иначе площадка уходит в минус.
+      const expertShare = Math.min(cost, price);
+      return {
+        expertShare,
+        platformFee: price - expertShare,
+        expertCommissionPct: 0,
+        expertCostPrice: cost,
+      };
+    }
+
     let pct = 0;
     if (challenge?.authorId) {
       const expert = await this.dataSource
@@ -76,7 +96,12 @@ export class PaymentsService {
       pct = expert?.commissionPct ?? 0;
     }
     const expertShare = Math.round((price * pct) / 100);
-    return { expertShare, platformFee: price - expertShare, expertCommissionPct: pct };
+    return {
+      expertShare,
+      platformFee: price - expertShare,
+      expertCommissionPct: pct,
+      expertCostPrice: 0,
+    };
   }
 
   async create(dto: {

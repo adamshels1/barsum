@@ -66,6 +66,12 @@ export class Challenge {
   @Column({ default: 0 })
   price: number;
 
+  // Себестоимость экземпляра (₸) по прайсу правообладателя. Если > 0 — автору/издательству
+  // с каждой продажи уходит эта ФИКСИРОВАННАЯ сумма, а не процент (commissionPct эксперта).
+  // Так работает договор с «Мазмұндама»: платим себестоимость, а не долю от цены.
+  @Column({ default: 0 })
+  costPrice: number;
+
   @Column({ default: 0 })
   coinsReward: number;
 

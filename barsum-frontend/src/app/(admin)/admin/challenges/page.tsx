@@ -24,6 +24,7 @@ const dict: Dict = {
     years: "лет",
     parts: "{n} частей",
     price: "Цена",
+    costPrice: "Себестоимость",
     reward: "Награда",
     publish: "Опубликовать",
     reject: "Отклонить",
@@ -46,6 +47,7 @@ const dict: Dict = {
     years: "жас",
     parts: "{n} бөлім",
     price: "Баға",
+    costPrice: "Өзіндік құны",
     reward: "Сыйлық",
     publish: "Жариялау",
     reject: "Қабылдамау",
@@ -65,6 +67,7 @@ interface Challenge {
   bookAuthor: string;
   description?: string;
   price: number;
+  costPrice?: number;
   coinsReward: number;
   totalParts: number;
   status: string;
@@ -225,6 +228,12 @@ export default function AdminChallengesPage() {
                     <p style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.55)" }}>{t("price")}</p>
                     <p style={{ margin: 0, fontSize: 15, fontWeight: 900, color: "#ffffff" }}>{challenge.price} ₸</p>
                   </div>
+                  {!!challenge.costPrice && (
+                    <div>
+                      <p style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.55)" }}>{t("costPrice")}</p>
+                      <p style={{ margin: 0, fontSize: 15, fontWeight: 900, color: "#ffd200" }}>{challenge.costPrice} ₸</p>
+                    </div>
+                  )}
                   <div>
                     <p style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.55)" }}>{t("reward")}</p>
                     <p style={{ margin: 0, fontSize: 15, fontWeight: 900, color: "rgba(255,255,255,0.85)" }}>{challenge.coinsReward} <CoinIcon size={13} /></p>

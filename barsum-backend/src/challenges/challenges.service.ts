@@ -35,12 +35,17 @@ export class ChallengesService {
     }
     // Новые книги — сверху.
     qb.orderBy('c.createdAt', 'DESC');
-    return qb.getMany();
+    const list = await qb.getMany();
+    // Себестоимость — внутренняя коммерческая информация (расчёт с правообладателем),
+    // в витрину родителю/ребёнку не отдаём. Админке она приходит другим методом.
+    for (const c of list) delete (c as Partial<Challenge>).costPrice;
+    return list;
   }
 
   async findById(id: string): Promise<Challenge> {
     const c = await this.challengeRepo.findOne({ where: { id } });
     if (!c) throw new NotFoundException('Challenge not found');
+    delete (c as Partial<Challenge>).costPrice;
     return c;
   }
 
