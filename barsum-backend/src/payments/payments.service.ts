@@ -266,6 +266,62 @@ export class PaymentsService {
     return { payment, enrollment, challenge };
   }
 
+  // Бесплатная книга (price = 0): родитель добавляет её ребёнку без оплаты.
+  // Платёж на 0 ₸ всё равно создаём — чтобы доступ выдавался тем же кодом
+  // (activateEnrollment закрывает и запрос ребёнка на книгу), и остался след в истории.
+  async addFree(dto: {
+    parentId: string;
+    childId: string;
+    challengeId: string;
+  }): Promise<Payment> {
+    const challenge = await this.challengeRepo.findOne({ where: { id: dto.challengeId } });
+    if (!challenge) throw new NotFoundException('Challenge not found');
+    if (challenge.price !== 0) {
+      throw new BadRequestException('Эта книга платная');
+    }
+    if (challenge.status !== ChallengeStatus.PUBLISHED) {
+      throw new BadRequestException('Книга недоступна');
+    }
+
+    // Идемпотентность: книга уже добавлена этому ребёнку — возвращаем прошлый платёж.
+    const already = await this.enrollmentRepo.findOne({
+      where: { childId: dto.childId, challengeId: dto.challengeId },
+    });
+    if (already) {
+      const prev = await this.paymentRepo.findOne({
+        where: { childId: dto.childId, challengeId: dto.challengeId, status: PaymentStatus.CONFIRMED },
+        order: { createdAt: 'DESC' },
+      });
+      if (prev) return prev;
+    }
+
+    const payment = await this.paymentRepo.save(
+      this.paymentRepo.create({
+        parentId: dto.parentId,
+        childId: dto.childId,
+        challengeId: dto.challengeId,
+        challengePrice: 0,
+        coinsAmount: 0,
+        coinsTg: 0,
+        total: 0,
+        expertShare: 0,
+        platformFee: 0,
+        expertCommissionPct: 0,
+        status: PaymentStatus.CONFIRMED,
+        resolvedAt: new Date(),
+      }),
+    );
+    await this.activateEnrollment(payment);
+
+    this.telegram.send(
+      'payments',
+      `🎁 <b>Бесплатная книга добавлена</b>\n${await this.actorLines(dto.parentId, dto.childId)}\n` +
+        `Книга: ${esc(challenge.bookTitle || challenge.title)} · ${challenge.coinsReward} монет за прочтение`,
+    );
+
+    return payment;
+  }
+
   private async activateEnrollment(payment: Payment): Promise<void> {
     const existing = await this.enrollmentRepo.findOne({
       where: { childId: payment.childId, challengeId: payment.challengeId },
@@ -274,9 +330,16 @@ export class PaymentsService {
 
     const challenge = await this.challengeRepo.findOne({ where: { id: payment.challengeId } });
     const totalParts = challenge?.totalParts || 1;
-    const coinsPerPart = payment.coinsAmount > 0
-      ? Math.floor(payment.coinsAmount / totalParts)
-      : 0;
+    // Пул монет: у платных книг равен оплаченной сумме, у бесплатных (price = 0)
+    // берётся из coinsReward книги — родитель ничего не платит, но чтение всё равно
+    // оплачивается монетами. Делим пул поровну на части.
+    const coinsPool =
+      payment.coinsAmount > 0
+        ? payment.coinsAmount
+        : challenge && challenge.price === 0
+          ? challenge.coinsReward || 0
+          : 0;
+    const coinsPerPart = coinsPool > 0 ? Math.floor(coinsPool / totalParts) : 0;
     const enrollment = this.enrollmentRepo.create({
       childId: payment.childId,
       challengeId: payment.challengeId,

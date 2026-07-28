@@ -12,6 +12,9 @@ export const paymentsApi = {
     challengeId: string;
     coinsAmount: number;
   }) => apiClient.post("/payments/intent", data).then((r) => r.data),
+  // Бесплатная книга (цена 0) — добавляется ребёнку без оплаты.
+  addFree: (data: { childId: string; challengeId: string }) =>
+    apiClient.post("/payments/free", data).then((r) => r.data),
   // Родитель подтверждает свой незавершённый платёж.
   confirmMine: (id: string) =>
     apiClient.post(`/payments/${id}/confirm`).then((r) => r.data),

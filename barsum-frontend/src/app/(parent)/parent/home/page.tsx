@@ -21,6 +21,16 @@ const dict: Dict = {
   ru: {
     parts: "{n} частей",
     buyBtn: "Купить",
+    // Бесплатная книга (price = 0): без оплаты, родитель просто добавляет её ребёнку.
+    freeLabel: "Бесплатно",
+    addBtn: "Добавить",
+    addFreeBtn: "Добавить бесплатно 🎁",
+    freeRewardTitle: "Монеты за прочтение",
+    freeRewardHint: "Ребёнок получит их, прочитав все части",
+    freeAdded: "Книга добавлена!",
+    freeForWhom: "Кому добавляем?",
+    freePrice: "Книга от Barsum",
+    selectChildWarnFree: "⚠️ Сначала выберите ребёнка",
     back: "← Назад",
     toPay: "К оплате",
     qrInstructions: "Откройте приложение Kaspi.kz, отсканируйте QR и оплатите {total} ₸. После оплаты нажмите кнопку ниже.",
@@ -86,6 +96,15 @@ const dict: Dict = {
   kk: {
     parts: "{n} бөлім",
     buyBtn: "Сатып алу",
+    freeLabel: "Тегін",
+    addBtn: "Қосу",
+    addFreeBtn: "Тегін қосу 🎁",
+    freeRewardTitle: "Оқығаны үшін монета",
+    freeRewardHint: "Барлық бөлімді оқып шыққанда алады",
+    freeAdded: "Кітап қосылды!",
+    freeForWhom: "Кімге қосамыз?",
+    freePrice: "Barsum кітабы",
+    selectChildWarnFree: "⚠️ Алдымен баланы таңдаңыз",
     back: "← Артқа",
     toPay: "Төлеуге",
     qrInstructions: "Kaspi.kz қосымшасын ашып, QR-кодты сканерлеп, {total} ₸ төлеңіз. Төлегеннен кейін төмендегі батырманы басыңыз.",
@@ -194,6 +213,8 @@ function ChallengeCard({
   const t = useT(dict);
   const colorIdx = challenge.title.charCodeAt(0) % CARD_GRADS.length;
   const grad = CARD_GRADS[colorIdx];
+  // Бесплатная книга: вместо цены — «Бесплатно», вместо «Купить» — «Добавить».
+  const isFree = challenge.price === 0;
 
   return (
     <div
@@ -233,14 +254,14 @@ function ChallengeCard({
         )}
         <div style={{ marginTop: "auto", paddingTop: 10 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <p style={{ margin: 0, fontWeight: 900, fontSize: 16, color: "#ffffff" }}>
-              {challenge.price.toLocaleString()} ₸
+            <p style={{ margin: 0, fontWeight: 900, fontSize: isFree ? 14 : 16, color: isFree ? "#7ef0b0" : "#ffffff" }}>
+              {isFree ? t("freeLabel") : `${challenge.price.toLocaleString()} ₸`}
             </p>
             <button
               onClick={onBuy}
               style={{ padding: "7px 14px", borderRadius: 9999, border: "none", background: "rgba(255,255,255,0.88)", color: "#4776e6", fontWeight: 900, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}
             >
-              {t("buyBtn")}
+              {isFree ? t("addBtn") : t("buyBtn")}
             </button>
           </div>
         </div>
@@ -381,6 +402,15 @@ function PurchaseModal({
   // Монеты для ребёнка равны цене книги (ползунок убран).
   const coinsAmount = challenge.price;
   const total = challenge.price;
+  // Бесплатная книга: оплаты нет вообще — родитель просто добавляет её ребёнку,
+  // монеты ребёнку начисляются за чтение из coinsReward книги.
+  const isFree = challenge.price === 0;
+
+  const freeMutation = useMutation({
+    mutationFn: () => paymentsApi.addFree({ childId, challengeId: challenge.id }),
+    onSuccess: (payment: Payment) => onSuccess(payment),
+    onError: (err: any) => { toast.error(err?.response?.data?.message || t("orderError")); },
+  });
 
   // Фаза 1: клик «Оплатить через Kaspi» → создаём незавершённый платёж (pending),
   // чтобы покупка не потерялась, если родитель забудет подтвердить.
@@ -448,7 +478,7 @@ function PurchaseModal({
           </p>
         </div>
 
-        {step === "qr" ? (
+        {step === "qr" && !isFree ? (
           <KaspiQrStep
             total={total}
             onBack={() => setStep("form")}
@@ -461,7 +491,7 @@ function PurchaseModal({
           {/* Child selector */}
           <div>
             <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.65)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-              {t("forWhom")}
+              {isFree ? t("freeForWhom") : t("forWhom")}
             </label>
             {children.length === 0 ? (
               <p style={{ fontSize: 14, textAlign: "center", padding: "12px 0", color: "rgba(255,255,255,0.55)" }}>
@@ -484,6 +514,54 @@ function PurchaseModal({
             )}
           </div>
 
+          {isFree ? (
+            <>
+              {/* Бесплатная книга: цены и оплаты нет — только монеты за прочтение. */}
+              <div className="glass-sm" style={{ padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div>
+                  <p style={{ margin: 0, fontWeight: 800, fontSize: 14, color: "#ffffff" }}>{challenge.title}</p>
+                  <p style={{ margin: "3px 0 0", fontSize: 12, color: "rgba(255,255,255,0.55)" }}>{t("freePrice")}</p>
+                </div>
+                <p style={{ margin: 0, fontWeight: 900, fontSize: 18, color: "#7ef0b0" }}>{t("freeLabel")}</p>
+              </div>
+
+              <div className="glass-sm" style={{ padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div>
+                  <p style={{ margin: 0, fontWeight: 800, fontSize: 14, color: "#ffffff" }}>{t("freeRewardTitle")}</p>
+                  <p style={{ margin: "3px 0 0", fontSize: 12, color: "rgba(255,255,255,0.55)" }}>{t("freeRewardHint")}</p>
+                </div>
+                <p style={{ margin: 0, display: "flex", alignItems: "center", gap: 5, fontWeight: 900, fontSize: 22, color: "#ffd200" }}>
+                  {(challenge.coinsReward ?? 0).toLocaleString()} <CoinIcon size={18} />
+                </p>
+              </div>
+
+              <button
+                onClick={() => freeMutation.mutate()}
+                disabled={!childId || freeMutation.isPending}
+                style={{
+                  padding: "16px 20px",
+                  borderRadius: 16,
+                  border: "none",
+                  background: "rgba(255,255,255,0.9)",
+                  color: "#4776e6",
+                  fontWeight: 900,
+                  fontSize: 15,
+                  cursor: !childId || freeMutation.isPending ? "not-allowed" : "pointer",
+                  fontFamily: "inherit",
+                  opacity: !childId || freeMutation.isPending ? 0.45 : 1,
+                  transition: "opacity 0.15s",
+                }}
+              >
+                {freeMutation.isPending ? t("processing") : t("addFreeBtn")}
+              </button>
+              {!childId && children.length > 0 && (
+                <p style={{ margin: "-8px 0 0", fontSize: 12.5, fontWeight: 700, color: "#ffd200", textAlign: "right" }}>
+                  {t("selectChildWarnFree")}
+                </p>
+              )}
+            </>
+          ) : (
+          <>
           {/* Price */}
           <div className="glass-sm" style={{ padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div>
@@ -535,6 +613,8 @@ function PurchaseModal({
               {t("selectChildWarn")}
             </p>
           )}
+          </>
+          )}
         </div>
         )}
       </div>
@@ -543,7 +623,7 @@ function PurchaseModal({
   );
 }
 
-function SuccessModal({ onClose }: { onClose: () => void }) {
+function SuccessModal({ onClose, free }: { onClose: () => void; free?: boolean }) {
   const t = useT(dict);
   return (
     <Portal>
@@ -553,7 +633,7 @@ function SuccessModal({ onClose }: { onClose: () => void }) {
         style={{ width: "100%", maxWidth: 340, padding: 40, textAlign: "center" }}
       >
         <div style={{ fontSize: 64, marginBottom: 20 }}>🎉</div>
-        <h2 style={{ margin: 0, fontSize: 24, fontWeight: 900, color: "#ffffff" }}>{t("purchaseDone")}</h2>
+        <h2 style={{ margin: 0, fontSize: 24, fontWeight: 900, color: "#ffffff" }}>{free ? t("freeAdded") : t("purchaseDone")}</h2>
         <p style={{ margin: "10px 0 28px", fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.65)", lineHeight: 1.5 }}>
           {t("childGotAccess")}
         </p>
@@ -737,6 +817,7 @@ export default function ParentHomePage() {
   const [purchaseChildId, setPurchaseChildId] = useState<string | undefined>(undefined);
   const [showOwnBook, setShowOwnBook] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [successFree, setSuccessFree] = useState(false);
 
   const { data: challenges = [], isLoading: loadingChallenges } = useQuery<Challenge[]>({
     queryKey: ["challenges"],
@@ -783,6 +864,8 @@ export default function ParentHomePage() {
   });
 
   const handlePurchaseSuccess = () => {
+    // Бесплатную книгу «добавляют», а не «покупают» — меняем текст финального окна.
+    setSuccessFree(selectedChallenge?.price === 0);
     setSelectedChallenge(null);
     setPurchaseChildId(undefined);
     setShowSuccess(true);
@@ -892,7 +975,9 @@ export default function ParentHomePage() {
                         «{ch?.bookTitle || ch?.title}»
                       </p>
                     </div>
-                    <p style={{ margin: 0, fontWeight: 900, fontSize: 16, color: "#ffffff", flexShrink: 0 }}>{(ch?.price ?? 0).toLocaleString()} ₸</p>
+                    <p style={{ margin: 0, fontWeight: 900, fontSize: (ch?.price ?? 0) === 0 ? 14 : 16, color: (ch?.price ?? 0) === 0 ? "#7ef0b0" : "#ffffff", flexShrink: 0 }}>
+                      {(ch?.price ?? 0) === 0 ? t("freeLabel") : `${(ch?.price ?? 0).toLocaleString()} ₸`}
+                    </p>
                   </div>
                   <div style={{ display: "flex", gap: 8 }}>
                     <button
@@ -906,7 +991,7 @@ export default function ParentHomePage() {
                       onClick={() => { if (ch) { setPurchaseChildId(req.childId); setSelectedChallenge(ch as any); } }}
                       style={{ flex: 1, padding: "11px 0", borderRadius: 12, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 900, fontSize: 13, background: "rgba(255,255,255,0.9)", color: "#4776e6" }}
                     >
-                      {t("bookReqBuy")} 🚀
+                      {(ch?.price ?? 0) === 0 ? `${t("addBtn")} 🎁` : `${t("bookReqBuy")} 🚀`}
                     </button>
                   </div>
                 </div>
@@ -964,7 +1049,7 @@ export default function ParentHomePage() {
         />
       )}
 
-      {showSuccess && <SuccessModal onClose={() => { setShowSuccess(false); router.push("/parent/cabinet"); }} />}
+      {showSuccess && <SuccessModal free={successFree} onClose={() => { setShowSuccess(false); setSuccessFree(false); router.push("/parent/cabinet"); }} />}
     </main>
   );
 }

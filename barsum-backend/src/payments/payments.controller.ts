@@ -65,6 +65,16 @@ export class PaymentsController {
     });
   }
 
+  // Бесплатная книга — родитель добавляет её ребёнку без оплаты (кнопка «Добавить»).
+  @Post('free')
+  addFree(@Request() req: any, @Body() body: { childId: string; challengeId: string }) {
+    return this.paymentsService.addFree({
+      parentId: req.user.sub,
+      childId: body.childId,
+      challengeId: body.challengeId,
+    });
+  }
+
   // Родитель подтверждает свой незавершённый платёж («Я оплатил» / кабинет).
   @Post(':id/confirm')
   confirmMine(@Request() req: any, @Param('id') id: string) {
