@@ -249,6 +249,38 @@ function ChallengeCard({
   );
 }
 
+// «Своя книжка» в каталоге: та же геометрия, что у ChallengeCard, чтобы карточка
+// не растягивалась на всю ширину главной.
+function OwnBookCard({ onOpen }: { onOpen: () => void }) {
+  const t = useT(dict);
+  return (
+    <div className="glass-card" style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <button
+        onClick={onOpen}
+        style={{ display: "block", width: "100%", padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}
+      >
+        <div style={{ aspectRatio: "1 / 1", background: "url(/books/own-book.jpg) center/cover" }} />
+      </button>
+      <div style={{ padding: "12px 12px 14px", flex: 1, display: "flex", flexDirection: "column" }}>
+        <p style={{ margin: 0, fontWeight: 900, fontSize: 13, color: "#ffffff", lineHeight: 1.3 }}>
+          📖 {t("ownBookTitle")}
+        </p>
+        <p style={{ margin: "6px 0 0", fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.6)", lineHeight: 1.35, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+          {t("ownBookSubtitle")}
+        </p>
+        <div style={{ marginTop: "auto", paddingTop: 10 }}>
+          <button
+            onClick={onOpen}
+            style={{ width: "100%", padding: "9px 14px", borderRadius: 9999, border: "none", background: "rgba(255,255,255,0.88)", color: "#4776e6", fontWeight: 900, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}
+          >
+            {t("ownBookCta")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const KASPI_PAY_URL = "https://pay.kaspi.kz/pay/e50c7djs";
 
 function KaspiQrStep({
@@ -884,23 +916,6 @@ export default function ParentHomePage() {
         </div>
       )}
 
-      {/* Своя книжка — приоритетный сценарий, крупная карточка над каталогом */}
-      <div style={{ padding: "16px 20px 0" }}>
-        <button
-          onClick={() => setShowOwnBook(true)}
-          style={{ display: "block", width: "100%", padding: 0, border: "none", borderRadius: 24, overflow: "hidden", cursor: "pointer", fontFamily: "inherit", textAlign: "left", position: "relative", boxShadow: "0 8px 24px rgba(0,0,0,0.25)" }}
-        >
-          <div style={{ height: 360, background: `url(/books/own-book.jpg) center/cover`, position: "relative" }}>
-            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(20,12,55,0.94) 14%, rgba(20,12,55,0.1) 62%)" }} />
-            <div style={{ position: "absolute", left: 20, right: 20, bottom: 20 }}>
-              <p style={{ margin: 0, fontSize: 28, fontWeight: 900, color: "#ffffff", textShadow: "0 2px 12px rgba(0,0,0,0.4)" }}>📖 {t("ownBookTitle")}</p>
-              <p style={{ margin: "8px 0 14px", fontSize: 14.5, fontWeight: 600, color: "rgba(255,255,255,0.9)", lineHeight: 1.4, textShadow: "0 1px 8px rgba(0,0,0,0.5)" }}>{t("ownBookSubtitle")}</p>
-              <span style={{ display: "inline-block", padding: "12px 22px", borderRadius: 9999, background: "rgba(255,255,255,0.95)", color: "#4776e6", fontWeight: 900, fontSize: 15 }}>{t("ownBookCta")} →</span>
-            </div>
-          </div>
-        </button>
-      </div>
-
       <div style={{ padding: "16px 20px 0" }}>
         {loadingChallenges ? (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -908,20 +923,25 @@ export default function ParentHomePage() {
               <div key={i} className="glass-card" style={{ height: 220, animation: "pulse 2s infinite" }} />
             ))}
           </div>
-        ) : filteredChallenges.length === 0 ? (
-          <div className="glass" style={{ padding: 48, textAlign: "center" }}>
-            <p style={{ fontSize: 56, margin: "0 0 16px" }}>📚</p>
-            <p style={{ margin: 0, fontWeight: 900, fontSize: 18, color: "#ffffff" }}>{t("noChallenges")}</p>
-            <p style={{ margin: "8px 0 0", fontSize: 14, color: "rgba(255,255,255,0.55)" }}>
-              {t("tryChangeFilter")}
-            </p>
-          </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            {filteredChallenges.map((c: any) => (
-              <ChallengeCard key={c.id} challenge={c} onBuy={() => { setPurchaseChildId(undefined); setSelectedChallenge(c); }} />
-            ))}
-          </div>
+          <>
+            {/* «Своя книжка» — такая же карточка, как книги каталога, первой в сетке */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <OwnBookCard onOpen={() => setShowOwnBook(true)} />
+              {filteredChallenges.map((c: any) => (
+                <ChallengeCard key={c.id} challenge={c} onBuy={() => { setPurchaseChildId(undefined); setSelectedChallenge(c); }} />
+              ))}
+            </div>
+            {filteredChallenges.length === 0 && (
+              <div className="glass" style={{ padding: 48, textAlign: "center", marginTop: 12 }}>
+                <p style={{ fontSize: 56, margin: "0 0 16px" }}>📚</p>
+                <p style={{ margin: 0, fontWeight: 900, fontSize: 18, color: "#ffffff" }}>{t("noChallenges")}</p>
+                <p style={{ margin: "8px 0 0", fontSize: 14, color: "rgba(255,255,255,0.55)" }}>
+                  {t("tryChangeFilter")}
+                </p>
+              </div>
+            )}
+          </>
         )}
       </div>
 
