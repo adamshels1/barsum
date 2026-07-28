@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { challengesApi } from "@/lib/api/challenges";
 import { bookRequestsApi } from "@/lib/api/book-requests";
+import { paymentsApi } from "@/lib/api/payments";
 import { sessionsApi } from "@/lib/api/sessions";
 import type { BookRequest, Challenge } from "@/types";
 import { BackButton } from "@/components/BackButton";
@@ -22,6 +23,10 @@ const dict: Dict = {
     subtitle: "Выбери книгу — родитель сможет купить её для тебя",
     parts: "{n} частей",
     askBtn: "Попросить",
+    takeFree: "Взять бесплатно 🎁",
+    adding: "Добавляем...",
+    addedFree: "Книга у тебя! Читай и получай монеты 🎉",
+    addFreeError: "Не получилось добавить книгу",
     requested: "Попросили ⏳",
     owned: "Уже у тебя ✅",
     requestSent: "Запрос отправлен родителю! 🎉",
@@ -42,6 +47,10 @@ const dict: Dict = {
     subtitle: "Кітап таңда — ата-анаң оны саған сатып ала алады",
     parts: "{n} бөлім",
     askBtn: "Сұрау",
+    takeFree: "Тегін алу 🎁",
+    adding: "Қосылуда...",
+    addedFree: "Кітап сенде! Оқы да, монета жина 🎉",
+    addFreeError: "Кітапты қосу мүмкін болмады",
     requested: "Сұралды ⏳",
     owned: "Сенде бар ✅",
     requestSent: "Сұрау ата-анаңа жіберілді! 🎉",
@@ -69,11 +78,15 @@ function BookCard({
   enrollmentId,
   requested,
   onAsk,
+  onAddFree,
+  addingFree,
 }: {
   challenge: Challenge & { author?: { name?: string } };
   enrollmentId?: string;
   requested: boolean;
   onAsk: () => void;
+  onAddFree: () => void;
+  addingFree: boolean;
 }) {
   const t = useT(dict);
   const router = useRouter();
@@ -125,6 +138,15 @@ function BookCard({
               style={{ width: "100%", padding: "9px 0", borderRadius: 9999, border: "none", background: "rgba(34,197,94,0.35)", color: "#ffffff", fontWeight: 900, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}
             >
               {t("owned")}
+            </button>
+          ) : challenge.price === 0 ? (
+            /* Бесплатную книгу ребёнок берёт сам — родителя спрашивать не надо. */
+            <button
+              onClick={onAddFree}
+              disabled={addingFree}
+              style={{ width: "100%", padding: "9px 0", borderRadius: 9999, border: "none", background: "rgba(34,197,94,0.85)", color: "#ffffff", fontWeight: 900, fontSize: 12, cursor: addingFree ? "default" : "pointer", fontFamily: "inherit", opacity: addingFree ? 0.6 : 1 }}
+            >
+              {addingFree ? t("adding") : t("takeFree")}
             </button>
           ) : requested ? (
             <span style={{ display: "block", width: "100%", padding: "9px 0", borderRadius: 9999, textAlign: "center", background: "rgba(255,200,0,0.25)", color: "#ffd200", fontWeight: 900, fontSize: 12 }}>
@@ -229,6 +251,17 @@ export default function ChildBooksPage() {
     refetchOnWindowFocus: "always",
   });
 
+  // Бесплатную книгу ребёнок добавляет себе сам. Повторное добавление безопасно:
+  // бэкенд вернёт прежний доступ, а монеты за книгу начисляются только один раз.
+  const addFreeMutation = useMutation({
+    mutationFn: (challengeId: string) => paymentsApi.addFreeSelf(challengeId),
+    onSuccess: () => {
+      toast.success(t("addedFree"));
+      queryClient.invalidateQueries({ queryKey: ["enrollments"] });
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.message || t("addFreeError")),
+  });
+
   const askMutation = useMutation({
     mutationFn: (challengeId: string) => bookRequestsApi.request(challengeId),
     onSuccess: () => {
@@ -315,6 +348,8 @@ export default function ChildBooksPage() {
               enrollmentId={enrollmentByChallenge.get(c.id)}
               requested={pendingRequested.has(c.id)}
               onAsk={() => setConfirmBook(c)}
+              onAddFree={() => addFreeMutation.mutate(c.id)}
+              addingFree={addFreeMutation.isPending && addFreeMutation.variables === c.id}
             />
           ))}
         </div>

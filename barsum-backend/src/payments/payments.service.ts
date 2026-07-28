@@ -291,13 +291,20 @@ export class PaymentsService {
     return { payment, enrollment, challenge };
   }
 
-  // Бесплатная книга (price = 0): родитель добавляет её ребёнку без оплаты.
+  // Бесплатная книга (price = 0): её добавляет либо родитель ребёнку, либо ребёнок
+  // сам себе (bySelf — разрешения родителя не требуется, книга бесплатная).
   // Платёж на 0 ₸ всё равно создаём — чтобы доступ выдавался тем же кодом
   // (activateEnrollment закрывает и запрос ребёнка на книгу), и остался след в истории.
+  //
+  // Монеты за книгу начисляются ОДИН раз: повторный вызов на уже добавленную книгу
+  // возвращает прежний платёж и не доходит до activateEnrollment, поэтому второй
+  // enrollment (а с ним и новый пул монет) не создаётся. Дочитанную книгу ребёнок
+  // может перечитывать в библиотеке — там сессий нет, монеты больше не капают.
   async addFree(dto: {
     parentId: string;
     childId: string;
     challengeId: string;
+    bySelf?: boolean;
   }): Promise<Payment> {
     const challenge = await this.challengeRepo.findOne({ where: { id: dto.challengeId } });
     if (!challenge) throw new NotFoundException('Challenge not found');
@@ -340,7 +347,8 @@ export class PaymentsService {
 
     this.telegram.send(
       'payments',
-      `🎁 <b>Бесплатная книга добавлена</b>\n${await this.actorLines(dto.parentId, dto.childId)}\n` +
+      `🎁 <b>Бесплатная книга ${dto.bySelf ? 'добавлена ребёнком' : 'добавлена'}</b>\n` +
+        `${await this.actorLines(dto.parentId, dto.childId)}\n` +
         `Книга: ${esc(challenge.bookTitle || challenge.title)} · ${challenge.coinsReward} монет за прочтение`,
     );
 

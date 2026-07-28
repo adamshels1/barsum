@@ -15,6 +15,9 @@ export const paymentsApi = {
   // Бесплатная книга (цена 0) — добавляется ребёнку без оплаты.
   addFree: (data: { childId: string; challengeId: string }) =>
     apiClient.post("/payments/free", data).then((r) => r.data),
+  // То же, но ребёнок добавляет бесплатную книгу себе сам (без запроса родителю).
+  addFreeSelf: (challengeId: string) =>
+    apiClient.post("/payments/free/self", { challengeId }).then((r) => r.data),
   // Родитель подтверждает свой незавершённый платёж.
   confirmMine: (id: string) =>
     apiClient.post(`/payments/${id}/confirm`).then((r) => r.data),

@@ -9,6 +9,7 @@ import {
   UploadedFile,
   UseInterceptors,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -72,6 +73,23 @@ export class PaymentsController {
       parentId: req.user.sub,
       childId: body.childId,
       challengeId: body.challengeId,
+    });
+  }
+
+  // Бесплатную книгу ребёнок может добавить себе сам, без спроса у родителя.
+  // Родитель и ребёнок ходят в один и тот же addFree: он идемпотентен — если книга
+  // уже добавлена, вернётся прежний платёж, а enrollment (а с ним и пул монет)
+  // НЕ создаётся заново. Значит, монеты за книгу всё равно начисляются один раз.
+  @Post('free/self')
+  addFreeSelf(@Request() req: any, @Body('challengeId') challengeId: string) {
+    if (req.user.role !== 'child') {
+      throw new ForbiddenException('Только для детского аккаунта');
+    }
+    return this.paymentsService.addFree({
+      parentId: req.user.parentId,
+      childId: req.user.sub,
+      challengeId,
+      bySelf: true,
     });
   }
 
