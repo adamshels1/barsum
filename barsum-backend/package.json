@@ -18,6 +18,7 @@
     "seed:dana": "ts-node -r tsconfig-paths/register src/seed-dana.ts",
     "seed:mazmundama": "ts-node -r tsconfig-paths/register src/seed-mazmundama.ts",
     "seed:mazmundama-series": "ts-node -r tsconfig-paths/register src/seed-mazmundama-series.ts",
+    "seed:mazmundama-2": "ts-node -r tsconfig-paths/register src/seed-mazmundama-2.ts",
     "seed:aibek": "ts-node -r tsconfig-paths/register src/seed-aibek.ts",
     "seed:dana-nurzhigit": "ts-node -r tsconfig-paths/register src/seed-dana-nurzhigit.ts",
     "seed:collab": "ts-node -r tsconfig-paths/register src/seed-collab.ts",
