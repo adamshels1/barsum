@@ -11,8 +11,7 @@ import type { BookRequest, Challenge } from "@/types";
 import { BackButton } from "@/components/BackButton";
 import { Portal } from "@/components/Portal";
 import { useT, type Dict } from "@/i18n/useT";
-import { useEffect, useState } from "react";
-import { useLocaleStore } from "@/stores/locale-store";
+import { useState } from "react";
 
 const dict: Dict = {
   ru: {
@@ -218,16 +217,10 @@ function ConfirmAskModal({
 
 export default function ChildBooksPage() {
   const t = useT(dict);
-  const locale = useLocaleStore((s) => s.locale);
   const queryClient = useQueryClient();
-  // Фильтр языка книг: стартует с языка интерфейса, «» = показать все.
-  // Локаль приезжает из localStorage после первого рендера — подхватываем эффектом,
-  // пока ребёнок не переключил фильтр сам.
-  const [langFilter, setLangFilter] = useState<string>(locale);
-  const [langTouched, setLangTouched] = useState(false);
-  useEffect(() => {
-    if (!langTouched) setLangFilter(locale);
-  }, [locale, langTouched]);
+  // Фильтр языка книг: по умолчанию казахский (независимо от языка интерфейса),
+  // «» = показать все. Переключается чипами вручную.
+  const [langFilter, setLangFilter] = useState<string>("kk");
   // Книга, ожидающая подтверждения «точно попросить?».
   const [confirmBook, setConfirmBook] = useState<Challenge | null>(null);
 
@@ -306,7 +299,7 @@ export default function ChildBooksPage() {
           return (
             <button
               key={f.value || "all"}
-              onClick={() => { setLangTouched(true); setLangFilter(f.value); }}
+              onClick={() => setLangFilter(f.value)}
               style={{
                 flexShrink: 0,
                 padding: "7px 16px",

@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { challengesApi } from "@/lib/api/challenges";
 import { childrenApi } from "@/lib/api/children";
@@ -822,14 +822,9 @@ export default function ParentHomePage() {
   const queryClient = useQueryClient();
 
   const [ageFilter, setAgeFilter] = useState("");
-  // Стартуем с языка интерфейса: казахоязычный родитель сразу видит казахские книги.
-  // Локаль приезжает из localStorage уже после первого рендера, поэтому подхватываем
-  // её эффектом — но только пока родитель не переключил фильтр руками.
-  const [langFilter, setLangFilter] = useState<string>(locale);
-  const [langTouched, setLangTouched] = useState(false);
-  useEffect(() => {
-    if (!langTouched) setLangFilter(locale);
-  }, [locale, langTouched]);
+  // По умолчанию каталог открывается на казахских книгах — независимо от языка
+  // интерфейса: основная часть каталога казахская. Переключается чипами вручную.
+  const [langFilter, setLangFilter] = useState<string>("kk");
   const [selectedChallenge, setSelectedChallenge] = useState<(Challenge & { author?: { name?: string } }) | null>(null);
   // Ребёнок, для которого открыта покупка из запроса «просит книгу».
   const [purchaseChildId, setPurchaseChildId] = useState<string | undefined>(undefined);
@@ -946,7 +941,7 @@ export default function ParentHomePage() {
             return (
               <button
                 key={f.value || "all"}
-                onClick={() => { setLangTouched(true); setLangFilter(f.value); }}
+                onClick={() => setLangFilter(f.value)}
                 style={{
                   flexShrink: 0,
                   padding: "6px 14px",
