@@ -1,6 +1,7 @@
 import { Injectable, ConflictException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
+import { randomBytes } from 'crypto';
 import { Child } from './entities/child.entity';
 import { FilesService, parseStoredFileUrl, imageMimeFromUrl } from '../files/files.service';
 import { encryptChildPassword } from '../common/child-password.util';
@@ -88,6 +89,60 @@ export class ChildrenService {
     if (!parsed) throw new NotFoundException('Photo not found');
     const buffer = await this.filesService.getBuffer(parsed.key, parsed.bucket);
     return { buffer, contentType: imageMimeFromUrl(child.photoUrl) };
+  }
+
+  // Ссылка живёт 30 дней: её пересылают в мессенджере, и семья возвращается к
+  // ней при переустановке приложения или смене телефона. Родитель может
+  // перевыпустить — старая ссылка при этом перестаёт работать.
+  private static readonly INVITE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
+  /**
+   * Отдаёт действующий инвайт-токен ребёнка, создавая его при необходимости.
+   * `regenerate` выпускает новый и обесценивает предыдущий.
+   */
+  async getOrCreateInviteToken(
+    id: string,
+    parentId: string,
+    regenerate = false,
+  ): Promise<{ token: string; expiresAt: Date }> {
+    // inviteToken помечен select: false — запрашиваем его явно.
+    const child = await this.childRepo
+      .createQueryBuilder('child')
+      .addSelect('child.inviteToken')
+      .where('child.id = :id', { id })
+      .getOne();
+    if (!child) throw new NotFoundException('Child not found');
+    if (child.parentId !== parentId) throw new ForbiddenException('Not your child');
+
+    const expired =
+      !child.inviteTokenExpiresAt || child.inviteTokenExpiresAt.getTime() <= Date.now();
+
+    let token = child.inviteToken;
+    let expiresAt = child.inviteTokenExpiresAt;
+
+    if (regenerate || !token || expired) {
+      token = randomBytes(24).toString('base64url');
+      expiresAt = new Date(Date.now() + ChildrenService.INVITE_TTL_MS);
+      // Возвращаем локальные значения, а не поля сущности: save() перечитывает
+      // строку, а колонка с select: false в выборку не попадает и обнуляется.
+      child.inviteToken = token;
+      child.inviteTokenExpiresAt = expiresAt;
+      await this.childRepo.save(child);
+    }
+
+    return { token: token!, expiresAt: expiresAt! };
+  }
+
+  // Вход ребёнка по ссылке. Токен не одноразовый: ребёнок может открыть ссылку
+  // повторно, если вышел из аккаунта или переустановил приложение.
+  async findByInviteToken(token: string): Promise<Child | null> {
+    if (!token) return null;
+    const child = await this.childRepo.findOne({ where: { inviteToken: token } });
+    if (!child) return null;
+    if (!child.inviteTokenExpiresAt || child.inviteTokenExpiresAt.getTime() <= Date.now()) {
+      return null;
+    }
+    return child;
   }
 
   // Ребёнок закончил или пропустил онбординг — больше его не показываем.

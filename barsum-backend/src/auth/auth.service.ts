@@ -86,6 +86,23 @@ export class AuthService {
     return { child: result, access_token: token };
   }
 
+  // Вход ребёнка по пригласительной ссылке от родителя. Выдаём такой же JWT,
+  // как при обычном входе, — дальше приложение не различает способ входа.
+  async loginChildByInviteToken(token: string) {
+    const child = await this.childrenService.findByInviteToken(token);
+    if (!child) throw new UnauthorizedException('Ссылка недействительна или истекла');
+
+    const jwt = await this.jwtService.signAsync({
+      sub: child.id,
+      login: child.login,
+      role: 'child',
+      parentId: child.parentId,
+    });
+
+    const { password, inviteToken, ...result } = child as any;
+    return { child: result, access_token: jwt, role: 'child' };
+  }
+
   async registerExpert(dto: RegisterParentDto) {
     const existing = await this.usersService.findByEmail(dto.email);
     if (existing) throw new ConflictException('Email already registered');

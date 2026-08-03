@@ -44,6 +44,12 @@ export class AuthController {
     return this.authService.loginChild(dto);
   }
 
+  @Post('child/link')
+  @ApiOperation({ summary: 'Вход ребёнка по пригласительной ссылке' })
+  loginChildByLink(@Body() body: { token: string }) {
+    return this.authService.loginChildByInviteToken(body?.token);
+  }
+
   @Post('expert/register')
   @ApiOperation({ summary: 'Регистрация эксперта' })
   registerExpert(@Body() dto: RegisterParentDto) {

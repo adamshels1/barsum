@@ -31,6 +31,18 @@ export class ChildrenController {
     return this.childrenService.markOnboarded(req.user.sub);
   }
 
+  @Get(':id/invite-link')
+  @ApiOperation({ summary: 'Токен пригласительной ссылки ребёнка' })
+  async inviteLink(@Request() req: any, @Param('id') id: string) {
+    return this.childrenService.getOrCreateInviteToken(id, req.user.sub);
+  }
+
+  @Post(':id/invite-link/regenerate')
+  @ApiOperation({ summary: 'Перевыпустить ссылку (старая перестаёт работать)' })
+  async regenerateInviteLink(@Request() req: any, @Param('id') id: string) {
+    return this.childrenService.getOrCreateInviteToken(id, req.user.sub, true);
+  }
+
   @Get()
   @ApiOperation({ summary: 'Список детей родителя' })
   async list(@Request() req: any) {

@@ -62,6 +62,11 @@ const dict: Dict = {
     credentialsTitle: "🔑 Логин и пароль ребёнка",
     loginLabel: "Логин",
     passwordLabel: "Пароль",
+    sendLink: "Отправить ссылку для входа",
+    regenerateLink: "Выпустить новую ссылку (старая перестанет работать)",
+    linkShareText: "Barsum — вход для «{name}»\nОткрой ссылку, и ты сразу внутри:\n{link}",
+    linkCopied: "Ссылка скопирована",
+    linkFailed: "Не удалось получить ссылку",
     copiedX: "{label} скопирован",
     copyFailed: "Не удалось скопировать",
     copyLoginAria: "Скопировать логин",
@@ -164,6 +169,11 @@ const dict: Dict = {
     credentialsTitle: "🔑 Баланың логині мен құпиясөзі",
     loginLabel: "Логин",
     passwordLabel: "Құпиясөз",
+    sendLink: "Кіру сілтемесін жіберу",
+    regenerateLink: "Жаңа сілтеме шығару (ескісі жұмысын тоқтатады)",
+    linkShareText: "Barsum — «{name}» үшін кіру\nСілтемені аш, сен бірден ішіндесің:\n{link}",
+    linkCopied: "Сілтеме көшірілді",
+    linkFailed: "Сілтемені алу мүмкін болмады",
     copiedX: "{label} көшірілді",
     copyFailed: "Көшіру мүмкін болмады",
     copyLoginAria: "Логинді көшіру",
@@ -422,6 +432,8 @@ function CredentialsSection({ child }: { child: Child }) {
   const t = useT(dict);
   const [showPassword, setShowPassword] = useState(false);
 
+  const [linkBusy, setLinkBusy] = useState(false);
+
   const copy = async (value: string, label: string) => {
     try {
       await navigator.clipboard.writeText(value);
@@ -431,9 +443,49 @@ function CredentialsSection({ child }: { child: Child }) {
     }
   };
 
+  // Ссылку выпускаем лениво — только когда родитель решил ею поделиться.
+  const sendLink = async (regenerate: boolean) => {
+    setLinkBusy(true);
+    try {
+      const { token } = regenerate
+        ? await childrenApi.regenerateInviteLink(child.id)
+        : await childrenApi.inviteLink(child.id);
+      const url = `${window.location.origin}/join/${token}`;
+      const text = t("linkShareText", { name: child.name, link: url });
+      if (typeof navigator !== "undefined" && navigator.share) {
+        await navigator.share({ title: "Barsum", text }).catch(() => {});
+      } else {
+        await navigator.clipboard.writeText(url);
+        toast.success(t("linkCopied"));
+      }
+    } catch {
+      toast.error(t("linkFailed"));
+    } finally {
+      setLinkBusy(false);
+    }
+  };
+
   return (
     <div style={{ ...GLASS, padding: "14px 16px", marginBottom: 12 }}>
       <p style={{ margin: "0 0 12px", fontWeight: 800, fontSize: 14, color: "#ffffff" }}>{t("credentialsTitle")}</p>
+
+      {/* Главное действие: ребёнку не нужно набирать логин руками. */}
+      <button
+        onClick={() => sendLink(false)}
+        disabled={linkBusy}
+        className="btn-white"
+        style={{ color: "#4776e6", marginBottom: 8, opacity: linkBusy ? 0.5 : 1 }}
+      >
+        🔗 {t("sendLink")}
+      </button>
+      <button
+        onClick={() => sendLink(true)}
+        disabled={linkBusy}
+        style={{ width: "100%", marginBottom: 14, background: "transparent", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.45)" }}
+      >
+        {t("regenerateLink")}
+      </button>
+
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", width: 52, flexShrink: 0 }}>{t("loginLabel")}</span>

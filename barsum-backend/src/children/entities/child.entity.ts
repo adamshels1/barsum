@@ -37,6 +37,18 @@ export class Child {
   @Column({ nullable: true, type: 'timestamp' })
   onboardedAt: Date | null;
 
+  // Пригласительная ссылка: родитель пересылает её ребёнку, тот входит одним
+  // тапом, без набора логина и пароля. Ручной ввод — главная точка потери:
+  // до формы входа доходят почти все дети, внутрь попадает меньшинство.
+  // select: false — токен равносилен паролю, и сущность Child уезжает наружу
+  // через связи (мечты и запросы с relations: ['child'], списки эксперта).
+  // По умолчанию не выбираем, читаем только там, где он действительно нужен.
+  @Column({ nullable: true, unique: true, select: false })
+  inviteToken: string | null;
+
+  @Column({ nullable: true, type: 'timestamp' })
+  inviteTokenExpiresAt: Date | null;
+
   @CreateDateColumn()
   createdAt: Date;
 

@@ -23,16 +23,18 @@ const dict: Dict = {
     templateAdded: "«{name}» добавлена в магазин",
     addError: "Ошибка при добавлении",
     createError: "Ошибка создания профиля",
-    credsCopied: "Логин и пароль скопированы",
-    copyText: "Логин: {login}\nПароль: {password}\nСайт: https://barsum.app",
-    shareText: "Barsum — данные для входа ребёнка «{name}»\nЛогин: {login}\nПароль: {password}\nСайт: https://barsum.app",
+    credsCopied: "Ссылка скопирована",
+    copyText: "{link}",
+    shareText: "Barsum — вход для «{name}»\nОткрой ссылку, и ты сразу внутри:\n{link}\n\nЕсли ссылка не откроется — логин: {login}, пароль: {password}",
     shareTitle: "Barsum — вход для ребёнка",
     dataCopied: "Данные скопированы в буфер обмена",
     setupShop: "Настрой магазин",
     shopHint: "Добавь пару наград одним тапом — цену можно поправить. Это необязательно, всегда можно сделать позже.",
     toCabinet: "В кабинет →",
     profileCreated: "Профиль создан!",
-    saveCreds: "Сохрани данные для входа ребёнка",
+    saveCreds: "Отправьте ребёнку ссылку — он войдёт одним нажатием",
+    linkLabel: "Ссылка для входа",
+    linkHint: "Ссылка работает 30 дней. Логин и пароль ниже — на случай, если ссылка не откроется.",
     name: "Имя",
     login: "Логин",
     password: "Пароль",
@@ -40,7 +42,7 @@ const dict: Dict = {
     copy: "Копировать",
     share: "Поделиться",
     next: "Далее →",
-    shareRequiredHint: "⚠️ Сначала скопируйте или отправьте данные ребёнку — без них он не войдёт",
+    shareRequiredHint: "⚠️ Сначала отправьте ссылку ребёнку — без неё он не войдёт",
     shareFirst: "Поделитесь, чтобы продолжить",
     addChild: "Добавь ребёнка",
     createToStart: "Создай профиль, чтобы начать",
@@ -61,16 +63,18 @@ const dict: Dict = {
     templateAdded: "«{name}» дүкенге қосылды",
     addError: "Қосу кезінде қате",
     createError: "Профильді құру қатесі",
-    credsCopied: "Логин мен құпиясөз көшірілді",
-    copyText: "Логин: {login}\nҚұпиясөз: {password}\nСайт: https://barsum.app",
-    shareText: "Barsum — «{name}» баласының кіру деректері\nЛогин: {login}\nҚұпиясөз: {password}\nСайт: https://barsum.app",
+    credsCopied: "Сілтеме көшірілді",
+    copyText: "{link}",
+    shareText: "Barsum — «{name}» үшін кіру\nСілтемені аш, сен бірден ішіндесің:\n{link}\n\nСілтеме ашылмаса — логин: {login}, құпиясөз: {password}",
     shareTitle: "Barsum — бала үшін кіру",
     dataCopied: "Деректер алмасу буферіне көшірілді",
     setupShop: "Дүкенді баптаңыз",
     shopHint: "Бір рет түртіп бірнеше сыйлық қосыңыз — бағаны түзетуге болады. Бұл міндетті емес, оны кейін де жасауға болады.",
     toCabinet: "Кабинетке →",
     profileCreated: "Профиль құрылды!",
-    saveCreds: "Баланың кіру деректерін сақтаңыз",
+    saveCreds: "Балаға сілтеме жіберіңіз — ол бір рет басып кіреді",
+    linkLabel: "Кіру сілтемесі",
+    linkHint: "Сілтеме 30 күн жұмыс істейді. Логин мен құпиясөз төменде — сілтеме ашылмаған жағдайға.",
     name: "Аты",
     login: "Логин",
     password: "Құпиясөз",
@@ -78,7 +82,7 @@ const dict: Dict = {
     copy: "Көшіру",
     share: "Бөлісу",
     next: "Әрі қарай →",
-    shareRequiredHint: "⚠️ Алдымен деректерді балаға көшіріп немесе жіберіңіз — онсыз ол кіре алмайды",
+    shareRequiredHint: "⚠️ Алдымен балаға сілтеме жіберіңіз — онсыз ол кіре алмайды",
     shareFirst: "Жалғастыру үшін бөлісіңіз",
     addChild: "Бала қосу",
     createToStart: "Бастау үшін профиль құрыңыз",
@@ -105,6 +109,8 @@ export default function ParentOnboardingPage() {
   const t = useT(dict);
   const router = useRouter();
   const [created, setCreated] = useState<{ login: string; password: string; name: string } | null>(null);
+  // Ссылка — основной способ входа: ребёнку не нужно ничего набирать.
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
   // Родитель обязан скопировать/отправить данные ребёнку прежде чем идти дальше —
   // иначе многие забывают поделиться, и ребёнок не может войти.
   const [shared, setShared] = useState(false);
@@ -157,6 +163,14 @@ export default function ParentOnboardingPage() {
           // фото не критично — профиль уже создан
         }
       }
+      if (child?.id) {
+        try {
+          const { token } = await childrenApi.inviteLink(child.id);
+          setInviteLink(`${window.location.origin}/join/${token}`);
+        } catch {
+          // Ссылка не критична: ниже остаются логин и пароль.
+        }
+      }
       setCreated({ login: data.login, password: data.password, name: data.name });
     } catch (err: any) {
       toast.error(err.response?.data?.message || t("createError"));
@@ -165,13 +179,18 @@ export default function ParentOnboardingPage() {
 
   const copyAll = () => {
     if (!created) return;
-    const text = t("copyText", { login: created.login, password: created.password });
+    const text = inviteLink ?? `${created.login} / ${created.password}`;
     navigator.clipboard.writeText(text).then(() => { setShared(true); toast.success(t("credsCopied")); });
   };
 
   const shareAll = () => {
     if (!created) return;
-    const text = t("shareText", { name: created.name, login: created.login, password: created.password });
+    const text = t("shareText", {
+      name: created.name,
+      link: inviteLink ?? "https://barsum.app",
+      login: created.login,
+      password: created.password,
+    });
     if (typeof navigator !== "undefined" && navigator.share) {
       navigator.share({ title: t("shareTitle"), text }).then(() => setShared(true)).catch(() => {});
     } else {
@@ -224,6 +243,22 @@ export default function ParentOnboardingPage() {
             <h1 style={{ margin: "0 0 6px", fontSize: 26, fontWeight: 900, color: "#ffffff" }}>{t("profileCreated")}</h1>
             <p style={{ margin: 0, fontSize: 14, color: "rgba(255,255,255,0.65)" }}>{t("saveCreds")}</p>
           </div>
+
+          {/* Ссылка выше логина с паролем: ребёнку не нужно ничего набирать,
+              а ручной ввод — то место, где терялось большинство детей. */}
+          {inviteLink && (
+            <div style={{ ...GLASS, padding: "16px 18px", marginBottom: 12, border: "1px solid rgba(255,255,255,0.35)" }}>
+              <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                {t("linkLabel")}
+              </p>
+              <p style={{ margin: "0 0 8px", fontSize: 12.5, fontWeight: 700, color: "#ffffff", wordBreak: "break-all", fontFamily: "monospace" }}>
+                {inviteLink}
+              </p>
+              <p style={{ margin: 0, fontSize: 11.5, fontWeight: 600, color: "rgba(255,255,255,0.5)", lineHeight: 1.4 }}>
+                {t("linkHint")}
+              </p>
+            </div>
+          )}
 
           <div style={{ ...GLASS, padding: "20px 20px", marginBottom: 12 }}>
             {[

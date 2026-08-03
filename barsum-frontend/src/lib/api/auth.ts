@@ -21,4 +21,7 @@ export const authApi = {
 
   // Обмен валидного токена на свежий (скользящая сессия).
   refresh: () => apiClient.post("/auth/refresh").then((r) => r.data),
+  // Вход ребёнка по пригласительной ссылке от родителя.
+  childLinkLogin: (token: string) =>
+    apiClient.post("/auth/child/link", { token }).then((r) => r.data),
 };
