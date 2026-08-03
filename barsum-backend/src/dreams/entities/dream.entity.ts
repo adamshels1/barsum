@@ -32,6 +32,11 @@ export class Dream {
   @Column({ nullable: true, type: 'text' })
   rejectedReason: string;
 
+  // Когда ребёнок последний раз напоминал родителю про неодобренную мечту —
+  // чтобы не давать спамить пушами (см. REMIND_COOLDOWN_MS в сервисе).
+  @Column({ nullable: true, type: 'timestamp' })
+  remindedAt: Date | null;
+
   @Column({ type: 'enum', enum: DreamStatus, default: DreamStatus.PENDING_APPROVAL })
   status: DreamStatus;
 

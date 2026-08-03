@@ -7,6 +7,9 @@ export const dreamsApi = {
     apiClient.post("/dreams", data).then((r) => r.data),
   update: (id: string, data: { name?: string; targetCoins?: number }) =>
     apiClient.patch(`/dreams/${id}`, data).then((r) => r.data),
+  // Напомнить родителю про неодобренную мечту (бэк не чаще раза в 6 ч).
+  remind: (id: string) =>
+    apiClient.post(`/dreams/${id}/remind`).then((r) => r.data),
   send: (amount: number, dreamId?: string) =>
     apiClient.post("/dreams/send", { amount, dreamId }).then((r) => r.data),
   uploadPhoto: (id: string, file: File) => {

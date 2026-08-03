@@ -90,6 +90,18 @@ export class ChildrenService {
     return { buffer, contentType: imageMimeFromUrl(child.photoUrl) };
   }
 
+  // Ребёнок закончил или пропустил онбординг — больше его не показываем.
+  async markOnboarded(id: string): Promise<Child> {
+    const child = await this.findById(id);
+    if (!child) throw new NotFoundException('Child not found');
+    if (!child.onboardedAt) {
+      child.onboardedAt = new Date();
+      await this.childRepo.save(child);
+    }
+    const { password, ...rest } = child as any;
+    return rest;
+  }
+
   async incrementStreak(id: string): Promise<void> {
     await this.childRepo.increment({ id }, 'streak', 1);
   }

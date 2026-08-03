@@ -28,7 +28,8 @@
     "seed:rustem": "ts-node -r tsconfig-paths/register src/seed-rustem.ts",
     "seed:barsum-city": "ts-node -r tsconfig-paths/register src/seed-barsum-city.ts",
     "seed:iskander-liga": "ts-node -r tsconfig-paths/register src/seed-iskander-liga.ts",
-    "backfill:book-language": "ts-node -r tsconfig-paths/register src/backfill-book-language.ts"
+    "backfill:book-language": "ts-node -r tsconfig-paths/register src/backfill-book-language.ts",
+    "backfill:child-onboarded": "ts-node -r tsconfig-paths/register src/backfill-child-onboarded.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

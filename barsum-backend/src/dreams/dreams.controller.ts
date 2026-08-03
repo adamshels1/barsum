@@ -45,6 +45,11 @@ export class DreamsController {
     return this.dreamsService.findCurrentForParentChild(req.user.sub, childId);
   }
 
+  @Post(':id/remind')
+  remind(@Request() req: any, @Param('id') id: string) {
+    return this.dreamsService.remind(id, req.user.sub);
+  }
+
   @Post(':id/fulfill')
   fulfill(@Request() req: any, @Param('id') id: string) {
     return this.dreamsService.fulfill(id, req.user.sub);

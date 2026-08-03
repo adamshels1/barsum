@@ -4,6 +4,7 @@ import { BookOpen, Gift, Home } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { rewardsApi } from "@/lib/api/rewards";
+import { dreamsApi } from "@/lib/api/dreams";
 import type { RewardRequest } from "@/types";
 import { useT, type Dict } from "@/i18n/useT";
 import { PushEnable } from "@/components/PushEnable";
@@ -47,6 +48,23 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
   });
   const pendingCount = requests.filter((r) => r.status === "pending").length;
 
+  // Мечты живут в кабинете — вешаем их счётчик на вкладку «Кабинет», иначе
+  // родитель, сидящий в каталоге, вообще не узнаёт, что мечту ждут оценки.
+  const { data: pendingDreams = [] } = useQuery<any[]>({
+    queryKey: ["dreams-pending"],
+    queryFn: dreamsApi.parentPending,
+    refetchInterval: 15000,
+    refetchOnWindowFocus: true,
+    enabled: !hideNav,
+  });
+  const { data: completedDreams = [] } = useQuery<any[]>({
+    queryKey: ["dreams-completed"],
+    queryFn: dreamsApi.parentCompleted,
+    refetchInterval: 15000,
+    enabled: !hideNav,
+  });
+  const dreamCount = pendingDreams.length + completedDreams.length;
+
   return (
     <div style={{ minHeight: "100dvh", background: BG, position: "relative" }}>
       <div style={{ position: "fixed", inset: 0, background: BG, zIndex: 0 }} />
@@ -76,7 +94,9 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
           {tabs.map((tab) => {
             const isActive = tab.match(pathname);
             const { Icon } = tab;
-            const showBadge = tab.href === "/parent/rewards" && pendingCount > 0;
+            const badgeCount =
+              tab.href === "/parent/rewards" ? pendingCount : tab.href === "/parent/cabinet" ? dreamCount : 0;
+            const showBadge = badgeCount > 0;
             return (
               <button
                 key={tab.href}
@@ -88,7 +108,7 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
                   <Icon size={20} strokeWidth={isActive ? 2.5 : 2} color={isActive ? "#ffffff" : "rgba(255,255,255,0.5)"} />
                   {showBadge && (
                     <span style={{ position: "absolute", top: -2, right: 6, minWidth: 18, height: 18, padding: "0 5px", borderRadius: 9999, background: "#ef4444", color: "#ffffff", fontSize: 11, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 0 2px rgba(70,60,150,0.6)" }}>
-                      {pendingCount}
+                      {badgeCount}
                     </span>
                   )}
                 </div>

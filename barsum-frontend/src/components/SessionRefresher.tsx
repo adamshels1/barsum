@@ -13,6 +13,7 @@ const REFRESH_MIN_INTERVAL_MS = 60 * 60 * 1000; // не чаще раза в ч�
 export function SessionRefresher() {
   const token = useAuthStore((s) => s.token);
   const setToken = useAuthStore((s) => s.setToken);
+  const setUser = useAuthStore((s) => s.setUser);
   const lastRefresh = useRef(0);
 
   useEffect(() => {
@@ -26,6 +27,10 @@ export function SessionRefresher() {
         .refresh()
         .then((res) => {
           if (res?.access_token) setToken(res.access_token);
+          // Заодно освежаем профиль: в localStorage он мог остаться от старой
+          // версии приложения (без новых полей вроде onboardedAt).
+          const fresh = res?.child ?? res?.user;
+          if (fresh) setUser(fresh);
         })
         // Сетевые сбои игнорируем; 401 обработает интерсептор apiClient.
         .catch(() => undefined);
@@ -39,7 +44,7 @@ export function SessionRefresher() {
     };
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
-  }, [token, setToken]);
+  }, [token, setToken, setUser]);
 
   return null;
 }

@@ -7,9 +7,10 @@ import { Dream } from './entities/dream.entity';
 import { Child } from '../children/entities/child.entity';
 import { FilesModule } from '../files/files.module';
 import { CoinsModule } from '../coins/coins.module';
+import { PushModule } from '../push/push.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Dream, Child]), FilesModule, CoinsModule],
+  imports: [TypeOrmModule.forFeature([Dream, Child]), FilesModule, CoinsModule, PushModule],
   controllers: [DreamsController, PublicDreamsController],
   providers: [DreamsService],
   exports: [DreamsService],

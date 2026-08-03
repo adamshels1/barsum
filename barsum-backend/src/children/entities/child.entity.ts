@@ -31,6 +31,12 @@ export class Child {
   @Column({ nullable: true })
   photoUrl: string | null;
 
+  // Когда ребёнок прошёл (или пропустил) первый онбординг. null → показываем
+  // онбординг при входе. Флаг серверный, а не в localStorage: иначе на новом
+  // устройстве / в переустановленной PWA онбординг начнётся заново.
+  @Column({ nullable: true, type: 'timestamp' })
+  onboardedAt: Date | null;
+
   @CreateDateColumn()
   createdAt: Date;
 

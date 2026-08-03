@@ -15,6 +15,9 @@ export const childrenApi = {
     id: string,
     data: Partial<{ name: string; age: number; login: string; password: string }>
   ) => apiClient.patch(`/children/${id}`, data).then((r) => r.data),
+  // Ребёнок отмечает, что прошёл (или пропустил) онбординг.
+  markOnboarded: () =>
+    apiClient.post("/children/me/onboarded").then((r) => r.data),
   uploadPhoto: (id: string, file: File) => {
     const fd = new FormData();
     fd.append("photo", file);

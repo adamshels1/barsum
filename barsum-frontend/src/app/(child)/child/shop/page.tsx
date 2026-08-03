@@ -40,7 +40,11 @@ const dict: Dict = {
     parentWillApprove: "Родитель установит стоимость и одобрит мечту 🌟",
     creating: "Создаём...",
     sendToParent: "✨ Отправить родителю",
-    waitingParentApproval: "Ждём, пока родитель установит стоимость и одобрит мечту",
+    waitingParentApproval: "Мы сказали родителю — он оценит мечту в монетах",
+    remind: "Напомнить",
+    reminded: "Напомнили родителю 💌",
+    remindLater: "Уже напоминали — попробуй позже",
+    remindError: "Не удалось напомнить",
     myDream: "Моя мечта",
     edit: "Изменить",
     dreamAchieved: "🎉 Мечта достигнута!",
@@ -97,7 +101,11 @@ const dict: Dict = {
     parentWillApprove: "Ата-ана бағасын белгілеп, арманды мақұлдайды 🌟",
     creating: "Құрылуда...",
     sendToParent: "✨ Ата-анаға жіберу",
-    waitingParentApproval: "Ата-ана бағасын белгілеп, арманды мақұлдағанын күтеміз",
+    waitingParentApproval: "Ата-анаға айттық — ол арманды монетамен бағалайды",
+    remind: "Еске салу",
+    reminded: "Ата-анаға еске салдық 💌",
+    remindLater: "Жақында еске салдық — сәл кейінірек көр",
+    remindError: "Еске салу мүмкін болмады",
     myDream: "Менің арманым",
     edit: "Өзгерту",
     dreamAchieved: "🎉 Арман орындалды!",
@@ -598,6 +606,13 @@ function DreamManageCard({ dream, childId, balance }: { dream: Dream; childId: s
     onSuccess: () => { invalidate(); setEditing(false); },
   });
 
+  // Бэк ограничивает пуши раз в 6 часов и возвращает ok: false — это не ошибка.
+  const remindMutation = useMutation({
+    mutationFn: () => dreamsApi.remind(dream.id),
+    onSuccess: (res: any) => (res?.ok ? toast.success(t("reminded")) : toast(t("remindLater"))),
+    onError: () => toast.error(t("remindError")),
+  });
+
   const photoMutation = useMutation({
     mutationFn: (file: File) => dreamsApi.uploadPhoto(dream.id, file),
     onSuccess: () => { invalidate(); toast.success(t("photoUpdated")); },
@@ -703,10 +718,19 @@ function DreamManageCard({ dream, childId, balance }: { dream: Dream; childId: s
 
           {isPending ? (
             <div className="glass-sm" style={{ padding: 12, textAlign: "center" }}>
-              <p style={{ margin: 0, fontSize: 24 }}>⏳</p>
+              <p style={{ margin: 0, fontSize: 24 }}>💌</p>
               <p style={{ margin: "4px 0 0", fontSize: 13, color: "rgba(255,255,255,0.75)", fontWeight: 700 }}>
                 {t("waitingParentApproval")}
               </p>
+              {/* Мечта без оценки родителя бесполезна — даём ребёнку способ поторопить. */}
+              <button
+                onClick={() => remindMutation.mutate()}
+                disabled={remindMutation.isPending}
+                className="glass-chip"
+                style={{ marginTop: 10, padding: "8px 16px", border: "1px solid rgba(255,255,255,0.25)", cursor: remindMutation.isPending ? "default" : "pointer", fontFamily: "inherit", fontWeight: 800, fontSize: 12.5, color: "#ffffff", opacity: remindMutation.isPending ? 0.5 : 1 }}
+              >
+                🔔 {t("remind")}
+              </button>
             </div>
           ) : (
             <>
@@ -847,7 +871,9 @@ function DreamTab({ childId }: { childId: string }) {
         </div>
       )}
 
-      {/* Добавление новой мечты — доступно всегда, мечт может быть несколько */}
+      {/* Добавление новой мечты — доступно всегда, мечт может быть несколько.
+          Когда мечт ещё нет, пустое состояние само и есть кнопка: раньше здесь
+          стояли подряд три одинаковых призыва добавить мечту. */}
       {adding ? (
         <div className="glass" style={{ padding: 16, borderRadius: 18 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
@@ -861,6 +887,16 @@ function DreamTab({ childId }: { childId: string }) {
           </div>
           <CreateDreamForm onCreated={() => setAdding(false)} />
         </div>
+      ) : current.length === 0 ? (
+        <button
+          onClick={() => setAdding(true)}
+          className="glass-sm"
+          style={{ width: "100%", padding: 24, borderRadius: 16, border: "1px dashed rgba(255,255,255,0.35)", cursor: "pointer", fontFamily: "inherit", textAlign: "center" }}
+        >
+          <p style={{ fontSize: 32, margin: "0 0 8px" }}>💫</p>
+          <p style={{ margin: 0, fontWeight: 800, fontSize: 15, color: "#ffffff" }}>{t("noDreamsYet")}</p>
+          <p style={{ margin: "4px 0 0", fontSize: 13, color: "rgba(255,255,255,0.6)" }}>{t("addFirstDream")}</p>
+        </button>
       ) : (
         <button
           onClick={() => setAdding(true)}
@@ -870,14 +906,6 @@ function DreamTab({ childId }: { childId: string }) {
           <Sparkles size={18} strokeWidth={2.2} />
           {t("addAnotherDream")}
         </button>
-      )}
-
-      {current.length === 0 && !adding && (
-        <div className="glass-sm" style={{ padding: 24, textAlign: "center", borderRadius: 16 }}>
-          <p style={{ fontSize: 32, margin: "0 0 8px" }}>💫</p>
-          <p style={{ margin: 0, fontWeight: 800, fontSize: 15, color: "#ffffff" }}>{t("noDreamsYet")}</p>
-          <p style={{ margin: "4px 0 0", fontSize: 13, color: "rgba(255,255,255,0.6)" }}>{t("addFirstDream")}</p>
-        </div>
       )}
 
       {current.length > 0 && (
@@ -944,7 +972,9 @@ function ChildShopInner() {
         </h2>
       </div>
 
-      {!dream || dream.status === "rejected" ? (
+      {/* Шорткат к мечте — только на вкладке наград. На самой вкладке «Мечта»
+          он дублировал бы карточку, которая и так ниже. */}
+      {activeTab === "rewards" && (!dream || dream.status === "rejected") ? (
         <button
           onClick={() => setActiveTab("dream")}
           className="glass-sm"
@@ -973,7 +1003,7 @@ function ChildShopInner() {
           </div>
           <ChevronRight size={20} color="rgba(255,255,255,0.7)" />
         </button>
-      ) : hasPendingDream ? (
+      ) : activeTab === "rewards" && hasPendingDream ? (
         <button
           onClick={() => setActiveTab("dream")}
           className="glass-chip"
@@ -995,7 +1025,7 @@ function ChildShopInner() {
             {t("dreamWaitingApproval", { name: dream.name })}
           </p>
         </button>
-      ) : hasActiveDream ? (
+      ) : activeTab === "rewards" && hasActiveDream ? (
         <button
           onClick={() => setActiveTab("dream")}
           className="glass-sm"

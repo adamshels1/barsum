@@ -22,7 +22,12 @@ const dict: Dict = {
     coinsOnAccount: "монет на счету",
     purchaseHistory: "История покупок",
     days: "дней",
-    awaitingApproval: "Ждёт одобрения родителя",
+    awaitingApproval: "Мы сказали родителю 💌",
+    awaitingApprovalHint: "Он оценит мечту в монетах — и можно копить",
+    remind: "Напомнить",
+    reminded: "Напомнили родителю 💌",
+    remindLater: "Уже напоминали — попробуй позже",
+    startReading: "А пока выбери книгу 📚",
     dreamRejected: "Мечта отклонена",
     dreamCollected: "«{name}» собрана! 🎉",
     waitingParentFulfill: "Ждём, пока родитель исполнит мечту",
@@ -54,7 +59,12 @@ const dict: Dict = {
     coinsOnAccount: "шоттағы монета",
     purchaseHistory: "Сатып алулар тарихы",
     days: "күн",
-    awaitingApproval: "Ата-ананың мақұлдауын күтуде",
+    awaitingApproval: "Ата-анаға айттық 💌",
+    awaitingApprovalHint: "Ол арманды монетамен бағалайды — сосын жинауға болады",
+    remind: "Еске салу",
+    reminded: "Ата-анаға еске салдық 💌",
+    remindLater: "Жақында еске салдық — сәл кейінірек көр",
+    startReading: "Ал әзірге кітап таңда 📚",
     dreamRejected: "Арман қабылданбады",
     dreamCollected: "«{name}» жиналды! 🎉",
     waitingParentFulfill: "Ата-ана арманды орындағанын күтеміз",
@@ -120,23 +130,48 @@ function HeroCard({ name, balance, streak, onHistory }: { name: string; balance:
   );
 }
 
-function DreamCard({ dream, currentBalance, onSend, isSending }: {
+function DreamCard({ dream, currentBalance, onSend, isSending, onRemind, isReminding }: {
   dream: any; currentBalance: number;
   onSend: (amount: number, dreamId: string) => void; isSending: boolean;
+  onRemind: (dreamId: string) => void; isReminding: boolean;
 }) {
   const t = useT(dict);
   const [sendAmount, setSendAmount] = useState("");
   const progress = dream.status === "active" && dream.targetCoins > 0
     ? Math.min((dream.savedCoins / dream.targetCoins) * 100, 100) : 0;
 
+  // Мечта ждёт оценки родителя. Копить в неё нельзя, поэтому вместо тупика даём
+  // ребёнку два действия: напомнить родителю и пойти читать.
   if (dream.status === "pending_approval") {
     return (
-      <div className="glass" style={{ padding: 16, marginBottom: 12, display: "flex", alignItems: "center", gap: 12, border: "1px solid rgba(255,210,0,0.4)" }}>
-        <span style={{ fontSize: 28 }}>⏳</span>
-        <div>
-          <p style={{ margin: 0, fontWeight: 900, fontSize: 15, color: "#ffffff" }}>{dream.name}</p>
-          <p style={{ margin: "4px 0 0", fontSize: 12, fontWeight: 600, color: "#ffd200" }}>{t("awaitingApproval")}</p>
+      <div className="glass" style={{ padding: 16, marginBottom: 12, border: "1px solid rgba(255,210,0,0.4)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={{ fontSize: 28 }}>💌</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ margin: 0, fontWeight: 900, fontSize: 15, color: "#ffffff" }}>{dream.name}</p>
+            <p style={{ margin: "4px 0 0", fontSize: 12, fontWeight: 700, color: "#ffd200" }}>{t("awaitingApproval")}</p>
+            <p style={{ margin: "2px 0 0", fontSize: 11.5, fontWeight: 600, color: "rgba(255,255,255,0.55)" }}>{t("awaitingApprovalHint")}</p>
+          </div>
         </div>
+        <button
+          onClick={() => onRemind(dream.id)}
+          disabled={isReminding}
+          className="glass-chip"
+          style={{
+            marginTop: 12,
+            width: "100%",
+            padding: "10px 0",
+            border: "1px solid rgba(255,255,255,0.25)",
+            cursor: isReminding ? "default" : "pointer",
+            fontFamily: "inherit",
+            fontWeight: 800,
+            fontSize: 13,
+            color: "#ffffff",
+            opacity: isReminding ? 0.5 : 1,
+          }}
+        >
+          🔔 {t("remind")}
+        </button>
       </div>
     );
   }
@@ -300,12 +335,29 @@ export default function ChildHomePage() {
       toast.error(err?.response?.data?.message || t("sendFailed")),
   });
 
+  // Бэк не шлёт пуш чаще раза в 6 часов и возвращает ok: false — показываем это
+  // как «уже напоминали», а не как ошибку.
+  const remindMutation = useMutation({
+    mutationFn: (dreamId: string) => dreamsApi.remind(dreamId),
+    onSuccess: (res: any) =>
+      res?.ok ? toast.success(t("reminded")) : toast(t("remindLater")),
+    onError: () => toast.error(t("sendFailed")),
+  });
+
   return (
     <main style={{ padding: "20px 20px 8px", maxWidth: 480, margin: "0 auto" }}>
       <HeroCard name={user?.name || t("reader")} balance={currentBalance} streak={streak} onHistory={() => router.push("/child/purchases")} />
 
       {currentDreams.length > 0 && currentDreams.map((d) => (
-        <DreamCard key={d.id} dream={d} currentBalance={currentBalance} onSend={(amt, dreamId) => sendMutation.mutate({ amount: amt, dreamId })} isSending={sendMutation.isPending} />
+        <DreamCard
+          key={d.id}
+          dream={d}
+          currentBalance={currentBalance}
+          onSend={(amt, dreamId) => sendMutation.mutate({ amount: amt, dreamId })}
+          isSending={sendMutation.isPending}
+          onRemind={(dreamId) => remindMutation.mutate(dreamId)}
+          isReminding={remindMutation.isPending}
+        />
       ))}
 
       <BannerCard

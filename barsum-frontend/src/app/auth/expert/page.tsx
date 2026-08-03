@@ -111,7 +111,7 @@ export default function ExpertAuthPage() {
         });
         const { access_token, role, user, child, expert } = res.data;
         setAuth(access_token, role, user ?? child, expert?.status);
-        redirectByRole(role, expert?.status, router);
+        redirectByRole(role, expert?.status, router, child);
       }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
@@ -177,8 +177,9 @@ export default function ExpertAuthPage() {
   );
 }
 
-function redirectByRole(role: string, expertStatus: string | undefined, router: ReturnType<typeof useRouter>) {
-  if (role === "child") router.push("/child/home");
+function redirectByRole(role: string, expertStatus: string | undefined, router: ReturnType<typeof useRouter>, child?: any) {
+  // Ребёнок, ещё не проходивший онбординг (onboardedAt === null), сразу идёт на него.
+  if (role === "child") router.push(child?.onboardedAt === null ? "/child/onboarding" : "/child/home");
   else if (role === "parent") router.push("/parent/cabinet");
   else if (role === "expert") router.push(expertStatus === "approved" ? "/expert/home" : "/expert/onboarding");
   else if (role === "admin") router.push("/admin");

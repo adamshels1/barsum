@@ -7,6 +7,10 @@ import { Child } from '../children/entities/child.entity';
 import { FilesService, parseStoredFileUrl, imageMimeFromUrl } from '../files/files.service';
 import { CoinsService } from '../coins/coins.service';
 import { TelegramService, esc } from '../notifications/telegram.service';
+import { PushService } from '../push/push.service';
+
+// Как часто ребёнок может напоминать родителю про неодобренную мечту.
+const REMIND_COOLDOWN_MS = 6 * 60 * 60 * 1000;
 
 @Injectable()
 export class DreamsService {
@@ -18,6 +22,7 @@ export class DreamsService {
     private filesService: FilesService,
     private coinsService: CoinsService,
     private telegram: TelegramService,
+    private push: PushService,
   ) {}
 
   async create(childId: string, dto: { name: string; photoUrl?: string }): Promise<Dream> {
@@ -40,7 +45,49 @@ export class DreamsService {
       `⭐ <b>Новая мечта</b>\n🧒 Ребёнок: ${esc(child.name)} (${esc(childId)})\nМечта: «${esc(saved.name)}»`,
     );
 
+    // Веб-пуш родителю: без него мечта висит в pending_approval неделями —
+    // родитель просто не знает, что её нужно оценить.
+    if (child.parentId) {
+      void this.push.sendToUser(child.parentId, {
+        title: '💫 Новая мечта',
+        body: `${child.name} мечтает: ${saved.name}. Оцените мечту в монетах.`,
+        url: '/parent/cabinet',
+        tag: `dream-${saved.id}`,
+      });
+    }
+
     return saved;
+  }
+
+  // Ребёнок напоминает родителю про неодобренную мечту. Повторный пуш, но не чаще
+  // раза в REMIND_COOLDOWN_MS — иначе получится спам-кнопка.
+  async remind(id: string, childId: string): Promise<{ ok: boolean; nextAvailableAt?: Date }> {
+    const dream = await this.dreamRepo.findOne({ where: { id, childId } });
+    if (!dream) throw new NotFoundException('Dream not found');
+    if (dream.status !== DreamStatus.PENDING_APPROVAL) {
+      throw new BadRequestException('Dream is not pending approval');
+    }
+
+    if (dream.remindedAt) {
+      const nextAvailableAt = new Date(dream.remindedAt.getTime() + REMIND_COOLDOWN_MS);
+      if (nextAvailableAt > new Date()) {
+        return { ok: false, nextAvailableAt };
+      }
+    }
+
+    const child = await this.childRepo.findOne({ where: { id: childId } });
+    if (dream.parentId) {
+      void this.push.sendToUser(dream.parentId, {
+        title: '💫 Напоминание о мечте',
+        body: `${child?.name ?? 'Ребёнок'} ждёт: «${dream.name}». Оцените мечту в монетах.`,
+        url: '/parent/cabinet',
+        tag: `dream-${dream.id}`,
+      });
+    }
+
+    dream.remindedAt = new Date();
+    await this.dreamRepo.save(dream);
+    return { ok: true };
   }
 
   async findMy(childId: string): Promise<Dream | null> {

@@ -26,8 +26,9 @@ const dict: Dict = {
     dreamFulfilled: "Мечта отмечена исполненной!",
     childPrefix: "Ребёнок: {name}",
     waitingApproval: "Ждёт одобрения",
-    setCoinPrice: "Установите стоимость в монетах:",
-    coinsPlaceholder: "Например: 1000",
+    setCoinPrice: "Сколько монет ребёнку нужно накопить?",
+    coinsPlaceholder: "Например: 3000",
+    coinsHint: "Можно оставить предложенную сумму и сразу одобрить",
     approveBtn: "✅ Одобрить",
     rejectReasonLabel: "Причина отказа:",
     ownReasonPlaceholder: "Или своя причина...",
@@ -51,8 +52,9 @@ const dict: Dict = {
     dreamFulfilled: "Арман орындалды деп белгіленді!",
     childPrefix: "Бала: {name}",
     waitingApproval: "Мақұлдауды күтуде",
-    setCoinPrice: "Монетамен құнын белгілеңіз:",
-    coinsPlaceholder: "Мысалы: 1000",
+    setCoinPrice: "Бала қанша монета жинауы керек?",
+    coinsPlaceholder: "Мысалы: 3000",
+    coinsHint: "Ұсынылған соманы қалдырып, бірден мақұлдауға болады",
     approveBtn: "✅ Мақұлдау",
     rejectReasonLabel: "Бас тарту себебі:",
     ownReasonPlaceholder: "Немесе өз себебіңіз...",
@@ -63,6 +65,11 @@ const dict: Dict = {
     reason4: "Басқа нәрсе таңда",
   },
 };
+
+// Предложенные суммы: родителю не нужно придумывать цену с нуля — по умолчанию
+// подставляем среднюю, остальное меняется одним тапом.
+const COIN_PRESETS = [1000, 3000, 5000, 10000];
+const DEFAULT_TARGET_COINS = 3000;
 
 const GLASS: React.CSSProperties = {
   background: "rgba(255,255,255,0.13)",
@@ -136,18 +143,9 @@ export function ChildRequestsInbox() {
         <span style={{ fontSize: 12, fontWeight: 900, padding: "2px 9px", borderRadius: 9999, background: "#ef4444", color: "#ffffff" }}>{total}</span>
       </div>
 
-      {/* Запросы наград */}
-      {pendingRequests.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: pendingDreams.length || completedDreams.length ? 16 : 0 }}>
-          {pendingRequests.map((req) => (
-            <RewardRequestCard key={req.id} request={req} highlight />
-          ))}
-        </div>
-      )}
-
       {/* Мечты на одобрение */}
       {pendingDreams.length > 0 && (
-        <div style={{ marginBottom: completedDreams.length ? 16 : 0 }}>
+        <div style={{ marginBottom: pendingRequests.length || completedDreams.length ? 16 : 0 }}>
           <h3 style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 800, color: "rgba(255,255,255,0.75)" }}>{t("dreamsToApprove")}</h3>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {pendingDreams.map((dream: any) => (
@@ -168,7 +166,19 @@ export function ChildRequestsInbox() {
                 {approvingId === dream.id ? (
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                     <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.6)" }}>{t("setCoinPrice")}</p>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      {COIN_PRESETS.map((c) => (
+                        <button
+                          key={c}
+                          onClick={() => setTargetCoins(String(c))}
+                          style={{ padding: "6px 12px", borderRadius: 9999, border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 800, background: Number(targetCoins) === c ? "rgba(34,197,94,0.7)" : "rgba(255,255,255,0.15)", color: "#ffffff" }}
+                        >
+                          {c.toLocaleString("ru-RU")}
+                        </button>
+                      ))}
+                    </div>
                     <input type="number" min={1} value={targetCoins} onChange={(e) => setTargetCoins(e.target.value)} placeholder={t("coinsPlaceholder")} className="glass-input" />
+                    <p style={{ margin: 0, fontSize: 11.5, color: "rgba(255,255,255,0.5)" }}>{t("coinsHint")}</p>
                     <div style={{ display: "flex", gap: 8 }}>
                       <button onClick={() => setApprovingId(null)} style={{ flex: 1, padding: "11px 0", borderRadius: 12, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13, background: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.7)" }}>{t("cancel")}</button>
                       <button onClick={() => approveMutation.mutate({ id: dream.id, coins: Number(targetCoins) })} disabled={!targetCoins || Number(targetCoins) < 1 || approveMutation.isPending} style={{ flex: 1, padding: "11px 0", borderRadius: 12, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13, background: "rgba(34,197,94,0.7)", color: "#ffffff", opacity: !targetCoins || Number(targetCoins) < 1 ? 0.5 : 1 }}>
@@ -196,13 +206,22 @@ export function ChildRequestsInbox() {
                   </div>
                 ) : (
                   <div style={{ display: "flex", gap: 8 }}>
-                    <button onClick={() => setApprovingId(dream.id)} style={{ flex: 1, padding: "11px 0", borderRadius: 12, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13, background: "rgba(34,197,94,0.7)", color: "#ffffff" }}>{t("approveBtn")}</button>
+                    <button onClick={() => { setTargetCoins(String(DEFAULT_TARGET_COINS)); setApprovingId(dream.id); }} style={{ flex: 1, padding: "11px 0", borderRadius: 12, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13, background: "rgba(34,197,94,0.7)", color: "#ffffff" }}>{t("approveBtn")}</button>
                     <button onClick={() => setRejectingId(dream.id)} style={{ flex: 1, padding: "11px 0", borderRadius: 12, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13, background: "rgba(239,68,68,0.5)", color: "#ffffff" }}>{t("rejectBtn")}</button>
                   </div>
                 )}
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Запросы наград */}
+      {pendingRequests.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: completedDreams.length ? 16 : 0 }}>
+          {pendingRequests.map((req) => (
+            <RewardRequestCard key={req.id} request={req} highlight />
+          ))}
         </div>
       )}
 

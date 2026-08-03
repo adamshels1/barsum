@@ -24,6 +24,13 @@ export class ChildrenController {
     return result;
   }
 
+  // Объявлено до ':id/photo' — иначе 'me' попадёт в параметр :id.
+  @Post('me/onboarded')
+  @ApiOperation({ summary: 'Ребёнок прошёл онбординг' })
+  async markOnboarded(@Request() req: any) {
+    return this.childrenService.markOnboarded(req.user.sub);
+  }
+
   @Get()
   @ApiOperation({ summary: 'Список детей родителя' })
   async list(@Request() req: any) {

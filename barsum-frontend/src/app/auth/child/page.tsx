@@ -29,6 +29,7 @@ const dict: Dict = {
     loading: "Загрузка...",
     signIn: "Войти",
     parentHint: "Логин и пароль выдаёт родитель",
+    noLoginYet: "Нет логина? Пусть родитель зарегистрируется →",
     showPassword: "Показать пароль",
     hidePassword: "Скрыть пароль",
   },
@@ -46,6 +47,7 @@ const dict: Dict = {
     loading: "Жүктелуде...",
     signIn: "Кіру",
     parentHint: "Логин мен құпиясөзді ата-ана береді",
+    noLoginYet: "Логин жоқ па? Ата-анаң тіркелсін →",
     showPassword: "Құпиясөзді көрсету",
     hidePassword: "Құпиясөзді жасыру",
   },
@@ -78,7 +80,7 @@ export default function ChildAuthPage() {
       });
       const { access_token, role, user, child, expert } = res.data;
       setAuth(access_token, role, user ?? child, expert?.status);
-      redirectByRole(role, expert?.status, router);
+      redirectByRole(role, expert?.status, router, child);
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
       toast.error(error.response?.data?.message || t("wrongCredentials"));
@@ -138,13 +140,22 @@ export default function ChildAuthPage() {
         <p style={{ textAlign: "center", marginTop: 20, fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.45)" }}>
           {t("parentHint")}
         </p>
+        {/* Выход из тупика: сюда с главной попадают взрослые из рекламы, у которых
+            аккаунта ещё нет. Без этой ссылки им остаётся только кнопка «назад». */}
+        <button
+          onClick={() => router.push("/auth/parent")}
+          style={{ display: "block", width: "100%", marginTop: 12, background: "transparent", border: "none", cursor: "pointer", fontFamily: "inherit", textAlign: "center", fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.75)", textDecoration: "underline", textUnderlineOffset: 3 }}
+        >
+          {t("noLoginYet")}
+        </button>
       </div>
     </main>
   );
 }
 
-function redirectByRole(role: string, expertStatus: string | undefined, router: ReturnType<typeof useRouter>) {
-  if (role === "child") router.push("/child/home");
+function redirectByRole(role: string, expertStatus: string | undefined, router: ReturnType<typeof useRouter>, child?: any) {
+  // Ребёнок, ещё не проходивший онбординг (onboardedAt === null), сразу идёт на него.
+  if (role === "child") router.push(child?.onboardedAt === null ? "/child/onboarding" : "/child/home");
   else if (role === "parent") router.push("/parent/cabinet");
   else if (role === "expert") router.push(expertStatus === "approved" ? "/expert/home" : "/expert/onboarding");
   else if (role === "admin") router.push("/admin");

@@ -2,7 +2,7 @@
 
 import { BookOpen, Library, ShoppingBag } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { useAuthStore } from "@/stores/auth-store";
 import { useQuery } from "@tanstack/react-query";
 import { coinsApi } from "@/lib/api/coins";
@@ -38,6 +38,18 @@ function ChildLayoutInner({ children }: { children: React.ReactNode }) {
   const t = useT(dict);
   const user = useAuthStore((s) => s.user);
   const isSession = pathname?.includes("/child/session");
+  const isOnboarding = pathname === "/child/onboarding";
+  // Онбординг и экран чтения — без шапки и таб-бара.
+  const showChrome = !isSession && !isOnboarding;
+
+  // Гейт первого входа. Редиректим только если сервер явно сказал onboardedAt: null.
+  // Если поля нет вовсе (профиль лежит в localStorage от старой версии приложения) —
+  // не трогаем: иначе действующие дети разом улетят в онбординг. Актуальный профиль
+  // подтянет SessionRefresher.
+  const needsOnboarding = user?.onboardedAt === null;
+  useEffect(() => {
+    if (needsOnboarding && !isOnboarding) router.replace("/child/onboarding");
+  }, [needsOnboarding, isOnboarding, router]);
 
   const { data: balanceData } = useQuery({
     queryKey: ["child-balance", user?.id],
@@ -66,7 +78,7 @@ function ChildLayoutInner({ children }: { children: React.ReactNode }) {
       <div style={{ position: "fixed", bottom: "15%", left: "-8%", width: 160, height: 160, borderRadius: "50%", background: "rgba(0,0,0,0.1)", filter: "blur(50px)", pointerEvents: "none", zIndex: 0 }} />
 
       {/* Header */}
-      {!isSession && (
+      {showChrome && (
         <div
           className="glass-header"
           style={{
@@ -91,12 +103,12 @@ function ChildLayoutInner({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Content */}
-      <div style={{ position: "relative", zIndex: 1, paddingBottom: isSession ? 0 : 96 }}>
+      <div style={{ position: "relative", zIndex: 1, paddingBottom: showChrome ? 96 : 0 }}>
         {children}
       </div>
 
       {/* Bottom nav */}
-      {!isSession && (
+      {showChrome && (
         <div
           className="glass-nav"
           style={{

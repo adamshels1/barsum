@@ -16,6 +16,8 @@ interface AuthState {
   ) => void;
   // Тихая замена токена (скользящая сессия): роль и пользователь не меняются.
   setToken: (token: string) => void;
+  // Обновить профиль, не трогая токен и роль (напр. после онбординга ребёнка).
+  setUser: (user: any) => void;
   clearAuth: () => void;
 }
 
@@ -46,6 +48,7 @@ export const useAuthStore = create<AuthState>()(
         persistToken(token);
         set({ token });
       },
+      setUser: (user) => set({ user }),
       clearAuth: () => {
         if (typeof document !== "undefined") {
           document.cookie = "barsum_token=; path=/; max-age=0";
