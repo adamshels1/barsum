@@ -31,6 +31,12 @@ export class ChildrenController {
     return this.childrenService.markOnboarded(req.user.sub);
   }
 
+  @Post('me/dream-prompted')
+  @ApiOperation({ summary: 'Ребёнку показали вопрос «на что копишь?»' })
+  async markDreamPrompted(@Request() req: any) {
+    return this.childrenService.markDreamPrompted(req.user.sub);
+  }
+
   @Get(':id/invite-link')
   @ApiOperation({ summary: 'Токен пригласительной ссылки ребёнка' })
   async inviteLink(@Request() req: any, @Param('id') id: string) {

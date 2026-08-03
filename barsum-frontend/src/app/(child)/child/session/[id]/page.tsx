@@ -5,6 +5,10 @@ import { useParams, useRouter } from "next/navigation";
 import { Home, Mic, MicOff, Send, RotateCcw, Bot } from "lucide-react";
 import { useRef, useState } from "react";
 import { sessionsApi } from "@/lib/api/sessions";
+import { coinsApi } from "@/lib/api/coins";
+import { dreamsApi } from "@/lib/api/dreams";
+import { childrenApi } from "@/lib/api/children";
+import { useAuthStore } from "@/stores/auth-store";
 import { CoinIcon } from "@/components/CoinIcon";
 import { BackButton } from "@/components/BackButton";
 import { PartAudioPlayer } from "@/components/PartAudioPlayer";
@@ -29,6 +33,10 @@ const dict: Dict = {
     great: "Отлично!",
     partReadDone: "Часть прочитана — молодец!",
     coinsAdded: "+{coins} монет начислено!",
+    dreamAskTitle: "У тебя уже {balance} монет",
+    dreamAskSub: "На что копим? Загадай мечту — родители помогут её осуществить",
+    dreamAskYes: "💫 Загадать мечту",
+    dreamAskLater: "Потом",
     partCounted: "Часть засчитана! 🎉",
     streakGoes: "Серия продолжается — так держать!",
     almostDone: "Почти готово!",
@@ -77,6 +85,10 @@ const dict: Dict = {
     great: "Керемет!",
     partReadDone: "Бөлім оқылды — жарайсың!",
     coinsAdded: "+{coins} монета есептелді!",
+    dreamAskTitle: "Сенде қазірдің өзінде {balance} монета бар",
+    dreamAskSub: "Неге жинаймыз? Арман ойла — ата-анаң оны орындауға көмектеседі",
+    dreamAskYes: "💫 Арман ойлау",
+    dreamAskLater: "Кейін",
     partCounted: "Бөлім есептелді! 🎉",
     streakGoes: "Серия жалғасуда — осылай ұста!",
     almostDone: "Дерлік дайын!",
@@ -747,6 +759,72 @@ function Confetti() {
 }
 
 // ─── Phase: done ──────────────────────────────────────────────────────────────
+/**
+ * Вопрос «на что копишь?» — только тем, кто уже читает, но мечты не завёл.
+ * Момент выбран специально: монеты только что начислены, и вопрос звучит
+ * как продолжение разговора, а не как баннер. Спрашиваем один раз.
+ */
+function DreamPrompt() {
+  const router = useRouter();
+  const t = useT(dict);
+  const user = useAuthStore((s) => s.user);
+  const setUser = useAuthStore((s) => s.setUser);
+
+  const { data: dreams } = useQuery<any[]>({
+    queryKey: ["dream-my-all"],
+    queryFn: dreamsApi.myAll,
+  });
+  const { data: balanceData } = useQuery({
+    queryKey: ["child-balance", user?.id],
+    queryFn: () => coinsApi.childBalance(user?.id),
+    enabled: !!user?.id,
+  });
+
+  const [answered, setAnswered] = useState(false);
+  const balance: number = balanceData?.balance ?? 0;
+
+  // Мечты нет вообще, ещё не спрашивали, и монеты уже есть — иначе вопрос
+  // «на что копим» повисает в воздухе.
+  const show =
+    !answered && !user?.dreamPromptedAt && Array.isArray(dreams) && dreams.length === 0 && balance > 0;
+  if (!show) return null;
+
+  const answer = async (goToDream: boolean) => {
+    setAnswered(true);
+    try {
+      const child = await childrenApi.markDreamPrompted();
+      if (child) setUser(child);
+    } catch {
+      // Не критично: в худшем случае спросим ещё раз в следующий раз.
+    }
+    if (goToDream) router.push("/child/shop?tab=dream");
+  };
+
+  return (
+    <div
+      className="glass"
+      style={{ width: "100%", padding: 20, borderRadius: 20, border: "1px solid rgba(255,210,0,0.45)", textAlign: "center" }}
+    >
+      <p style={{ fontSize: 32, margin: "0 0 6px" }}>💫</p>
+      <p style={{ margin: 0, fontWeight: 900, fontSize: 17, color: "#ffffff" }}>
+        {t("dreamAskTitle", { balance: balance.toLocaleString("ru-RU") })}
+      </p>
+      <p style={{ margin: "6px 0 16px", fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.65)", lineHeight: 1.45 }}>
+        {t("dreamAskSub")}
+      </p>
+      <button onClick={() => answer(true)} className="btn-white" style={{ color: "#4776e6" }}>
+        {t("dreamAskYes")}
+      </button>
+      <button
+        onClick={() => answer(false)}
+        style={{ width: "100%", marginTop: 10, background: "transparent", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.5)" }}
+      >
+        {t("dreamAskLater")}
+      </button>
+    </div>
+  );
+}
+
 function PhaseDone({ session, coinsPerPart, ownBook }: { session: Session; coinsPerPart: number; ownBook: boolean }) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -820,6 +898,10 @@ function PhaseDone({ session, coinsPerPart, ownBook }: { session: Session; coins
           </div>
         </>
       )}
+
+      {/* Только после засчитанного чтения: монеты в кармане, вопрос уместен. */}
+      {isCompleted && <DreamPrompt />}
+
       <button
         onClick={() => {
           queryClient.invalidateQueries({ queryKey: ["enrollments"] });

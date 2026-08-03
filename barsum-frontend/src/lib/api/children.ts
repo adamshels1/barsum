@@ -15,6 +15,9 @@ export const childrenApi = {
     id: string,
     data: Partial<{ name: string; age: number; login: string; password: string }>
   ) => apiClient.patch(`/children/${id}`, data).then((r) => r.data),
+  // Ребёнку показали и он ответил на вопрос «на что копишь?».
+  markDreamPrompted: () =>
+    apiClient.post("/children/me/dream-prompted").then((r) => r.data),
   // Пригласительная ссылка для входа ребёнка одним тапом.
   inviteLink: (id: string): Promise<{ token: string; expiresAt: string }> =>
     apiClient.get(`/children/${id}/invite-link`).then((r) => r.data),

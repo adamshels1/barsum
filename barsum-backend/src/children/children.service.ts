@@ -157,6 +157,19 @@ export class ChildrenService {
     return rest;
   }
 
+  // Ребёнок ответил на вопрос «на что копишь?» — согласием или отказом.
+  // Больше не спрашиваем: одна попытка, без превращения в назойливый баннер.
+  async markDreamPrompted(id: string): Promise<Child> {
+    const child = await this.findById(id);
+    if (!child) throw new NotFoundException('Child not found');
+    if (!child.dreamPromptedAt) {
+      child.dreamPromptedAt = new Date();
+      await this.childRepo.save(child);
+    }
+    const { password, ...rest } = child as any;
+    return rest;
+  }
+
   async incrementStreak(id: string): Promise<void> {
     await this.childRepo.increment({ id }, 'streak', 1);
   }
