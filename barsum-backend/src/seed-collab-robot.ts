@@ -31,6 +31,8 @@ async function seed() {
   }
 
   const TITLE = 'Айдан келген робот (бірге шығарамыз)';
+  // Цена книги после завершения соавторства. Монеты ребёнку = цене (см. payments.create).
+  const PRICE = 500;
   const CHAPTER_1 =
     'Бір күні түнде Аянның терезесі жарқ ете қалды. Ол сыртқа жүгіріп шықты. Аулада кішкентай күміс шар тұр екен. Шар баяу ашылды. Ішінен алақандай ғана робот шықты. Оның көздері көгілдір түспен жарқырап тұрды. Робот Аянға жақындады.\n— Сәлем, Аян, — деді ол.\nАян таңғалып қалды.\n— Сен менің атымды қайдан білесің?\nРобот үнсіз күлімсіреді. Сосын қолындағы кішкентай жарық тасты Аянға ұсынды.\n— Ай жоғалып бара жатыр. Маған сенің көмегің керек...';
 
@@ -45,18 +47,22 @@ async function seed() {
     totalParts: 1,
     partTexts: [CHAPTER_1],
     partTitles: ['1-тарау'],
-    // Иллюстрация к каждой главе. 1-тарау — обложка (эксперт); главы 2 и 3 —
+    // Иллюстрация к каждой главе. 1-тарау — обложка (эксперт); главы 2–5 —
     // придуманы соавторами, картинки добавлены вручную (accept-флоу collab не
     // сохраняет partImages, поэтому канон живёт здесь и переживает ре-сид).
     partImages: [
       '/books/robot/cover.jpg', // 1-тарау (эксперт)
       '/books/robot/chapter2.jpg', // Глава 2 (соавторы)
       '/books/robot/chapter3.jpg', // Глава 3 (соавторы)
+      '/books/robot/chapter4.jpg', // Глава 4 (соавторы)
+      '/books/robot/chapter5.jpg', // Глава 5 (соавторы)
     ],
     partAudios: ['/books/robot/chapter1.mp3'],
     coverImage: '/books/robot/cover.jpg',
-    price: 0,
-    coinsReward: 0,
+    // Книга дописана и переведена в платные: 500 ₸ = 500 монет ребёнку
+    // (coinsAmount при покупке = price), доля автора — commissionPct эксперта.
+    price: PRICE,
+    coinsReward: PRICE,
     ageMin: 5,
     ageMax: 12,
     category: ChallengeCategory.READING,
@@ -78,20 +84,24 @@ async function seed() {
     await challengeRepo.save(book);
     console.log(`✓ Создана совместная книга (KZ): «${TITLE}»`);
   } else {
+    // Обновляем только то, чей канон живёт в сиде. Прогресс соавторства
+    // (главы, раунд, открыта/завершена) и автора книги НЕ трогаем: на проде
+    // книга уже дописана и её автор — реальный эксперт, а не expert@test.kz.
+    const parts = book.partTexts?.length || 0;
     Object.assign(book, {
       bookTitle: fields.bookTitle,
-      partTexts: book.partTexts?.length ? book.partTexts : fields.partTexts,
+      partTexts: parts ? book.partTexts : fields.partTexts,
       partTitles: book.partTitles?.length ? book.partTitles : fields.partTitles,
-      partImages: fields.partImages,
+      // Картинок ровно столько, сколько глав (лишние слоты обрезаем).
+      partImages: fields.partImages.slice(0, Math.max(parts, 1)),
       partAudios: fields.partAudios,
       coverImage: fields.coverImage,
       collaborative: true,
       status: ChallengeStatus.PUBLISHED,
-      collabOpen: true,
-      collabCompleted: false,
-      currentRound: book.currentRound && book.currentRound >= 2 ? book.currentRound : 2,
+      price: fields.price,
+      coinsReward: fields.coinsReward,
       winnerCoins: 300,
-      authorId: user.id,
+      authorId: book.authorId || user.id,
     });
     await challengeRepo.save(book);
     console.log(`~ Совместная книга синхронизирована: «${TITLE}»`);
