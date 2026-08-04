@@ -63,6 +63,9 @@ async function seed() {
     // (coinsAmount при покупке = price), доля автора — commissionPct эксперта.
     price: PRICE,
     coinsReward: PRICE,
+    // Закреплена сразу после «ДАНА БАЛА» І бөлім (100) и перед «Искандером» (50):
+    // сортировка каталога — sortWeight DESC, затем createdAt DESC.
+    sortWeight: 75,
     ageMin: 5,
     ageMax: 12,
     category: ChallengeCategory.READING,
@@ -100,6 +103,7 @@ async function seed() {
       status: ChallengeStatus.PUBLISHED,
       price: fields.price,
       coinsReward: fields.coinsReward,
+      sortWeight: fields.sortWeight,
       winnerCoins: 300,
       authorId: book.authorId || user.id,
     });

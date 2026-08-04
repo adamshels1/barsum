@@ -23,8 +23,8 @@ import {
  * и используются только сверялкой чтения вслух.
  *
  * Книга БЕСПЛАТНАЯ (price = 0): родитель добавляет её ребёнку без Kaspi,
- * ребёнок может взять её себе сам. sortWeight = 50 — сразу после
- * «ДАНА БАЛА» І бөлім (100) и перед остальным каталогом (0 и ниже).
+ * ребёнок может взять её себе сам. sortWeight = 50 — после «ДАНА БАЛА»
+ * І бөлім (100) и «Айдан келген робот» (75), перед остальным каталогом (0 и ниже).
  *
  * НИЧЕГО не удаляет — безопасно запускать повторно и на проде.
  */
@@ -81,7 +81,7 @@ async function seedIskanderLiga() {
     language: 'ru',
     status: ChallengeStatus.PUBLISHED,
     authorId: user.id,
-    sortWeight: 50, // сразу после «ДАНА БАЛА» І бөлім (sortWeight 100)
+    sortWeight: 50, // после «ДАНА БАЛА» (100) и «Айдан келген робот» (75)
   };
 
   const existing = await challengeRepo.findOne({ where: { coverImage: ISKANDER_LIGA_COVER } });
