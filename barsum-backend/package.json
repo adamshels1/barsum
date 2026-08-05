@@ -28,6 +28,7 @@
     "seed:rustem": "ts-node -r tsconfig-paths/register src/seed-rustem.ts",
     "seed:barsum-city": "ts-node -r tsconfig-paths/register src/seed-barsum-city.ts",
     "seed:iskander-liga": "ts-node -r tsconfig-paths/register src/seed-iskander-liga.ts",
+    "seed:orynbek": "ts-node -r tsconfig-paths/register src/seed-orynbek.ts",
     "backfill:book-language": "ts-node -r tsconfig-paths/register src/backfill-book-language.ts",
     "backfill:child-onboarded": "ts-node -r tsconfig-paths/register src/backfill-child-onboarded.ts"
   },
